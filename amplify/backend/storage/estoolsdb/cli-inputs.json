@@ -1,0 +1,10 @@
+{
+  "resourceName": "estoolsdb",
+  "tableName": "estoolsdb",
+  "partitionKey": {
+    "fieldName": "toolname",
+    "fieldType": "string"
+  },
+  "gsi": [],
+  "triggerFunctions": []
+}

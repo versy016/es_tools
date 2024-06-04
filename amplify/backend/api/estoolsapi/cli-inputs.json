@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "paths": {
+    "/tools": {
+      "name": "/tools",
+      "lambdaFunction": "estoolslambda",
+      "permissions": {
+        "setting": "open"
+      }
+    }
+  }
+}

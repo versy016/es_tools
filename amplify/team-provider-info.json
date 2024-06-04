@@ -1,15 +1,33 @@
 {
   "dev": {
     "awscloudformation": {
-      "AuthRoleName": "amplify-estools-dev-b8d2a-authRole",
-      "UnauthRoleArn": "arn:aws:iam::637423185740:role/amplify-estools-dev-b8d2a-unauthRole",
-      "AuthRoleArn": "arn:aws:iam::637423185740:role/amplify-estools-dev-b8d2a-authRole",
+      "AuthRoleName": "amplify-estools-dev-f6dca-authRole",
+      "UnauthRoleArn": "arn:aws:iam::637423185740:role/amplify-estools-dev-f6dca-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::637423185740:role/amplify-estools-dev-f6dca-authRole",
       "Region": "ap-southeast-2",
-      "DeploymentBucketName": "amplify-estools-dev-b8d2a-deployment",
-      "UnauthRoleName": "amplify-estools-dev-b8d2a-unauthRole",
-      "StackName": "amplify-estools-dev-b8d2a",
-      "StackId": "arn:aws:cloudformation:ap-southeast-2:637423185740:stack/amplify-estools-dev-b8d2a/701d54b0-1e1d-11ef-b1e6-0a16a44e0c59",
-      "AmplifyAppId": "d3bspl4svs3a1i"
+      "DeploymentBucketName": "amplify-estools-dev-f6dca-deployment",
+      "UnauthRoleName": "amplify-estools-dev-f6dca-unauthRole",
+      "StackName": "amplify-estools-dev-f6dca",
+      "StackId": "arn:aws:cloudformation:ap-southeast-2:637423185740:stack/amplify-estools-dev-f6dca/dc0cb8b0-1e21-11ef-8709-0a1f95095557",
+      "AmplifyAppId": "d2fwjkj81h6igs"
+    },
+    "categories": {
+      "auth": {
+        "estools": {}
+      },
+      "function": {
+        "estoolslambda": {
+          "deploymentBucketName": "amplify-estools-dev-f6dca-deployment",
+          "s3Key": "amplify-builds/estoolslambda-4771524131544e755a7a-build.zip"
+        }
+      },
+      "storage": {
+        "estoolsdb": {}
+      },
+      "api": {
+        "estoolsapi": {},
+        "estools": {}
+      }
     }
   }
 }
