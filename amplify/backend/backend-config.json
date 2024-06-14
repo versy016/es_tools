@@ -67,6 +67,11 @@
     }
   },
   "function": {
+    "S3Triggerf65f33db": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
     "estoolslambda": {
       "build": true,
       "dependsOn": [
@@ -88,6 +93,22 @@
     }
   },
   "parameters": {
+    "AMPLIFY_function_S3Triggerf65f33db_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "S3Triggerf65f33db"
+        }
+      ]
+    },
+    "AMPLIFY_function_S3Triggerf65f33db_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "S3Triggerf65f33db"
+        }
+      ]
+    },
     "AMPLIFY_function_estoolslambda_deploymentBucketName": {
       "usedBy": [
         {
@@ -109,6 +130,21 @@
     "estoolsdb": {
       "providerPlugin": "awscloudformation",
       "service": "DynamoDB"
+    },
+    "estoolstorage": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "LambdaExecutionRole"
+          ],
+          "category": "function",
+          "resourceName": "S3Triggerf65f33db"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "S3"
     }
   }
 }

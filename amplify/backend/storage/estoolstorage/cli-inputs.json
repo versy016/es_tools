@@ -1,0 +1,14 @@
+{
+  "resourceName": "estoolstorage",
+  "policyUUID": "13d46092",
+  "bucketName": "estoolsbucket",
+  "storageAccess": "auth",
+  "guestAccess": [],
+  "authAccess": [
+    "CREATE_AND_UPDATE",
+    "READ",
+    "DELETE"
+  ],
+  "triggerFunction": "S3Triggerf65f33db",
+  "groupAccess": {}
+}

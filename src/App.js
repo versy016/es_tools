@@ -1,5 +1,4 @@
 import './App.css';
-import { Button, Heading } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import { fetchUserAttributes } from 'aws-amplify/auth';
 import React, { useEffect, useState } from 'react';
@@ -8,17 +7,19 @@ import { Amplify } from 'aws-amplify';
 import { ThemeProvider } from '@aws-amplify/ui-react';
 import amplifyconfig from './amplifyconfiguration.json';
 import studioTheme from './ui-components/studioTheme';
+import NavBar from './components/Navbar';
+import ToolCard  from './components/ToolCard';
+import ServiceLocater from './tools/ServiceLocater';
 
 Amplify.configure(amplifyconfig);
 
 const styles = {
-  container: {
-    padding: '20px',
-  },
+ 
 };
 
 const App = ({ signOut }) => {
   const [userName, setUserName] = useState(null);
+  const [currentTool, setCurrentTool] = useState(null);
 
   useEffect(() => {
     const fetchUserName = async () => {
@@ -32,16 +33,37 @@ const App = ({ signOut }) => {
     };
     fetchUserName();
   }, []);
-
+  const goBack = () => {
+    setCurrentTool(null);
+  };
+  const renderTool = () => {
+    switch (currentTool) {
+      case 'service-locater':
+        return <ServiceLocater goBack={goBack} />;
+      default:
+        return (
+          <>
+            <div className="tool-cards-container">
+              <ToolCard 
+                image="/images/Service_Location_Report.png" 
+                title="Service Location Field Report" 
+                description="This tool helps you with creating Service Location Field Report" 
+                onClick={() => setCurrentTool('service-locater')}
+              />
+              {/* Add more ToolCard components here */}
+            </div>
+          </>
+        );
+    }
+  };
   return (
-    <div style={styles.container}>
-      <Heading level={1}>Hello {userName || 'Loading...'}</Heading>
-      <Button onClick={signOut}>Sign out</Button>
-      <h2>ES Tools</h2>
+    <div className="App">
+      <NavBar userName={userName} signOut={signOut} />
+           {renderTool()}
+
     </div>
   );
 };
-
 const AppWithAuth = () => (
   <div style={styles.container}>
     <Authenticator >

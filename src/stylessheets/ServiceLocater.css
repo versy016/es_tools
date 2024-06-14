@@ -1,0 +1,78 @@
+.service-locater {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+.back-link {
+    text-align: left;
+    margin: 1rem;
+    cursor: pointer;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+.service-locater h1 {
+    text-align: center;
+}
+
+.service-locater form {
+    display: flex;
+    flex-direction: column;
+}
+
+.job-details,
+.checklist,
+.site-notes,
+.photos {
+    margin-bottom: 20px;
+}
+
+.job-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.job-details-grid label {
+    display: flex;
+    flex-direction: column;
+}
+
+.checklist table {
+    width: 100%;
+    border-collapse: collapse;
+    
+}
+input{
+        cursor: pointer;
+}
+.checklist th,
+.checklist td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.checklist th {
+    background-color: #f2f2f2;
+}
+
+.buttons {
+    display: flex;
+    justify-content: center;
+}
+
+.service-locater button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.service-locater button:hover {
+    background-color: #0056b3;
+}

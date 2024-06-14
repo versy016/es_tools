@@ -37,3 +37,10 @@
     transform: rotate(360deg);
   }
 }
+
+.tool-cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  position: relative;
+}

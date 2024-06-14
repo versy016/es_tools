@@ -24,6 +24,13 @@ export type AmplifyDependentResourcesAttributes = {
     }
   },
   "function": {
+    "S3Triggerf65f33db": {
+      "Arn": "string",
+      "LambdaExecutionRole": "string",
+      "LambdaExecutionRoleArn": "string",
+      "Name": "string",
+      "Region": "string"
+    },
     "estoolslambda": {
       "Arn": "string",
       "LambdaExecutionRole": "string",
@@ -40,6 +47,10 @@ export type AmplifyDependentResourcesAttributes = {
       "PartitionKeyType": "string",
       "Region": "string",
       "StreamArn": "string"
+    },
+    "estoolstorage": {
+      "BucketName": "string",
+      "Region": "string"
     }
   }
 }

@@ -19,10 +19,15 @@
         "estoolslambda": {
           "deploymentBucketName": "amplify-estools-dev-f6dca-deployment",
           "s3Key": "amplify-builds/estoolslambda-4771524131544e755a7a-build.zip"
+        },
+        "S3Triggerf65f33db": {
+          "deploymentBucketName": "amplify-estools-dev-f6dca-deployment",
+          "s3Key": "amplify-builds/S3Triggerf65f33db-77465a435a4b674b7541-build.zip"
         }
       },
       "storage": {
-        "estoolsdb": {}
+        "estoolsdb": {},
+        "estoolstorage": {}
       },
       "api": {
         "estoolsapi": {},
