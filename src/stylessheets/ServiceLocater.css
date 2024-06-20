@@ -25,7 +25,8 @@
 .job-details,
 .checklist,
 .site-notes,
-.photos {
+.photos
+.dbyd {
     margin-bottom: 20px;
 }
 
@@ -34,7 +35,16 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
 }
+.dbyd-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
 
+.dbyd-grid label {
+        display: flex;
+    flex-direction: column;
+}
 .job-details-grid label {
     display: flex;
     flex-direction: column;
@@ -75,4 +85,28 @@ input{
 
 .service-locater button:hover {
     background-color: #0056b3;
+}
+
+.dropdown {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    z-index: 1000;
+}
+
+.dropdown-item {
+        cursor: pointer;
+}
+.dropdown-item:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+.dropdown-item:nth-child(even) {
+    background-color: #e9e9e9;
+}
+.dropdown-item:hover {
+    background-color: #f2f2f2;
 }

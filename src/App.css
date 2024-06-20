@@ -40,7 +40,8 @@
 
 .tool-cards-container {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  position: relative;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  /* Adjust the minmax value as needed */
+  
 }
+

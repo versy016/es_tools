@@ -10,6 +10,7 @@ import studioTheme from './ui-components/studioTheme';
 import NavBar from './components/Navbar';
 import ToolCard  from './components/ToolCard';
 import ServiceLocater from './tools/ServiceLocater';
+import ServiceLocaterpdf from './tools/ServiceLocaterpdf';
 
 Amplify.configure(amplifyconfig);
 
@@ -40,6 +41,8 @@ const App = ({ signOut }) => {
     switch (currentTool) {
       case 'service-locater':
         return <ServiceLocater goBack={goBack} />;
+      case 'service-locater-pdf':
+        return <ServiceLocaterpdf goBack={goBack} />;
       default:
         return (
           <>
@@ -50,9 +53,16 @@ const App = ({ signOut }) => {
                 description="This tool helps you with creating Service Location Field Report" 
                 onClick={() => setCurrentTool('service-locater')}
               />
-              {/* Add more ToolCard components here */}
+              <ToolCard 
+                image="/images/Service_Location_Report.png" 
+                title="Service Location Field Report PDF" 
+                description="This tool helps you with creating Service Location Field Report" 
+                onClick={() => setCurrentTool('service-locater-pdf')}
+              />
             </div>
+    
           </>
+          
         );
     }
   };
