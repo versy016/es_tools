@@ -18,7 +18,7 @@ const searchAlgolia = async (indexName, query, callback) => {
   }
 };
 
-const displayDropdown = (inputElement, results, displayAttribute) => {
+const displayDropdown = (inputElement, results, displayAttribute, onSelect) => {
   const dropdown = document.createElement('div');
   dropdown.classList.add('dropdown');
   
@@ -28,7 +28,9 @@ const displayDropdown = (inputElement, results, displayAttribute) => {
     item.textContent = result[displayAttribute];
     item.addEventListener('click', () => {
       inputElement.value = result[displayAttribute];
+      inputElement.dataset.selected = JSON.stringify(result);  // Store selected item data
       clearDropdown(inputElement);
+      onSelect(result);  // Call the onSelect function with the selected value
     });
     dropdown.appendChild(item);
   });
@@ -44,20 +46,26 @@ const clearDropdown = (inputElement) => {
   }
 };
 
-const setupSearch = (inputElement, indexName, displayAttribute) => {
+const setupSearch = (inputElement, indexName, displayAttribute, onSelect) => {
   inputElement.addEventListener('input', (event) => {
     const query = event.target.value;
     if (query.length > 0) {
       searchAlgolia(indexName, query, (results) => {
-        displayDropdown(inputElement, results, displayAttribute);
+        displayDropdown(inputElement, results, displayAttribute, onSelect);
       });
     } else {
       clearDropdown(inputElement);
     }
   });
+
+  inputElement.addEventListener('blur', () => {
+    setTimeout(() => clearDropdown(inputElement), 200); // Delay to allow click event
+  });
 };
 
 // Export the setup functions for use in other scripts
-export const setupTendersSearch = (inputElement) => setupSearch(inputElement, 'tenders', 'name');
-export const setupClientsSearch = (inputElement) => setupSearch(inputElement, 'clients', 'title');
-export const setupProjectsSearch = (inputElement) => setupSearch(inputElement, 'projects', 'project');
+export const setupTendersSearch = (inputElement, onSelect) => setupSearch(inputElement, 'tenders', 'name', onSelect);
+export const setupClientsSearch = (inputElement, onSelect) => setupSearch(inputElement, 'clients', 'title', onSelect);
+export const setupProjectsSearch = (inputElement, onSelect) => setupSearch(inputElement, 'projects', 'project', onSelect);
+export const setupContactsSearch = (inputElement, onSelect) => setupSearch(inputElement, 'contacts', 'name', onSelect);
+export const setupUsersSearch = (inputElement, onSelect) => setupSearch(inputElement, 'users', 'name', onSelect);
