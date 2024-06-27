@@ -194,7 +194,7 @@ const ServiceLocater = ({ goBack }) => {
             dbydplans: e.target.dbydPlansCoverAreas.value,
             SWMS: e.target.swmsCompleted.value,
             plansupply: e.target.dbydPlansSupplied.value,
-            sitename: 'Industrial Park Zone 3',
+            sitename: address,
             addnotes: notes,
             base64_images: base64Images
         };
