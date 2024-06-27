@@ -53,12 +53,7 @@ const App = ({ signOut }) => {
                 description="This tool helps you with creating Service Location Field Report" 
                 onClick={() => setCurrentTool('service-locater')}
               />
-              <ToolCard 
-                image="/images/Service_Location_Report.png" 
-                title="Service Location Field Report PDF" 
-                description="This tool helps you with creating Service Location Field Report" 
-                onClick={() => setCurrentTool('service-locater-pdf')}
-              />
+              
             </div>
     
           </>
