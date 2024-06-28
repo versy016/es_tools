@@ -1,20 +1,41 @@
+/* General styles */
+body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 .service-locater {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
-    font-family: Arial, sans-serif;
+    font-family: 'Roboto', sans-serif;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
 }
+
 .back-link {
     text-align: left;
-    margin: 1rem;
+    margin: 1rem 0;
     cursor: pointer;
+    font-size: 1rem;
+    color: #007bff;
 }
 
 .back-link:hover {
     text-decoration: underline;
 }
-.service-locater h1 {
+
+.service-locater h1,
+.service-locater h2 {
     text-align: center;
+    color: #333;
+}
+
+.service-locater h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .service-locater form {
@@ -25,68 +46,104 @@
 .job-details,
 .checklist,
 .site-notes,
-.photos
+.photos,
 .dbyd {
     margin-bottom: 20px;
+    padding: 20px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
 }
 
-.job-details-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-}
+/* Grid layouts */
+.job-details-grid,
 .dbyd-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
 }
 
-.dbyd-grid label {
-        display: flex;
-    flex-direction: column;
-}
+.dbyd-grid label,
 .job-details-grid label {
     display: flex;
     flex-direction: column;
+    font-weight: bold;
+    color: #555;
 }
 
+/* Input fields */
+input[type="text"],
+input[type="date"],
+textarea,
+select {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    background-color: #fff;
+    margin-top: 5px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus,
+textarea:focus,
+select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+/* Checklist table */
 .checklist table {
     width: 100%;
     border-collapse: collapse;
-    
+    margin-top: 10px;
 }
-input{
-        cursor: pointer;
+
+input {
+    cursor: pointer;
 }
+
 .checklist th,
 .checklist td {
     border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
+    padding: 12px;
 }
 
 .checklist th {
-    background-color: #f2f2f2;
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
 }
 
+.checklist label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Buttons */
 .buttons {
     display: flex;
     justify-content: center;
 }
 
 .service-locater button {
-    padding: 10px 15px;
+    padding: 10px 20px;
     background-color: #007bff;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
 }
 
 .service-locater button:hover {
     background-color: #0056b3;
 }
 
+/* Dropdowns */
 .dropdown {
     background-color: white;
     border: 1px solid #ddd;
@@ -98,8 +155,11 @@ input{
 }
 
 .dropdown-item {
-        cursor: pointer;
+    cursor: pointer;
+    padding: 10px;
+    font-size: 0.9rem;
 }
+
 .dropdown-item:nth-child(odd) {
     background-color: #f9f9f9;
 }
@@ -107,35 +167,51 @@ input{
 .dropdown-item:nth-child(even) {
     background-color: #e9e9e9;
 }
+
 .dropdown-item:hover {
     background-color: #f2f2f2;
 }
+
+/* Images */
 .image-thumbnail {
     width: 100px;
     height: 100px;
     object-fit: cover;
     margin: 5px;
+    border-radius: 8px;
 }
+
 .image-previews {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
-.image-thumbnail-wrapper {
+.image-container {
     position: relative;
-    display: inline-block;
 }
 
-.image-thumbnail {
+.image-description,
+.image-name {
     width: 100px;
-    height: 100px;
-    object-fit: cover;
+    margin-top: 5px;
+    text-align: center;
+    font-size: 0.9rem;
+    border: none;
+    border-bottom: 1px solid #ddd;
+    background: none;
+}
+
+.image-description:focus,
+.image-name:focus {
+    outline: none;
+    border-bottom-color: #007bff;
 }
 
 .remove-button {
     position: absolute;
-    top: 0;
-    right: 0;
+    top: -10px;
+    right: -10px;
     background: rgba(0, 0, 0, 0.5);
     color: white;
     border: none;
@@ -150,4 +226,71 @@ input{
 
 .remove-button:hover {
     background: rgba(0, 0, 0, 0.7);
+}
+
+/* Download link */
+.download-link {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.download-link a {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.download-link a:hover {
+    text-decoration: underline;
+}
+
+/* Media queries */
+@media (max-width: 768px) {
+
+    .job-details-grid,
+    .dbyd-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .service-locater {
+        padding: 10px;
+    }
+
+    .buttons {
+        flex-direction: column;
+    }
+
+    .service-locater button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .image-previews {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .back-link {
+        font-size: 0.9rem;
+    }
+
+    .service-locater h1,
+    .service-locater h2 {
+        font-size: 1.2rem;
+    }
+
+    .checklist th,
+    .checklist td {
+        padding: 8px;
+    }
+
+    .service-locater button {
+        font-size: 0.9rem;
+    }
+
+    .dropdown-item {
+        font-size: 0.8rem;
+    }
 }

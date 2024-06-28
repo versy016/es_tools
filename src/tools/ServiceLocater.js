@@ -291,25 +291,25 @@ const ServiceLocater = ({ goBack }) => {
                             </label>
                             <label>
                                 Contact
-                                <input type="text" name="contact" placeholder="Enter Contact Name" ref={contactInputRef} />
+                                <input type="text" name="contact" placeholder="Enter Contact Name" ref={contactInputRef} autoComplete="off"/>
                             </label>
                             <label>
                                 Contact Mob. No:
-                                <input type="text" name="ContactMob" placeholder="04xxx xxx xx" />
+                                <input type="text" name="ContactMob" placeholder="04xxx xxx xx" autoComplete="off" />
                             </label>
                             <label>
                                 Locater
-                                <input type="text" name="surveyor" placeholder="Enter Locater Name" ref={locaterInputRef} />
+                                <input type="text" name="surveyor" placeholder="Enter Locater Name" ref={locaterInputRef} autoComplete="off"/>
                             </label>
                             <label>
                                 Locater Mob. No:
-                                <input type="text" name="LocaterMob" placeholder="04xxx xxx xx" />
+                                <input type="text" name="LocaterMob" placeholder="04xxx xxx xx" autoComplete="off"/>
                             </label>
                         </div>
                     </section>
                     <section className="checklist">
                         <h2>Checklist (Standard)</h2>
-                        <label>
+                        <label style={{marginRight: '39rem'}}>
                             <input type="checkbox" checked={selectAll} onChange={handleSelectAll} /> Select All
                         </label>
                         <table>
@@ -336,34 +336,38 @@ const ServiceLocater = ({ goBack }) => {
                                         </td>
                                         <td>
                                             <label>
+                                                A
                                                 <input
                                                     type="checkbox"
                                                     name={`quality-${item.type.toLowerCase()}`}
                                                     value="A"
                                                     checked={item.quality.includes('A')}
                                                     onChange={(e) => handleQualityChange(index, e.target.value)}
-                                                /> A
+                                                />
+                                                B
                                                 <input
                                                     type="checkbox"
                                                     name={`quality-${item.type.toLowerCase()}`}
                                                     value="B"
                                                     checked={item.quality.includes('B')}
                                                     onChange={(e) => handleQualityChange(index, e.target.value)}
-                                                /> B
+                                                />
+                                                C
                                                 <input
                                                     type="checkbox"
                                                     name={`quality-${item.type.toLowerCase()}`}
                                                     value="C"
                                                     checked={item.quality.includes('C')}
                                                     onChange={(e) => handleQualityChange(index, e.target.value)}
-                                                /> C
+                                                />
+                                                D
                                                 <input
                                                     type="checkbox"
                                                     name={`quality-${item.type.toLowerCase()}`}
                                                     value="D"
                                                     checked={item.quality.includes('D')}
                                                     onChange={(e) => handleQualityChange(index, e.target.value)}
-                                                /> D
+                                                />
                                             </label>
                                         </td>
                                         <td>
@@ -379,6 +383,7 @@ const ServiceLocater = ({ goBack }) => {
                             </tbody>
                         </table>
                     </section>
+
                     <section className="dbyd">
                         <h2>DBYD Details</h2>
                         <div className="dbyd-grid">
@@ -423,7 +428,7 @@ const ServiceLocater = ({ goBack }) => {
 
                     <section className="site-notes">
                         <h2>Site Notes</h2>
-                        <textarea name="note" value={note} onChange={handleNoteChange} rows="4" style={{ width: '50rem' }}></textarea>
+                        <textarea name="note" value={note} onChange={handleNoteChange} rows="4" style={{ width: '45rem' }}></textarea>
                         <button type="button" onClick={addNote}>Add Note</button>
                         <ul>
                             {notes.map((note, index) => (
