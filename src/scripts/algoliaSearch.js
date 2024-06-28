@@ -59,7 +59,7 @@ const setupSearch = (inputElement, indexName, displayAttribute, onSelect) => {
   });
 
   inputElement.addEventListener('blur', () => {
-    setTimeout(() => clearDropdown(inputElement), 200); // Delay to allow click event
+    setTimeout(() => clearDropdown(inputElement), 100); // Delay to allow click event
   });
 };
 

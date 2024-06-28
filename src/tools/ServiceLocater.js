@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../stylessheets/ServiceLocater.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { setupClientsSearch, setupProjectsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
 import { loadGoogleMapsScript } from '../scripts/googleMaps';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 const ServiceLocater = ({ goBack }) => {
     const [project, setProject] = useState('');
@@ -18,6 +19,8 @@ const ServiceLocater = ({ goBack }) => {
     ]);
     const [base64Images, setBase64Images] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
+    const [imageNames, setImageNames] = useState([]);
+    const [imageDescriptions, setImageDescriptions] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
     const [checklist, setChecklist] = useState([
         { type: 'Gas', quality: '', comment: '', selected: false },
@@ -102,26 +105,30 @@ const ServiceLocater = ({ goBack }) => {
     };
 
     const handleFileUpload = (event) => {
-        const files = Array.from(event.target.files);
-        const promises = files.map(file => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    resolve(e.target.result.split(',')[1]);
-                    // For preview
-                    setImagePreviews(prev => [...prev, e.target.result]);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
+    const files = Array.from(event.target.files);
+    const fileNames = files.map(file => file.name);
+    const promises = files.map(file => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                resolve(e.target.result.split(',')[1]);
+                // For preview
+                setImagePreviews(prev => [...prev, e.target.result]);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
         });
+    });
 
-        Promise.all(promises).then(base64Files => {
-            setBase64Images(base64Files);
-        }).catch(error => {
-            console.error("Error converting images to base64", error);
-        });
-    };
+    Promise.all(promises).then(base64Files => {
+        setBase64Images(prev => [...prev, ...base64Files]);
+        setImageNames(prev => [...prev, ...fileNames]);
+        setImageDescriptions(prev => [...prev, ...fileNames.map(() => '')]);
+    }).catch(error => {
+        console.error("Error converting images to base64", error);
+    });
+};
+
 
     const handleCheckboxChange = (index, field) => {
         const newChecklist = [...checklist];
@@ -167,6 +174,42 @@ const ServiceLocater = ({ goBack }) => {
         return true;
     };
 
+    const handleRemoveImage = (index) => {
+        setImagePreviews(prev => prev.filter((_, i) => i !== index));
+        setBase64Images(prev => prev.filter((_, i) => i !== index));
+        setImageNames(prev => prev.filter((_, i) => i !== index));
+        setImageDescriptions(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const onDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const reorder = (list, startIndex, endIndex) => {
+        const result = Array.from(list);
+        const [removed] = result.splice(startIndex, 1);
+        result.splice(endIndex, 0, removed);
+        return result;
+    };
+
+    // Update all related states
+    setImagePreviews(prev => reorder(prev, result.source.index, result.destination.index));
+    setBase64Images(prev => reorder(prev, result.source.index, result.destination.index));
+    setImageNames(prev => reorder(prev, result.source.index, result.destination.index));
+    setImageDescriptions(prev => reorder(prev, result.source.index, result.destination.index));
+};
+
+    const handleImageNameChange = (index, newName) => {
+        const newNames = [...imageNames];
+        newNames[index] = newName;
+        setImageNames(newNames);
+    };
+
+    const handleImageDescriptionChange = (index, newDescription) => {
+        const newDescriptions = [...imageDescriptions];
+        newDescriptions[index] = newDescription;
+        setImageDescriptions(newDescriptions);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
@@ -196,7 +239,8 @@ const ServiceLocater = ({ goBack }) => {
             plansupply: e.target.dbydPlansSupplied.value,
             sitename: address,
             addnotes: notes,
-            base64_images: base64Images
+            base64_images: base64Images,
+            photo_data: imageNames.map((name, index) => ({ name, description: imageDescriptions[index] }))
         };
 
         console.log('Form Data:', formData);
@@ -391,11 +435,46 @@ const ServiceLocater = ({ goBack }) => {
                     <section className="photos">
                         <h2>Photos</h2>
                         <input type="file" accept="image/*" multiple onChange={handleFileUpload} />
-                        <div className="image-previews">
-                            {imagePreviews.map((preview, index) => (
-                                <img key={index} src={preview} alt={`Preview ${index + 1}`} className="image-thumbnail" />
-                            ))}
-                        </div>
+                        <DragDropContext onDragEnd={onDragEnd}>
+                            <Droppable droppableId="photos" direction="horizontal">
+                                {(provided) => (
+                                    <div className="image-previews" {...provided.droppableProps} ref={provided.innerRef}>
+                                        {imagePreviews.map((preview, index) => (
+                                            <Draggable key={index} draggableId={`photo-${index}`} index={index}>
+                                                {(provided) => (
+                                                    <div
+                                                        className="image-container"
+                                                        ref={provided.innerRef}
+                                                        {...provided.draggableProps}
+                                                        {...provided.dragHandleProps}
+                                                    >
+                                                        <img src={preview} alt={`Preview ${index + 1}`} className="image-thumbnail" />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Description"
+                                                            value={imageDescriptions[index]}
+                                                            onChange={(e) => handleImageDescriptionChange(index, e.target.value)}
+                                                            className="image-description"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Image Name"
+                                                            value={imageNames[index]}
+                                                            onChange={(e) => handleImageNameChange(index, e.target.value)}
+                                                            className="image-name"
+                                                        />
+                                                        <button type="button" className="remove-image" onClick={() => handleRemoveImage(index)}>
+                                                            <FontAwesomeIcon icon={faTimes} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </Draggable>
+                                        ))}
+                                        {provided.placeholder}
+                                    </div>
+                                )}
+                            </Droppable>
+                        </DragDropContext>
                     </section>
 
                     <div className="buttons">
