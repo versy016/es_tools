@@ -20,6 +20,7 @@
     "@testing-library/user-event": "^13.5.0",
     "algoliasearch": "^4.23.3",
     "aws-amplify": "^6.3.5",
+    "aws-sdk": "^2.1651.0",
     "google-maps": "^4.3.3",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^3.11.174",

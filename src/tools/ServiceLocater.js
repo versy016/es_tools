@@ -17,8 +17,8 @@ const ServiceLocater = ({ goBack }) => {
         "Passive sweep of area (Power and Radio mode with Wand and GPR)",
         "Services marked with depths where possible."
     ]);
-    const [base64Images, setBase64Images] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
+    const [imageFiles, setImageFiles] = useState([]);
     const [imageNames, setImageNames] = useState([]);
     const [imageDescriptions, setImageDescriptions] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
@@ -36,6 +36,7 @@ const ServiceLocater = ({ goBack }) => {
         { type: 'Reclaimed Water', quality: '', comment: '', selected: false },
         { type: 'Unknown Services', quality: '', comment: '', selected: false }
     ]);
+    const [loading, setLoading] = useState(false);
 
     const projectInputRef = useRef(null);
     const clientInputRef = useRef(null);
@@ -105,30 +106,28 @@ const ServiceLocater = ({ goBack }) => {
     };
 
     const handleFileUpload = (event) => {
-    const files = Array.from(event.target.files);
-    const fileNames = files.map(file => file.name);
-    const promises = files.map(file => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                resolve(e.target.result.split(',')[1]);
-                // For preview
-                setImagePreviews(prev => [...prev, e.target.result]);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
+        const files = Array.from(event.target.files);
+        const fileNames = files.map(file => file.name);
+        const promises = files.map(file => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    resolve();
+                    setImagePreviews(prev => [...prev, e.target.result]);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
         });
-    });
 
-    Promise.all(promises).then(base64Files => {
-        setBase64Images(prev => [...prev, ...base64Files]);
-        setImageNames(prev => [...prev, ...fileNames]);
-        setImageDescriptions(prev => [...prev, ...fileNames.map(() => '')]);
-    }).catch(error => {
-        console.error("Error converting images to base64", error);
-    });
-};
-
+        Promise.all(promises).then(() => {
+            setImageFiles(prev => [...prev, ...files]);
+            setImageNames(prev => [...prev, ...fileNames]);
+            setImageDescriptions(prev => [...prev, ...fileNames.map(() => '')]);
+        }).catch(error => {
+            console.error("Error loading images", error);
+        });
+    };
 
     const handleCheckboxChange = (index, field) => {
         const newChecklist = [...checklist];
@@ -176,27 +175,26 @@ const ServiceLocater = ({ goBack }) => {
 
     const handleRemoveImage = (index) => {
         setImagePreviews(prev => prev.filter((_, i) => i !== index));
-        setBase64Images(prev => prev.filter((_, i) => i !== index));
+        setImageFiles(prev => prev.filter((_, i) => i !== index));
         setImageNames(prev => prev.filter((_, i) => i !== index));
         setImageDescriptions(prev => prev.filter((_, i) => i !== index));
     };
 
     const onDragEnd = (result) => {
-    if (!result.destination) return;
+        if (!result.destination) return;
 
-    const reorder = (list, startIndex, endIndex) => {
-        const result = Array.from(list);
-        const [removed] = result.splice(startIndex, 1);
-        result.splice(endIndex, 0, removed);
-        return result;
+        const reorder = (list, startIndex, endIndex) => {
+            const result = Array.from(list);
+            const [removed] = result.splice(startIndex, 1);
+            result.splice(endIndex, 0, removed);
+            return result;
+        };
+
+        setImagePreviews(prev => reorder(prev, result.source.index, result.destination.index));
+        setImageFiles(prev => reorder(prev, result.source.index, result.destination.index));
+        setImageNames(prev => reorder(prev, result.source.index, result.destination.index));
+        setImageDescriptions(prev => reorder(prev, result.source.index, result.destination.index));
     };
-
-    // Update all related states
-    setImagePreviews(prev => reorder(prev, result.source.index, result.destination.index));
-    setBase64Images(prev => reorder(prev, result.source.index, result.destination.index));
-    setImageNames(prev => reorder(prev, result.source.index, result.destination.index));
-    setImageDescriptions(prev => reorder(prev, result.source.index, result.destination.index));
-};
 
     const handleImageNameChange = (index, newName) => {
         const newNames = [...imageNames];
@@ -210,11 +208,68 @@ const ServiceLocater = ({ goBack }) => {
         setImageDescriptions(newDescriptions);
     };
 
+    const getPresignedUrl = async (fileName, fileType) => {
+        const response = await fetch('https://kc84cxp392.execute-api.ap-southeast-2.amazonaws.com/dev/presignedurl', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                fileName,
+                contentType: fileType
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return data.uploadUrl;
+        } else {
+            throw new Error('Error generating presigned URL');
+        }
+    };
+
+    const uploadFileToS3 = async (file, url) => {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', url, true);
+            xhr.setRequestHeader('Content-Type', file.type);
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    console.log(`Upload progress for ${file.name}: ${Math.round((event.loaded / event.total) * 100)}%`);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    resolve();
+                } else {
+                    reject(new Error(`Failed to upload file ${file.name}: ${xhr.statusText}`));
+                }
+            };
+
+            xhr.onerror = () => {
+                reject(new Error(`Failed to upload file ${file.name}: ${xhr.statusText}`));
+            };
+
+            xhr.send(file);
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
             alert('Please ensure all selected assets have a quality selected and at least one asset is selected.');
             return;
+        }
+
+        setLoading(true);
+        const fileUrls = [];
+        for (let i = 0; i < imageFiles.length; i++) {
+            const file = imageFiles[i];
+            const url = await getPresignedUrl(file.name, file.type);
+            await uploadFileToS3(file, url);
+            fileUrls.push(url.split('?')[0]); // store the file URL without query parameters
         }
 
         const filteredChecklist = checklist.filter(item => item.selected || item.quality.length > 0).map(item => ({
@@ -239,7 +294,7 @@ const ServiceLocater = ({ goBack }) => {
             plansupply: e.target.dbydPlansSupplied.value,
             sitename: address,
             addnotes: notes,
-            base64_images: base64Images,
+            photo_urls: fileUrls,
             photo_data: imageNames.map((name, index) => ({ name, description: imageDescriptions[index] }))
         };
 
@@ -260,6 +315,8 @@ const ServiceLocater = ({ goBack }) => {
         } else {
             console.error('Error generating the document');
         }
+
+        setLoading(false);
     };
 
     return (
@@ -491,6 +548,11 @@ const ServiceLocater = ({ goBack }) => {
                         <a href={docLink} download="updated_document.docx">
                             Download Populated Report
                         </a>
+                    </div>
+                )}
+                {loading && (
+                    <div className="loading-overlay">
+                        <p>Processing document, please wait...</p>
                     </div>
                 )}
             </div>

@@ -11,6 +11,7 @@ import NavBar from './components/Navbar';
 import ToolCard  from './components/ToolCard';
 import ServiceLocater from './tools/ServiceLocater';
 import ServiceLocaterpdf from './tools/ServiceLocaterpdf';
+import FileUpload from './components/FileUpload';
 
 Amplify.configure(amplifyconfig);
 

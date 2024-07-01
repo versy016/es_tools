@@ -1,46 +1,79 @@
 import React, { useState } from 'react';
-import { uploadData } from '@aws-amplify/storage';
 
 const FileUpload = () => {
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState({});
 
   const handleChange = (event) => {
-    const file = event.target.files[0];
-    setFile(file);
+    setFiles(Array.from(event.target.files));
+  };
+
+  const getPresignedUrl = async (fileName, fileType) => {
+    const response = await fetch('https://kc84cxp392.execute-api.ap-southeast-2.amazonaws.com/dev/presignedurl', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        fileName,
+        contentType: fileType
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.uploadUrl;
+    } else {
+      throw new Error('Error generating presigned URL');
+    }
   };
 
   const handleUpload = async () => {
-    try {
-      if (file) {
-        const result = await uploadData({
-          path: `public/${file.name}`, // Specify the path where the file will be stored
-          data: file,
-          options: {
-            contentType: file.type,
-            onProgress: ({ transferredBytes, totalBytes }) => {
-              if (totalBytes) {
-                console.log(
-                  `Upload progress ${
-                    Math.round((transferredBytes / totalBytes) * 100)
-                  } %`
-                );
-              }
-            }
+    const uploadPromises = files.map(async (file) => {
+      try {
+        const uploadUrl = await getPresignedUrl(file.name, file.type);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', uploadUrl, true);
+        xhr.setRequestHeader('Content-Type', file.type);
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            setUploadProgress(prevProgress => ({
+              ...prevProgress,
+              [file.name]: Math.round((event.loaded / event.total) * 100)
+            }));
           }
-        }).result;
-        console.log('File uploaded successfully:', result);
-      } else {
-        console.log('No file selected');
+        };
+
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            console.log(`File ${file.name} uploaded successfully`);
+          } else {
+            console.error(`File ${file.name} upload failed`, xhr.status, xhr.statusText);
+          }
+        };
+
+        xhr.onerror = () => {
+          console.error(`File ${file.name} upload failed`, xhr.status, xhr.statusText);
+        };
+
+        xhr.send(file);
+      } catch (error) {
+        console.error(`Error uploading file ${file.name}:`, error);
       }
-    } catch (error) {
-      console.error('Error uploading file:', error);
-    }
+    });
+
+    await Promise.all(uploadPromises);
   };
 
   return (
     <div>
-      <input type="file" onChange={handleChange} />
+      <input type="file" multiple onChange={handleChange} />
       <button onClick={handleUpload}>Upload</button>
+      {Object.keys(uploadProgress).map((fileName) => (
+        <p key={fileName}>Upload progress for {fileName}: {uploadProgress[fileName]}%</p>
+      ))}
     </div>
   );
 };

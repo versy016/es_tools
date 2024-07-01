@@ -1,10 +1,4 @@
-/* General styles */
-body {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
+/* Container */
 .service-locater {
     max-width: 800px;
     margin: 0 auto;
@@ -15,6 +9,7 @@ body {
     border-radius: 8px;
 }
 
+/* Back link */
 .back-link {
     text-align: left;
     margin: 1rem 0;
@@ -27,6 +22,7 @@ body {
     text-decoration: underline;
 }
 
+/* Headings */
 .service-locater h1,
 .service-locater h2 {
     text-align: center;
@@ -38,11 +34,13 @@ body {
     margin-bottom: 0.5rem;
 }
 
+/* Forms */
 .service-locater form {
     display: flex;
     flex-direction: column;
 }
 
+/* Job details and other sections */
 .job-details,
 .checklist,
 .site-notes,
@@ -184,7 +182,6 @@ input {
 .image-previews {
     display: flex;
     gap: 10px;
-    flex-wrap: wrap;
 }
 
 .image-container {
@@ -245,7 +242,7 @@ input {
     text-decoration: underline;
 }
 
-/* Media queries */
+/* Responsive Design */
 @media (max-width: 768px) {
 
     .job-details-grid,
@@ -253,44 +250,34 @@ input {
         grid-template-columns: 1fr;
     }
 
-    .service-locater {
-        padding: 10px;
-    }
-
-    .buttons {
-        flex-direction: column;
-    }
-
-    .service-locater button {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-
-    .image-previews {
-        justify-content: center;
-    }
-}
-
-@media (max-width: 480px) {
-    .back-link {
-        font-size: 0.9rem;
-    }
-
-    .service-locater h1,
-    .service-locater h2 {
-        font-size: 1.2rem;
-    }
-
     .checklist th,
     .checklist td {
         padding: 8px;
     }
 
-    .service-locater button {
+    .checklist table {
         font-size: 0.9rem;
     }
 
-    .dropdown-item {
-        font-size: 0.8rem;
+    .image-description,
+    .image-name {
+        width: 100%;
+    }
+
+    .site-notes textarea {
+        width: 100%;
+    }
+
+    .job-details,
+    .checklist,
+    .site-notes,
+    .photos,
+    .dbyd {
+        padding: 10px;
+    }
+
+    .service-locater button {
+        padding: 8px 16px;
+        font-size: 0.9rem;
     }
 }
