@@ -26,7 +26,8 @@ const displayDropdown = (inputElement, results, displayAttribute, onSelect) => {
     const item = document.createElement('div');
     item.classList.add('dropdown-item');
     item.textContent = result[displayAttribute];
-    item.addEventListener('click', () => {
+    item.addEventListener('mousedown', (e) => {
+      e.preventDefault(); // Prevents the blur event
       inputElement.value = result[displayAttribute];
       inputElement.dataset.selected = JSON.stringify(result);  // Store selected item data
       clearDropdown(inputElement);
@@ -58,7 +59,8 @@ const setupSearch = (inputElement, indexName, displayAttribute, onSelect) => {
     }
   });
 
-  inputElement.addEventListener('blur', () => {
+  // Remove the blur event handler
+  inputElement.removeEventListener('blur', () => {
     setTimeout(() => clearDropdown(inputElement), 100); // Delay to allow click event
   });
 };
