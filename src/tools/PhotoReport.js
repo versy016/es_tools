@@ -131,6 +131,8 @@ const PhotoReport = ({ goBack }) => {
     };
 
     const editingPhoto = photos.find((p) => p.id === editingPhotoId);
+    const potholeCount = photos.reduce((n, p) => n + (p.potholes ? p.potholes.length : 0), 0);
+    const qlSelected = QUALITY_LEVELS.filter((q) => qualityLevels[q]);
 
     const handleAnnotatorSave = ({ annotations, flattenedDataUrl, lastUtility }) => {
         updatePhoto(editingPhotoId, { annotations, flattenedDataUrl, lastUtility });
@@ -171,11 +173,10 @@ const PhotoReport = ({ goBack }) => {
                             and generate a Photo Report PDF on the Engineering Surveys letterhead.
                         </p>
                     </div>
-                    <button type="button" className="btn-primary" onClick={handleGenerate} disabled={loading}>
-                        <FontAwesomeIcon icon={faFilePdf} /> {loading ? 'Generating…' : 'Generate PDF'}
-                    </button>
                 </div>
 
+                <div className="pr-layout">
+                  <div className="pr-main">
                 <SectionCard icon={faClipboardList} title="Job Details" subtitle="Appears on the report cover page">
                     <div className="job-details-grid">
                         <label>Date
@@ -296,17 +297,31 @@ const PhotoReport = ({ goBack }) => {
                         </DragDropContext>
                     )}
                 </SectionCard>
+                  </div>
 
-                {pdfUrl && (
-                    <div className="download-link">
-                        <a href={pdfUrl} download={`Photo Report - ${form.siteAddress || 'report'}.pdf`}>
-                            <FontAwesomeIcon icon={faDownload} /> Download Photo Report (PDF)
-                        </a>
-                        <a href={pdfUrl} target="_blank" rel="noreferrer">
-                            <FontAwesomeIcon icon={faUpRightFromSquare} /> Open in new tab
-                        </a>
+                  <aside className="pr-summary">
+                    <div className="summary-card">
+                        <h3 className="summary-title">Report summary</h3>
+                        <div className="summary-row"><span>Photos</span><strong>{photos.length}</strong></div>
+                        <div className="summary-row"><span>Potholes</span><strong>{potholeCount}</strong></div>
+                        <div className="summary-row"><span>Utilities located</span><strong>{utilitiesLocated.length}</strong></div>
+                        <div className="summary-row"><span>Quality levels</span><strong>{qlSelected.length ? qlSelected.join(', ') : '—'}</strong></div>
+                        <button type="button" className="btn-primary summary-generate" onClick={handleGenerate} disabled={loading}>
+                            <FontAwesomeIcon icon={faFilePdf} /> {loading ? 'Generating…' : 'Generate PDF'}
+                        </button>
+                        {pdfUrl && (
+                            <div className="download-link">
+                                <a href={pdfUrl} download={`Photo Report - ${form.siteAddress || 'report'}.pdf`}>
+                                    <FontAwesomeIcon icon={faDownload} /> Download PDF
+                                </a>
+                                <a href={pdfUrl} target="_blank" rel="noreferrer">
+                                    <FontAwesomeIcon icon={faUpRightFromSquare} /> Open in new tab
+                                </a>
+                            </div>
+                        )}
                     </div>
-                )}
+                  </aside>
+                </div>
             </div>
 
             {editingPhoto && (

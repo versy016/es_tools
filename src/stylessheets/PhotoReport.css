@@ -58,6 +58,81 @@
     cursor: not-allowed;
 }
 
+/* Two-column layout: form + sticky summary */
+.pr-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 304px;
+    gap: 22px;
+    align-items: start;
+}
+
+.pr-summary {
+    position: sticky;
+    top: 18px;
+}
+
+.summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+}
+
+.summary-title {
+    margin: 0 0 14px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: .9rem;
+    color: var(--muted);
+}
+
+.summary-row:last-of-type {
+    border-bottom: none;
+}
+
+.summary-row strong {
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.summary-generate {
+    width: 100%;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+.summary-card .download-link {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.summary-card .download-link a {
+    width: 100%;
+    justify-content: center;
+}
+
+@media (max-width: 900px) {
+    .pr-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .pr-summary {
+        position: static;
+        order: -1;
+    }
+}
+
 /* Section cards */
 .section-card {
     background: var(--surface);
