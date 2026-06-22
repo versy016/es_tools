@@ -1,35 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog } from '@fortawesome/free-solid-svg-icons';
+import { faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import '../stylessheets/Navbar.css';
 
 const NavBar = ({ userName, signOut }) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const menuRef = useRef(null);
 
-  const toggleDropdown = () => {
-    setDropdownVisible(!dropdownVisible);
-  };
+  const initial = (userName || 'U').trim().charAt(0).toUpperCase();
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setDropdownVisible(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
 
   return (
     <nav className="navbar">
-      <div className="navbar-logo">
-        <img src="/images/logo.png" alt="Engineering Surveys Logo" />
+      <div className="navbar-brand">
+        <img src="/images/logo.png" alt="Engineering Surveys" className="navbar-logo" />
+        <span className="navbar-title">ES&nbsp;Tools</span>
       </div>
-      <ul className="navbar-links">
-        <li><a href="#dashboard">ES Tools</a></li>
-   
-      </ul>
-      <div className="navbar-icons">
-        <FontAwesomeIcon icon={faCog} className="navbar-icon" />
-        <div className="navbar-profile-container" onClick={toggleDropdown}>
-          <img src="/images/profile.jpg" alt="User Profile" className="navbar-profile" />
-          {dropdownVisible && (
-            <div className="dropdown-menu">
-              <p>Hello, {userName}</p>
-              <button onClick={signOut}>Sign Out</button>
-            </div>
-          )}
-        </div>
+
+      <div className="navbar-right" ref={menuRef}>
+        <button type="button" className="navbar-profile" onClick={() => setDropdownVisible((v) => !v)}>
+          <span className="navbar-avatar">{initial}</span>
+          <span className="navbar-username">{userName || 'User'}</span>
+        </button>
+        {dropdownVisible && (
+          <div className="dropdown-menu">
+            <p className="dropdown-hello">Signed in as<br /><strong>{userName || 'User'}</strong></p>
+            <button className="dropdown-signout" onClick={signOut}>
+              <FontAwesomeIcon icon={faRightFromBracket} /> Sign out
+            </button>
+          </div>
+        )}
       </div>
     </nav>
   );

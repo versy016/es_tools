@@ -1,50 +1,58 @@
 @import "@aws-amplify/ui-react/styles.css";
+
 .App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  background:
+    radial-gradient(1200px 500px at 100% -10%, rgba(245, 166, 35, .10), transparent 60%),
+    radial-gradient(1000px 460px at -10% 0%, rgba(37, 99, 235, .08), transparent 55%),
+    var(--bg);
 }
 
-.App-link {
-  color: #61dafb;
+/* ---- Home: tools landing ---- */
+.tools-home {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 36px 24px 64px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.tools-home-header {
+  margin-bottom: 28px;
+}
+
+.tools-home-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--es-yellow-dark);
+  margin: 0 0 6px;
+}
+
+.tools-home-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+.tools-home-header p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 1.02rem;
+  max-width: 640px;
 }
 
 .tool-cards-container {
-  display: flex;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  /* Adjust the minmax value as needed */
-  
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 22px;
 }
 
-.photos{
-  margin-bottom: 2rem;
+@media (max-width: 600px) {
+  .tools-home {
+    padding: 22px 14px 48px;
+  }
+  .tools-home-header h1 {
+    font-size: 1.55rem;
+  }
 }

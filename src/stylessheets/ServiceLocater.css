@@ -1,56 +1,74 @@
-/* Container */
+/* ============================================================
+   Shared tool-form styling (Service Locater v1 + Photo Report v2)
+   Modern card-based forms. Inputs are scoped to .service-locater
+   so the Amplify Authenticator login page is left untouched.
+   ============================================================ */
+
 .service-locater {
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto;
-    padding: 20px;
-    font-family: 'Roboto', sans-serif;
-    background-color: #f9f9f9;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
+    padding: 28px 24px 64px;
 }
 
 /* Back link */
 .back-link {
-    text-align: left;
-    margin: 1rem 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 18px 0 6px 24px;
     cursor: pointer;
-    font-size: 1rem;
-    color: #007bff;
+    font-size: .92rem;
+    font-weight: 600;
+    color: var(--primary);
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: background .15s ease, transform .1s ease;
+    width: fit-content;
 }
 
 .back-link:hover {
-    text-decoration: underline;
+    background: var(--primary-soft);
+    transform: translateX(-2px);
 }
 
 /* Headings */
-.service-locater h1,
-.service-locater h2 {
-    text-align: center;
-    color: #333;
+.service-locater h1 {
+    text-align: left;
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    margin: 6px 0 22px;
 }
 
 .service-locater h2 {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
+    text-align: left;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 16px;
+    padding-left: 12px;
+    border-left: 4px solid var(--es-yellow);
 }
 
-/* Forms */
 .service-locater form {
     display: flex;
     flex-direction: column;
 }
 
-/* Job details and other sections */
+/* Section cards */
 .job-details,
 .checklist,
 .site-notes,
 .photos,
 .dbyd {
     margin-bottom: 20px;
-    padding: 20px;
-    background-color: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    padding: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
 }
 
 /* Grid layouts */
@@ -58,191 +76,258 @@
 .dbyd-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 18px;
 }
 
 .dbyd-grid label,
 .job-details-grid label {
     display: flex;
     flex-direction: column;
-    font-weight: bold;
-    color: #555;
+    font-weight: 600;
+    font-size: .82rem;
+    color: var(--ink-soft);
+    gap: 6px;
 }
 
-/* Input fields */
-input[type="text"],
-input[type="date"],
-textarea,
-select {
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-    background-color: #fff;
-    margin-top: 5px;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+/* Inputs (scoped) */
+.service-locater input[type="text"],
+.service-locater input[type="date"],
+.service-locater input[type="email"],
+.service-locater input[type="number"],
+.service-locater textarea,
+.service-locater select {
+    padding: 10px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font-size: .95rem;
+    font-family: var(--font);
+    background: var(--surface);
+    color: var(--ink);
+    transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-input[type="text"]:focus,
-input[type="date"]:focus,
-textarea:focus,
-select:focus {
-    border-color: #007bff;
+.service-locater input:focus,
+.service-locater textarea:focus,
+.service-locater select:focus {
+    border-color: var(--primary);
     outline: none;
+    box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
 /* Checklist table */
 .checklist table {
     width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-input {
-    cursor: pointer;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
 }
 
 .checklist th,
 .checklist td {
-    border: 1px solid #ddd;
+    border-bottom: 1px solid var(--border);
     padding: 12px;
+    text-align: left;
 }
 
 .checklist th {
-    background-color: #007bff;
-    color: white;
-    font-weight: bold;
+    background: var(--ink);
+    color: #fff;
+    font-weight: 600;
+    font-size: .85rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+.checklist tbody tr:nth-child(even) {
+    background: var(--surface-2);
+}
+
+.checklist tbody tr:hover {
+    background: var(--es-yellow-soft);
 }
 
 .checklist label {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 8px;
+}
+
+input {
+    cursor: pointer;
+    accent-color: var(--primary);
 }
 
 /* Buttons */
 .buttons {
     display: flex;
     justify-content: center;
+    margin-top: 8px;
 }
 
 .service-locater button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
+    padding: 12px 26px;
+    background: var(--primary);
+    color: #fff;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.3s;
+    font-size: .98rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+    transition: background .15s ease, transform .08s ease;
 }
 
 .service-locater button:hover {
-    background-color: #0056b3;
+    background: var(--primary-dark);
 }
 
-/* Dropdowns */
+.service-locater button:active {
+    transform: translateY(1px);
+}
+
+.service-locater button:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+/* Algolia / address dropdowns */
 .dropdown {
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    max-height: 200px;
+    position: absolute;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    max-height: 220px;
     overflow-y: auto;
     width: 100%;
     z-index: 1000;
+    box-shadow: var(--shadow-lg);
 }
 
 .dropdown-item {
     cursor: pointer;
-    padding: 10px;
-    font-size: 0.9rem;
-}
-
-.dropdown-item:nth-child(odd) {
-    background-color: #f9f9f9;
-}
-
-.dropdown-item:nth-child(even) {
-    background-color: #e9e9e9;
+    padding: 10px 12px;
+    font-size: .9rem;
 }
 
 .dropdown-item:hover {
-    background-color: #f2f2f2;
+    background: var(--primary-soft);
 }
 
-/* Images */
-.image-thumbnail {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-    margin: 5px;
-    border-radius: 8px;
-}
-
+/* Image thumbnails (v1) */
 .image-previews {
     display: flex;
-    gap: 10px;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
 }
 
 .image-container {
     position: relative;
 }
 
+.image-thumbnail {
+    width: 110px;
+    height: 110px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+}
+
 .image-description,
 .image-name {
-    width: 100px;
-    margin-top: 5px;
+    width: 110px;
+    margin-top: 6px;
     text-align: center;
-    font-size: 0.9rem;
+    font-size: .85rem;
     border: none;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--border-strong);
     background: none;
 }
 
 .image-description:focus,
 .image-name:focus {
     outline: none;
-    border-bottom-color: #007bff;
+    border-bottom-color: var(--primary);
 }
 
+.remove-image,
 .remove-button {
     position: absolute;
-    top: -10px;
-    right: -10px;
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
+    top: -8px;
+    right: -8px;
+    background: var(--danger);
+    color: #fff;
     border: none;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
 }
 
+.remove-image:hover,
 .remove-button:hover {
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--danger-dark);
+}
+
+/* Site notes list */
+.site-notes textarea {
+    width: 100%;
+    resize: vertical;
+}
+
+.site-notes ul {
+    margin: 14px 0 0;
+    padding-left: 20px;
+    color: var(--ink-soft);
+}
+
+.site-notes li {
+    margin-bottom: 6px;
 }
 
 /* Download link */
 .download-link {
     text-align: center;
-    margin-top: 20px;
+    margin-top: 24px;
+    padding: 18px;
+    background: #ecfdf3;
+    border: 1px solid #abefc6;
+    border-radius: var(--radius);
 }
 
 .download-link a {
-    color: #007bff;
+    color: var(--success-dark);
     text-decoration: none;
     font-size: 1rem;
-    font-weight: bold;
+    font-weight: 700;
 }
 
 .download-link a:hover {
     text-decoration: underline;
 }
 
-/* Responsive Design */
+/* Loading overlay */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(27, 34, 48, .55);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
 
     .job-details-grid,
@@ -250,22 +335,8 @@ input {
         grid-template-columns: 1fr;
     }
 
-    .checklist th,
-    .checklist td {
-        padding: 8px;
-    }
-
-    .checklist table {
-        font-size: 0.9rem;
-    }
-
-    .image-description,
-    .image-name {
-        width: 100%;
-    }
-
-    .site-notes textarea {
-        width: 100%;
+    .service-locater {
+        padding: 16px 14px 48px;
     }
 
     .job-details,
@@ -273,11 +344,12 @@ input {
     .site-notes,
     .photos,
     .dbyd {
-        padding: 10px;
+        padding: 16px;
     }
 
-    .service-locater button {
-        padding: 8px 16px;
-        font-size: 0.9rem;
+    .checklist th,
+    .checklist td {
+        padding: 8px;
+        font-size: .85rem;
     }
 }

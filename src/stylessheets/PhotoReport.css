@@ -1,80 +1,110 @@
-/* ===== Photo Report tool (v2.0) ===== */
+/* ============================================================
+   Photo Report tool (v2.0) — form + advanced annotation editor
+   ============================================================ */
 
 /* Utilities Located checkbox grid */
 .utilities-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px 16px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px 18px;
 }
 
 .utility-check {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     font-weight: 500;
-    color: #444;
+    color: var(--ink-soft);
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.utility-check:hover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
 }
 
 .utility-swatch {
     display: inline-block;
-    width: 22px;
-    height: 10px;
-    border: 1px solid #999;
-    border-radius: 2px;
+    width: 26px;
+    height: 12px;
+    border: 1px solid rgba(0, 0, 0, .25);
+    border-radius: 3px;
 }
 
 .ql-row {
     display: flex;
-    gap: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
 .ql-check {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-weight: bold;
-    color: #444;
+    gap: 8px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    cursor: pointer;
 }
 
-/* Upload button */
+/* Upload buttons */
 .upload-btn,
 .pothole-add-btn {
-    display: inline-block;
-    padding: 8px 14px;
-    background-color: #007bff;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--primary);
     color: #fff;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 0.9rem;
-    margin-bottom: 12px;
+    font-size: .92rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: background .15s ease;
 }
 
 .upload-btn:hover,
 .pothole-add-btn:hover {
-    background-color: #0056b3;
+    background: var(--primary-dark);
 }
 
 /* Photo blocks */
 .photo-block {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    margin-bottom: 16px;
-    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 18px;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
 }
 
 .photo-block-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    background: #f4f4f4;
-    border-bottom: 1px solid #e3e3e3;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+}
+
+.photo-block-header strong {
+    font-size: 1rem;
 }
 
 .drag-handle {
     cursor: grab;
-    color: #999;
+    color: var(--muted);
+    padding: 4px;
 }
 
 .photo-block-actions {
@@ -83,46 +113,63 @@
     gap: 8px;
 }
 
+.annotate-btn,
+.remove-photo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: .88rem;
+    font-weight: 600;
+    color: #fff;
+    padding: 8px 14px;
+}
+
 .annotate-btn {
-    padding: 6px 12px !important;
-    background-color: #28a745 !important;
-    font-size: 0.85rem !important;
+    background: var(--success);
 }
 
 .annotate-btn:hover {
-    background-color: #1e7e34 !important;
+    background: var(--success-dark);
 }
 
 .remove-photo-btn {
-    padding: 6px 10px !important;
-    background-color: #dc3545 !important;
+    background: var(--danger);
+    padding: 8px 12px;
 }
 
 .remove-photo-btn:hover {
-    background-color: #b02a37 !important;
+    background: var(--danger-dark);
 }
 
 .photo-block-body {
     display: flex;
-    gap: 16px;
-    padding: 12px;
+    gap: 18px;
+    padding: 16px;
     align-items: flex-start;
     flex-wrap: wrap;
 }
 
 .photo-preview {
-    width: 320px;
+    width: 340px;
     max-width: 100%;
     height: auto;
-    border-radius: 6px;
-    border: 1px solid #ddd;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
     cursor: pointer;
     object-fit: contain;
+    transition: filter .15s ease;
+}
+
+.photo-preview:hover {
+    filter: brightness(.94);
 }
 
 .photo-block-side {
     flex: 1;
-    min-width: 260px;
+    min-width: 280px;
 }
 
 /* Pothole panel */
@@ -130,89 +177,108 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
+    margin-bottom: 8px;
 }
 
 .pothole-panel-header h4 {
     margin: 0;
-    color: #333;
+    font-size: 1rem;
 }
 
 .pothole-empty {
-    color: #999;
-    font-size: 0.9rem;
+    color: var(--muted);
+    font-size: .9rem;
 }
 
 .pothole-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 12px;
 }
 
 .pothole-card {
     position: relative;
-    width: 180px;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 8px;
-    background: #fafafa;
+    width: 190px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    background: var(--surface-2);
 }
 
 .pothole-remove {
     position: absolute;
     top: -8px;
     right: -8px;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    background: #dc3545 !important;
+    background: var(--danger);
     color: #fff;
     border: none;
     cursor: pointer;
-    padding: 0 !important;
     line-height: 1;
 }
 
+.pothole-remove:hover {
+    background: var(--danger-dark);
+}
+
 .pothole-label {
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 4px;
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 6px;
+    letter-spacing: .02em;
 }
 
 .pothole-thumb {
     width: 100%;
-    height: 110px;
+    height: 120px;
     object-fit: cover;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
 }
 
 .pothole-fields {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-top: 6px;
+    gap: 8px;
+    margin-top: 8px;
 }
 
 .pothole-fields label {
     display: flex;
     flex-direction: column;
-    font-size: 0.78rem;
-    font-weight: bold;
-    color: #555;
+    font-size: .76rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    gap: 3px;
 }
 
 .pothole-fields input,
 .pothole-fields select {
-    padding: 5px !important;
-    font-size: 0.82rem !important;
-    margin-top: 2px !important;
+    padding: 6px 8px;
+    font-size: .85rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 7px;
+    font-family: var(--font);
 }
 
-/* ===== Annotation editor (Konva) modal ===== */
+.pothole-fields input:focus,
+.pothole-fields select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+/* ============================================================
+   Annotation editor modal (large, near-fullscreen)
+   ============================================================ */
 .annotator-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(15, 20, 30, .78);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -221,25 +287,25 @@
 }
 
 .annotator-modal {
-    background: #fff;
-    border-radius: 8px;
-    max-width: 95vw;
-    max-height: 95vh;
-    overflow: auto;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    width: 96vw;
+    max-width: 1700px;
+    max-height: 96vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-lg);
 }
 
 .annotator-toolbar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 16px;
-    padding: 10px 14px;
-    border-bottom: 1px solid #e3e3e3;
-    background: #f7f7f7;
-    border-radius: 8px 8px 0 0;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
 }
 
 .tool-group {
@@ -252,108 +318,180 @@
     margin-left: auto;
 }
 
+.tool-divider {
+    width: 1px;
+    align-self: stretch;
+    background: var(--border-strong);
+    margin: 2px 4px;
+}
+
 .tool-btn {
-    width: 36px;
-    height: 36px;
-    border: 1px solid #ccc;
-    background: #fff;
-    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    color: #333;
+    color: var(--ink-soft);
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 1rem;
+    transition: all .12s ease;
 }
 
 .tool-btn:hover {
-    background: #eee;
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 .tool-btn.active {
-    background: #007bff;
-    border-color: #007bff;
+    background: var(--primary);
+    border-color: var(--primary);
     color: #fff;
 }
 
-.tool-btn.danger.active,
 .tool-btn.danger:hover {
-    background: #dc3545;
-    border-color: #dc3545;
+    background: var(--danger);
+    border-color: var(--danger);
     color: #fff;
 }
 
 .tool-btn:disabled {
-    opacity: 0.4;
+    opacity: .4;
     cursor: not-allowed;
+}
+
+.toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: .86rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+}
+
+.toggle-btn.on {
+    background: var(--es-yellow-soft);
+    border-color: var(--es-yellow);
+    color: var(--es-yellow-dark);
 }
 
 .swatches {
     flex-wrap: wrap;
-    max-width: 320px;
+    max-width: 360px;
 }
 
 .swatch {
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    border: 2px solid #ccc;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 2px solid rgba(0, 0, 0, .15);
     cursor: pointer;
     padding: 0;
+    transition: transform .1s ease;
+}
+
+.swatch:hover {
+    transform: scale(1.12);
 }
 
 .swatch.active {
-    border-color: #000;
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #007bff;
+    border-color: #1b2230;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--primary);
 }
 
-.width-control {
+.range-control {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-weight: bold;
-    color: #555;
-    font-size: 0.85rem;
+    gap: 8px;
+    color: var(--muted);
+    font-size: .85rem;
+    padding: 0 6px;
+}
+
+.range-control input[type="range"] {
+    width: 92px;
+    accent-color: var(--primary);
 }
 
 .annotator-btn {
-    padding: 8px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     color: #fff;
-    font-size: 0.9rem;
+    font-size: .92rem;
+    font-weight: 600;
 }
 
 .annotator-btn.save {
-    background: #28a745;
+    background: var(--success);
 }
 
 .annotator-btn.save:hover {
-    background: #1e7e34;
+    background: var(--success-dark);
 }
 
 .annotator-btn.cancel {
-    background: #6c757d;
+    background: #64748b;
 }
 
 .annotator-btn.cancel:hover {
-    background: #565e64;
+    background: #475569;
 }
 
 .annotator-hint {
-    padding: 8px 14px;
-    font-size: 0.85rem;
-    color: #555;
-    background: #fffbe6;
-    border-bottom: 1px solid #f0e6b0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 22px;
+    padding: 9px 18px;
+    font-size: .85rem;
+    color: var(--ink-soft);
+    background: #1b2230;
+    color: #d7deea;
+}
+
+.annotator-hint strong {
+    color: #fff;
 }
 
 .annotator-canvas {
-    padding: 14px;
+    flex: 1;
+    padding: 18px;
     display: flex;
     justify-content: center;
-    background: #2b2b2b;
+    align-items: flex-start;
+    background: #11151d;
     overflow: auto;
+}
+
+/* Inline on-canvas text editor */
+.inline-text-editor {
+    position: fixed;
+    z-index: 2100;
+    min-width: 90px;
+    min-height: 1.4em;
+    padding: 4px 7px;
+    margin: 0;
+    border: 2px dashed var(--primary);
+    border-radius: 6px;
+    font-family: var(--font);
+    font-weight: 700;
+    line-height: 1.2;
+    resize: both;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    outline: none;
 }
 
 @media (max-width: 768px) {
@@ -367,5 +505,11 @@
 
     .swatches {
         max-width: 100%;
+    }
+
+    .annotator-modal {
+        width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
     }
 }

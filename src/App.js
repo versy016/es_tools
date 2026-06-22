@@ -52,29 +52,34 @@ const App = ({ signOut }) => {
         return <PhotoReport goBack={goBack} />;
       default:
         return (
-          <>
+          <div className="tools-home">
+            <header className="tools-home-header">
+              <p className="tools-home-eyebrow">Engineering Surveys</p>
+              <h1>{userName ? `Welcome, ${userName}` : 'Tools'}</h1>
+              <p>Select a tool to get started. New tools are added here as they become available.</p>
+            </header>
             <div className="tool-cards-container">
-              <ToolCard 
-                image="/images/Service_Location_Report.png" 
-                title="Service Location Field Report" 
-                description="This tool helps you with creating Service Location Field Report" 
+              <ToolCard
+                image="/images/Service_Location_Report.png"
+                title="Service Location Field Report"
+                description="Create a Service Location Field Report — capture job details, asset checklist, and site photos, then generate the populated report."
                 onClick={() => setCurrentTool('service-locater')}
               />
-               <ToolCard
-                    image="/images/Service_Location_Report.png"
-                    title="Pothole Report Generator"
-                    description="Annotate site photos with utility-legend lines and labels, attach potholes, and generate a Photo Report PDF on the Engineering Surveys letterhead."
-                    onClick={() => setCurrentTool('photo-report')}
+              <ToolCard
+                image="/images/Service_Location_Report.png"
+                title="Pothole Report Generator"
+                description="Annotate site photos with utility-legend lines and labels, attach potholes, and generate a Photo Report PDF on the Engineering Surveys letterhead."
+                onClick={() => setCurrentTool('photo-report')}
               />
-              <ToolCard 
-                    image="/images/Service_Location_Report.png" 
-                    title="Drone Flight Record" 
-                    description="This tool helps you with creating Service Location Field Report" 
-                    onClick={() => setCurrentTool('Drone-Flight-Record')}
-                  />
+              <ToolCard
+                image="/images/Service_Location_Report.png"
+                title="Drone Flight Record"
+                description="Record drone flight details and generate the corresponding flight record document."
+                onClick={() => setCurrentTool('Drone-Flight-Record')}
+              />
             </div>
-          </>
-          
+          </div>
+
         );
     }
   };
