@@ -5,8 +5,7 @@ import '../stylessheets/PhotoReport.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowLeft, faXmark, faPenToSquare, faGripVertical, faFilePdf,
-    faClipboardList, faLayerGroup, faComment, faImages, faCloudArrowUp,
-    faDownload, faUpRightFromSquare,
+    faCloudArrowUp, faDownload, faUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { setupClientsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
@@ -25,16 +24,16 @@ const readFileAsDataURL = (file) => new Promise((resolve, reject) => {
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-const SectionCard = ({ icon, title, subtitle, children }) => (
-    <section className="section-card">
-        <div className="section-head">
-            <span className="section-head-icon"><FontAwesomeIcon icon={icon} /></span>
+const Section = ({ step, title, subtitle, children }) => (
+    <section className="form-section">
+        <div className="form-section-head">
+            <span className="form-section-step">{step}</span>
             <div>
                 <h2>{title}</h2>
-                {subtitle && <span className="section-head-sub">{subtitle}</span>}
+                {subtitle && <span className="form-section-sub">{subtitle}</span>}
             </div>
         </div>
-        {children}
+        <div className="form-section-body">{children}</div>
     </section>
 );
 
@@ -159,65 +158,66 @@ const PhotoReport = ({ goBack }) => {
     };
 
     return (
-        <div>
+        <div className="photo-report">
             <div className="back-link" onClick={goBack}>
                 <FontAwesomeIcon icon={faArrowLeft} /> Back to Tools
             </div>
 
-            <div className="service-locater">
-                <div className="tool-titlebar">
-                    <div className="tool-titlebar-text">
-                        <h1>Photo Report</h1>
-                        <p className="tool-subtitle">
-                            Annotate site photos with utility-legend lines &amp; labels, attach potholes,
-                            and generate a Photo Report PDF on the Engineering Surveys letterhead.
-                        </p>
+            <div className="pr-hero">
+                <div className="pr-hero-inner">
+                    <h1>Photo Report</h1>
+                    <p>Annotate site photos with utility-legend lines &amp; labels, attach potholes, and export a PDF on the Engineering Surveys letterhead.</p>
+                    <div className="stat-strip">
+                        <div className="stat-chip"><strong>{photos.length}</strong><span>Photos</span></div>
+                        <div className="stat-chip"><strong>{potholeCount}</strong><span>Potholes</span></div>
+                        <div className="stat-chip"><strong>{utilitiesLocated.length}</strong><span>Utilities</span></div>
+                        <div className="stat-chip"><strong>{qlSelected.length ? qlSelected.join(' ') : '—'}</strong><span>Quality</span></div>
                     </div>
                 </div>
+            </div>
 
-                <div className="pr-layout">
-                  <div className="pr-main">
-                <SectionCard icon={faClipboardList} title="Job Details" subtitle="Appears on the report cover page">
-                    <div className="job-details-grid">
+            <div className="pr-content">
+                <Section step="1" title="Job details" subtitle="Appears on the report cover page">
+                    <div className="field-grid">
                         <label>Date
                             <input type="date" value={form.date} onChange={(e) => setField('date', e.target.value)} />
                         </label>
                         <label>Locator
-                            <input type="text" placeholder="Start typing for locator suggestions.." ref={locatorRef}
+                            <input type="text" placeholder="Start typing for suggestions.." ref={locatorRef}
                                 value={form.locatorName} onChange={(e) => setField('locatorName', e.target.value)} autoComplete="off" />
                         </label>
                         <label>DBYD No
                             <input type="text" value={form.dbydNo} onChange={(e) => setField('dbydNo', e.target.value)} />
                         </label>
-                        <label>Site Address
+                        <label>Site address
                             <input type="text" ref={addressRef} value={form.siteAddress}
                                 onChange={(e) => setField('siteAddress', e.target.value)} autoComplete="off" />
                         </label>
-                        <label>Scope of Works
+                        <label>Scope of works
                             <input type="text" value={form.scopeOfWorks} onChange={(e) => setField('scopeOfWorks', e.target.value)} />
                         </label>
-                        <label>Client Name
-                            <input type="text" placeholder="Start typing for client suggestions.." ref={clientRef}
+                        <label>Client name
+                            <input type="text" placeholder="Start typing for suggestions.." ref={clientRef}
                                 value={form.clientName} onChange={(e) => setField('clientName', e.target.value)} autoComplete="off" />
                         </label>
-                        <label>Client Contact
-                            <input type="text" placeholder="Enter contact name" ref={contactRef}
+                        <label>Client contact
+                            <input type="text" placeholder="Contact name" ref={contactRef}
                                 value={form.clientContact} onChange={(e) => setField('clientContact', e.target.value)} autoComplete="off" />
                         </label>
-                        <label>Mobile No
+                        <label>Mobile no
                             <input type="text" placeholder="04xxx xxx xxx" value={form.clientMobile}
                                 onChange={(e) => setField('clientMobile', e.target.value)} />
                         </label>
-                        <label>DBYD Email
+                        <label>DBYD email
                             <input type="text" value={form.dbydEmail} onChange={(e) => setField('dbydEmail', e.target.value)} />
                         </label>
-                        <label>Ref No
+                        <label>Ref no
                             <input type="text" value={form.refNo} onChange={(e) => setField('refNo', e.target.value)} />
                         </label>
                     </div>
-                </SectionCard>
+                </Section>
 
-                <SectionCard icon={faLayerGroup} title="Utilities Located" subtitle="Tick the services located on site">
+                <Section step="2" title="Utilities located" subtitle="Tick the services located on site">
                     <div className="utilities-grid">
                         {UTILITIES.map((u) => (
                             <label key={u.key} className={`utility-check ${utilitiesLocated.includes(u.key) ? 'checked' : ''}`}>
@@ -227,7 +227,7 @@ const PhotoReport = ({ goBack }) => {
                             </label>
                         ))}
                     </div>
-                    <h3 className="subhead">Located to Quality Level</h3>
+                    <h3 className="subhead">Located to quality level</h3>
                     <div className="ql-row">
                         {QUALITY_LEVELS.map((q) => (
                             <label key={q} className={`ql-check ${qualityLevels[q] ? 'checked' : ''}`}>
@@ -236,18 +236,18 @@ const PhotoReport = ({ goBack }) => {
                             </label>
                         ))}
                     </div>
-                </SectionCard>
+                </Section>
 
-                <SectionCard icon={faComment} title="Comments" subtitle="Optional notes for the cover page">
+                <Section step="3" title="Comments" subtitle="Optional notes for the cover page">
                     <textarea rows="4" style={{ width: '100%' }} value={form.comments}
                         onChange={(e) => setField('comments', e.target.value)} placeholder="Add any comments…" />
-                </SectionCard>
+                </Section>
 
-                <SectionCard icon={faImages} title="Photos" subtitle="Each photo becomes a page with its potholes below">
+                <Section step="4" title="Photos" subtitle="Each photo becomes a report page with its potholes below">
                     <label className="dropzone">
                         <FontAwesomeIcon icon={faCloudArrowUp} className="dropzone-icon" />
                         <span className="dropzone-title">Click to add photos</span>
-                        <span className="dropzone-sub">JPG or PNG · you can add several at once</span>
+                        <span className="dropzone-sub">JPG or PNG · add several at once</span>
                         <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} hidden />
                     </label>
 
@@ -259,13 +259,16 @@ const PhotoReport = ({ goBack }) => {
                                         {photos.map((photo, index) => (
                                             <Draggable key={photo.id} draggableId={photo.id} index={index}>
                                                 {(prov) => (
-                                                    <div className="photo-block" ref={prov.innerRef} {...prov.draggableProps}>
-                                                        <div className="photo-block-header">
+                                                    <div className="photo-card" ref={prov.innerRef} {...prov.draggableProps}>
+                                                        <div className="photo-card-head">
                                                             <span className="drag-handle" {...prov.dragHandleProps}>
                                                                 <FontAwesomeIcon icon={faGripVertical} />
                                                             </span>
                                                             <strong>Photo {String(index + 1).padStart(2, '0')}</strong>
-                                                            <div className="photo-block-actions">
+                                                            {photo.potholes.length > 0 && (
+                                                                <span className="count-badge">{photo.potholes.length} pothole{photo.potholes.length === 1 ? '' : 's'}</span>
+                                                            )}
+                                                            <div className="photo-card-actions">
                                                                 <button type="button" className="annotate-btn" onClick={() => setEditingPhotoId(photo.id)}>
                                                                     <FontAwesomeIcon icon={faPenToSquare} /> Annotate
                                                                 </button>
@@ -274,18 +277,14 @@ const PhotoReport = ({ goBack }) => {
                                                                 </button>
                                                             </div>
                                                         </div>
-                                                        <div className="photo-block-body">
-                                                            <div className="photo-preview-wrap" onClick={() => setEditingPhotoId(photo.id)}>
-                                                                <img src={photo.flattenedDataUrl} alt={`Site marking ${index + 1}`} className="photo-preview" />
-                                                                <span className="photo-preview-overlay">
-                                                                    <FontAwesomeIcon icon={faPenToSquare} /> Annotate
-                                                                </span>
-                                                            </div>
-                                                            <div className="photo-block-side">
-                                                                <PotholePanel potholes={photo.potholes}
-                                                                    onChange={(potholes) => updatePhoto(photo.id, { potholes })} />
-                                                            </div>
+                                                        <div className="photo-preview-wrap" onClick={() => setEditingPhotoId(photo.id)}>
+                                                            <img src={photo.flattenedDataUrl} alt={`Site marking ${index + 1}`} className="photo-preview" />
+                                                            <span className="photo-preview-overlay">
+                                                                <FontAwesomeIcon icon={faPenToSquare} /> Annotate photo
+                                                            </span>
                                                         </div>
+                                                        <PotholePanel potholes={photo.potholes}
+                                                            onChange={(potholes) => updatePhoto(photo.id, { potholes })} />
                                                     </div>
                                                 )}
                                             </Draggable>
@@ -296,31 +295,28 @@ const PhotoReport = ({ goBack }) => {
                             </Droppable>
                         </DragDropContext>
                     )}
-                </SectionCard>
-                  </div>
+                </Section>
 
-                  <aside className="pr-summary">
-                    <div className="summary-card">
-                        <h3 className="summary-title">Report summary</h3>
-                        <div className="summary-row"><span>Photos</span><strong>{photos.length}</strong></div>
-                        <div className="summary-row"><span>Potholes</span><strong>{potholeCount}</strong></div>
-                        <div className="summary-row"><span>Utilities located</span><strong>{utilitiesLocated.length}</strong></div>
-                        <div className="summary-row"><span>Quality levels</span><strong>{qlSelected.length ? qlSelected.join(', ') : '—'}</strong></div>
-                        <button type="button" className="btn-primary summary-generate" onClick={handleGenerate} disabled={loading}>
+                <div className="action-bar">
+                    <div className="action-bar-text">
+                        <strong>Ready to export?</strong>
+                        <span>{photos.length} photo{photos.length === 1 ? '' : 's'} · {potholeCount} pothole{potholeCount === 1 ? '' : 's'} will be included.</span>
+                    </div>
+                    <div className="action-bar-buttons">
+                        {pdfUrl && (
+                            <>
+                                <a className="btn-ghost" href={pdfUrl} download={`Photo Report - ${form.siteAddress || 'report'}.pdf`}>
+                                    <FontAwesomeIcon icon={faDownload} /> Download
+                                </a>
+                                <a className="btn-ghost" href={pdfUrl} target="_blank" rel="noreferrer">
+                                    <FontAwesomeIcon icon={faUpRightFromSquare} /> Open
+                                </a>
+                            </>
+                        )}
+                        <button type="button" className="btn-primary" onClick={handleGenerate} disabled={loading}>
                             <FontAwesomeIcon icon={faFilePdf} /> {loading ? 'Generating…' : 'Generate PDF'}
                         </button>
-                        {pdfUrl && (
-                            <div className="download-link">
-                                <a href={pdfUrl} download={`Photo Report - ${form.siteAddress || 'report'}.pdf`}>
-                                    <FontAwesomeIcon icon={faDownload} /> Download PDF
-                                </a>
-                                <a href={pdfUrl} target="_blank" rel="noreferrer">
-                                    <FontAwesomeIcon icon={faUpRightFromSquare} /> Open in new tab
-                                </a>
-                            </div>
-                        )}
                     </div>
-                  </aside>
                 </div>
             </div>
 
