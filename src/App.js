@@ -10,8 +10,10 @@ import studioTheme from './ui-components/studioTheme';
 import NavBar from './components/Navbar';
 import ToolCard  from './components/ToolCard';
 import ServiceLocater from './tools/ServiceLocater';
+import DroneRecord from './tools/DroneFlightRecord';
 import ServiceLocaterpdf from './tools/ServiceLocaterpdf';
-import FileUpload from './components/FileUpload';
+import PhotoReport from './tools/PhotoReport';
+//import FileUpload from './components/FileUpload';
 
 Amplify.configure(amplifyconfig);
 
@@ -44,6 +46,10 @@ const App = ({ signOut }) => {
         return <ServiceLocater goBack={goBack} />;
       case 'service-locater-pdf':
         return <ServiceLocaterpdf goBack={goBack} />;
+      case 'Drone-Flight-Record':
+        return <DroneRecord goBack={goBack} />;
+      case 'photo-report':
+        return <PhotoReport goBack={goBack} />;
       default:
         return (
           <>
@@ -54,9 +60,19 @@ const App = ({ signOut }) => {
                 description="This tool helps you with creating Service Location Field Report" 
                 onClick={() => setCurrentTool('service-locater')}
               />
-              
+               <ToolCard
+                    image="/images/Service_Location_Report.png"
+                    title="Pothole Report Generator"
+                    description="Annotate site photos with utility-legend lines and labels, attach potholes, and generate a Photo Report PDF on the Engineering Surveys letterhead."
+                    onClick={() => setCurrentTool('photo-report')}
+              />
+              <ToolCard 
+                    image="/images/Service_Location_Report.png" 
+                    title="Drone Flight Record" 
+                    description="This tool helps you with creating Service Location Field Report" 
+                    onClick={() => setCurrentTool('Drone-Flight-Record')}
+                  />
             </div>
-    
           </>
           
         );

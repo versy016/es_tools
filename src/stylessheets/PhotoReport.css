@@ -1,0 +1,371 @@
+/* ===== Photo Report tool (v2.0) ===== */
+
+/* Utilities Located checkbox grid */
+.utilities-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+}
+
+.utility-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #444;
+}
+
+.utility-swatch {
+    display: inline-block;
+    width: 22px;
+    height: 10px;
+    border: 1px solid #999;
+    border-radius: 2px;
+}
+
+.ql-row {
+    display: flex;
+    gap: 20px;
+}
+
+.ql-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: bold;
+    color: #444;
+}
+
+/* Upload button */
+.upload-btn,
+.pothole-add-btn {
+    display: inline-block;
+    padding: 8px 14px;
+    background-color: #007bff;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+}
+
+.upload-btn:hover,
+.pothole-add-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Photo blocks */
+.photo-block {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.photo-block-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: #f4f4f4;
+    border-bottom: 1px solid #e3e3e3;
+}
+
+.drag-handle {
+    cursor: grab;
+    color: #999;
+}
+
+.photo-block-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+}
+
+.annotate-btn {
+    padding: 6px 12px !important;
+    background-color: #28a745 !important;
+    font-size: 0.85rem !important;
+}
+
+.annotate-btn:hover {
+    background-color: #1e7e34 !important;
+}
+
+.remove-photo-btn {
+    padding: 6px 10px !important;
+    background-color: #dc3545 !important;
+}
+
+.remove-photo-btn:hover {
+    background-color: #b02a37 !important;
+}
+
+.photo-block-body {
+    display: flex;
+    gap: 16px;
+    padding: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.photo-preview {
+    width: 320px;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    object-fit: contain;
+}
+
+.photo-block-side {
+    flex: 1;
+    min-width: 260px;
+}
+
+/* Pothole panel */
+.pothole-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.pothole-panel-header h4 {
+    margin: 0;
+    color: #333;
+}
+
+.pothole-empty {
+    color: #999;
+    font-size: 0.9rem;
+}
+
+.pothole-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pothole-card {
+    position: relative;
+    width: 180px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 8px;
+    background: #fafafa;
+}
+
+.pothole-remove {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #dc3545 !important;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    padding: 0 !important;
+    line-height: 1;
+}
+
+.pothole-label {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.pothole-thumb {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.pothole-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.pothole-fields label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.78rem;
+    font-weight: bold;
+    color: #555;
+}
+
+.pothole-fields input,
+.pothole-fields select {
+    padding: 5px !important;
+    font-size: 0.82rem !important;
+    margin-top: 2px !important;
+}
+
+/* ===== Annotation editor (Konva) modal ===== */
+.annotator-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 16px;
+}
+
+.annotator-modal {
+    background: #fff;
+    border-radius: 8px;
+    max-width: 95vw;
+    max-height: 95vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.annotator-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e3e3e3;
+    background: #f7f7f7;
+    border-radius: 8px 8px 0 0;
+}
+
+.tool-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tool-group.right {
+    margin-left: auto;
+}
+
+.tool-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tool-btn:hover {
+    background: #eee;
+}
+
+.tool-btn.active {
+    background: #007bff;
+    border-color: #007bff;
+    color: #fff;
+}
+
+.tool-btn.danger.active,
+.tool-btn.danger:hover {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.tool-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.swatches {
+    flex-wrap: wrap;
+    max-width: 320px;
+}
+
+.swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 2px solid #ccc;
+    cursor: pointer;
+    padding: 0;
+}
+
+.swatch.active {
+    border-color: #000;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #007bff;
+}
+
+.width-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: bold;
+    color: #555;
+    font-size: 0.85rem;
+}
+
+.annotator-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.annotator-btn.save {
+    background: #28a745;
+}
+
+.annotator-btn.save:hover {
+    background: #1e7e34;
+}
+
+.annotator-btn.cancel {
+    background: #6c757d;
+}
+
+.annotator-btn.cancel:hover {
+    background: #565e64;
+}
+
+.annotator-hint {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    color: #555;
+    background: #fffbe6;
+    border-bottom: 1px solid #f0e6b0;
+}
+
+.annotator-canvas {
+    padding: 14px;
+    display: flex;
+    justify-content: center;
+    background: #2b2b2b;
+    overflow: auto;
+}
+
+@media (max-width: 768px) {
+    .utilities-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .photo-preview {
+        width: 100%;
+    }
+
+    .swatches {
+        max-width: 100%;
+    }
+}
