@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowPointer, faPen, faSlash, faArrowRightLong, faSquare, faCircle,
     faFont, faTag, faFillDrip, faTrash, faRotateLeft, faRotateRight,
-    faCheck, faXmark,
+    faCheck, faXmark, faClone, faEraser,
 } from '@fortawesome/free-solid-svg-icons';
 import { UTILITIES, getUtility } from '../report/legendColors';
 
@@ -17,8 +17,8 @@ const nextId = () => `ann_${Date.now()}_${idCounter++}`;
 const POLY_TYPES = ['line', 'arrow', 'pen'];
 const BOX_TYPES = ['rect', 'ellipse'];
 const TEXT_TYPES = ['text', 'textbox'];
+const DRAG_THRESHOLD = 6;
 
-// Turn a #RRGGBB colour into an rgba() string with the given alpha.
 const withAlpha = (hex, a) => {
     const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
     if (!m) return hex;
@@ -31,8 +31,8 @@ const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
 const TOOLS = [
     { id: 'select', icon: faArrowPointer, label: 'Select / Move' },
     { id: 'pen', icon: faPen, label: 'Freehand' },
-    { id: 'line', icon: faSlash, label: 'Line (multi-point)' },
-    { id: 'arrow', icon: faArrowRightLong, label: 'Arrow (multi-point)' },
+    { id: 'line', icon: faSlash, label: 'Line — drag for straight, or click points' },
+    { id: 'arrow', icon: faArrowRightLong, label: 'Arrow — drag for straight, or click points' },
     { id: 'rect', icon: faSquare, label: 'Rectangle' },
     { id: 'ellipse', icon: faCircle, label: 'Circle / Ellipse' },
     { id: 'text', icon: faFont, label: 'Text' },
@@ -40,9 +40,10 @@ const TOOLS = [
 ];
 
 // Advanced photo annotation editor.
-// Draws lines / arrows (multi-vertex, editable), rectangles, ellipses, freehand,
-// text and text-boxes in the fixed utility-legend colours, with inline text
-// editing and on-canvas vertex handles. Exports a flattened PNG on save.
+// Lines / arrows support BOTH drag-to-draw (straight) and click-to-add multi-vertex
+// polylines, with draggable / insertable / removable vertices. Also rectangles,
+// ellipses, freehand pen, text and text-boxes with inline on-canvas editing.
+// Exports a flattened PNG on save (UI handles live on a separate hidden layer).
 const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
     const [img, setImg] = useState(null);
     const [view, setView] = useState({ width: 0, height: 0, scale: 1 });
@@ -57,18 +58,20 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
     const [selectedId, setSelectedId] = useState(null);
     const [history, setHistory] = useState([photo.annotations || []]);
     const [histIndex, setHistIndex] = useState(0);
-    const [editing, setEditing] = useState(null); // inline text editor state
+    const [editing, setEditing] = useState(null);
 
     const stageRef = useRef(null);
     const trRef = useRef(null);
     const editRef = useRef(null);
-    const drawingRef = useRef(null);     // in-progress shape (mutable)
+    const drawingRef = useRef(null);
     const annotationsRef = useRef(annotations);
     const utilityRef = useRef(utility);
+    const downPosRef = useRef(null);
+    const movedRef = useRef(false);
+    const justStartedRef = useRef(false);
 
     useEffect(() => { utilityRef.current = utility; }, [utility]);
 
-    // Load image and fit it to ~70% of the viewport (canvas roughly doubled vs before).
     useEffect(() => {
         const image = new window.Image();
         image.src = photo.src;
@@ -76,7 +79,7 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
             const natW = image.naturalWidth;
             const natH = image.naturalHeight;
             const maxW = window.innerWidth * 0.70;
-            const maxH = window.innerHeight * 0.72;
+            const maxH = window.innerHeight * 0.70;
             const scale = Math.max(0.1, Math.min(maxW / natW, maxH / natH, 3));
             setImg(image);
             setView({ width: Math.round(natW * scale), height: Math.round(natH * scale), scale });
@@ -99,16 +102,10 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
     }, [applyAnnotations, pushHistory]);
 
     const undo = () => {
-        if (histIndex > 0) {
-            const i = histIndex - 1;
-            setHistIndex(i); applyAnnotations(history[i]); setSelectedId(null); setEditing(null);
-        }
+        if (histIndex > 0) { const i = histIndex - 1; setHistIndex(i); applyAnnotations(history[i]); setSelectedId(null); setEditing(null); }
     };
     const redo = () => {
-        if (histIndex < history.length - 1) {
-            const i = histIndex + 1;
-            setHistIndex(i); applyAnnotations(history[i]); setSelectedId(null); setEditing(null);
-        }
+        if (histIndex < history.length - 1) { const i = histIndex + 1; setHistIndex(i); applyAnnotations(history[i]); setSelectedId(null); setEditing(null); }
     };
 
     const updateAnnotation = (id, patch, record = true) => {
@@ -122,6 +119,23 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
         setSelectedId(null);
     };
 
+    const duplicateSelected = () => {
+        const sel = annotationsRef.current.find((a) => a.id === selectedId);
+        if (!sel) return;
+        const copy = JSON.parse(JSON.stringify(sel));
+        copy.id = nextId();
+        copy.x = (copy.x || 0) + 16;
+        copy.y = (copy.y || 0) + 16;
+        commit([...annotationsRef.current, copy]);
+        setSelectedId(copy.id);
+    };
+
+    const clearAll = () => {
+        if (annotationsRef.current.length && window.confirm('Remove all annotations from this photo?')) {
+            commit([]); setSelectedId(null); setEditing(null);
+        }
+    };
+
     const pointer = () => {
         const p = stageRef.current.getPointerPosition();
         return p ? { x: p.x, y: p.y } : null;
@@ -129,7 +143,7 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
 
     const selected = annotations.find((a) => a.id === selectedId);
 
-    // ---- Transformer wiring (box + text shapes) ----
+    // Transformer wiring (box + text shapes)
     useEffect(() => {
         const tr = trRef.current;
         if (!tr || !stageRef.current) return;
@@ -139,7 +153,7 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
         if (tr.getLayer()) tr.getLayer().batchDraw();
     }, [selectedId, tool, annotations, selected]);
 
-    // ---- Inline text editing ----
+    // Inline text editing
     const startEditing = (ann, isNew = false) => {
         const box = stageRef.current.container().getBoundingClientRect();
         const u = getUtility(ann.utility);
@@ -151,7 +165,7 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
             value: ann.text || '',
             fontSize: ann.fontSize || fontSize,
             color: ann.type === 'textbox' ? u.text : u.color,
-            bg: ann.type === 'textbox' ? u.color : 'rgba(255,255,255,0.85)',
+            bg: ann.type === 'textbox' ? u.color : 'rgba(255,255,255,0.9)',
             isNew,
         });
         setTimeout(() => editRef.current && editRef.current.focus(), 20);
@@ -170,24 +184,26 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
     };
 
     const cancelEditing = () => {
-        if (editing && editing.isNew) {
-            applyAnnotations(annotationsRef.current.filter((a) => a.id !== editing.id));
-        }
+        if (editing && editing.isNew) applyAnnotations(annotationsRef.current.filter((a) => a.id !== editing.id));
         setEditing(null);
     };
 
-    // ---- Polyline (line / arrow) drawing helpers ----
-    const finishPolyline = () => {
+    // Polyline finishing. dropLast removes the trailing live preview vertex.
+    const finishPolyline = (dropLast = true) => {
         const d = drawingRef.current;
         if (!d || !POLY_TYPES.includes(d.type)) return;
         drawingRef.current = null;
-        const pts = d.points.slice(0, -2); // drop trailing preview vertex
-        if (pts.length < 4) { applyAnnotations(annotationsRef.current.filter((a) => a.id !== d.id)); return; }
+        const pts = dropLast ? d.points.slice(0, -2) : d.points;
+        // discard degenerate (too few points, or a zero-length 2-point segment)
+        const zeroLen = pts.length === 4 && dist(pts[0], pts[1], pts[2], pts[3]) < DRAG_THRESHOLD;
+        if (pts.length < 4 || zeroLen) {
+            applyAnnotations(annotationsRef.current.filter((a) => a.id !== d.id));
+            return;
+        }
         const finalShape = { ...d, points: pts };
         const next = annotationsRef.current.map((a) => (a.id === d.id ? finalShape : a));
         if (labelEnds) {
-            const lx = pts[pts.length - 2];
-            const ly = pts[pts.length - 1];
+            const lx = pts[pts.length - 2], ly = pts[pts.length - 1];
             const label = { id: nextId(), type: 'textbox', x: lx + 6, y: ly + 6, text: '', fontSize, utility: d.utility };
             applyAnnotations([...next, label]);
             pushHistory(annotationsRef.current);
@@ -205,7 +221,7 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
         applyAnnotations(annotationsRef.current.filter((a) => a.id !== d.id));
     };
 
-    // ---- Stage pointer handlers ----
+    // Pointer handlers
     const handleMouseDown = (e) => {
         if (editing) return;
         const pos = pointer();
@@ -225,6 +241,16 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
         } else if (tool === 'ellipse') {
             drawingRef.current = { id: nextId(), type: 'ellipse', utility: u, strokeWidth, fill: fillShapes, x: pos.x, y: pos.y, radiusX: 0, radiusY: 0, _ox: pos.x, _oy: pos.y };
             applyAnnotations([...annotationsRef.current, drawingRef.current]);
+        } else if (tool === 'line' || tool === 'arrow') {
+            downPosRef.current = pos;
+            movedRef.current = false;
+            if (!drawingRef.current) {
+                drawingRef.current = { id: nextId(), type: tool, utility: u, strokeWidth, points: [pos.x, pos.y, pos.x, pos.y], x: 0, y: 0 };
+                applyAnnotations([...annotationsRef.current, drawingRef.current]);
+                justStartedRef.current = true;
+            } else {
+                justStartedRef.current = false;
+            }
         }
     };
 
@@ -243,6 +269,7 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
             d.radiusX = Math.abs(pos.x - d._ox) / 2; d.radiusY = Math.abs(pos.y - d._oy) / 2;
         } else if (POLY_TYPES.includes(d.type)) {
             d.points = [...d.points.slice(0, -2), pos.x, pos.y];
+            if (downPosRef.current && dist(pos.x, pos.y, downPosRef.current.x, downPosRef.current.y) > DRAG_THRESHOLD) movedRef.current = true;
         }
         applyAnnotations(annotationsRef.current.map((a) => (a.id === d.id ? { ...d } : a)));
     };
@@ -262,8 +289,22 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
             drawingRef.current = null;
             if (d.radiusX < 4 || d.radiusY < 4) { applyAnnotations(annotationsRef.current.filter((a) => a.id !== d.id)); return; }
             pushHistory(annotationsRef.current);
+        } else if (POLY_TYPES.includes(d.type)) {
+            if (movedRef.current) {
+                // a drag gesture → finish as straight stroke ending at release point
+                finishPolyline(false);
+            } else if (justStartedRef.current) {
+                // first click only sets the start; keep drawing (preview will track the cursor)
+                justStartedRef.current = false;
+            } else {
+                // subsequent click → fix a vertex and add a fresh preview
+                const p = downPosRef.current;
+                d.points = [...d.points.slice(0, -2), p.x, p.y, p.x, p.y];
+                const fx = d.points[0], fy = d.points[1];
+                if (d.points.length >= 8 && dist(p.x, p.y, fx, fy) < 12) { finishPolyline(true); return; }
+                applyAnnotations(annotationsRef.current.map((a) => (a.id === d.id ? { ...d } : a)));
+            }
         }
-        // polylines (line/arrow) are finished via click / Enter, not mouseup
     };
 
     const handleClick = () => {
@@ -271,19 +312,7 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
         const pos = pointer();
         if (!pos) return;
         const u = utilityRef.current;
-
-        if (tool === 'line' || tool === 'arrow') {
-            const d = drawingRef.current;
-            if (!d) {
-                drawingRef.current = { id: nextId(), type: tool, utility: u, strokeWidth, points: [pos.x, pos.y, pos.x, pos.y], x: 0, y: 0 };
-                applyAnnotations([...annotationsRef.current, drawingRef.current]);
-            } else {
-                const fx = d.points[0], fy = d.points[1];
-                if (d.points.length >= 6 && dist(pos.x, pos.y, fx, fy) < 12) { finishPolyline(); return; }
-                d.points = [...d.points.slice(0, -2), pos.x, pos.y, pos.x, pos.y];
-                applyAnnotations(annotationsRef.current.map((a) => (a.id === d.id ? { ...d } : a)));
-            }
-        } else if (tool === 'text' || tool === 'textbox') {
+        if (tool === 'text' || tool === 'textbox') {
             const ann = { id: nextId(), type: tool, utility: u, x: pos.x, y: pos.y, text: '', fontSize };
             applyAnnotations([...annotationsRef.current, ann]);
             setTool('select');
@@ -292,10 +321,10 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
     };
 
     const handleDblClick = () => {
-        if ((tool === 'line' || tool === 'arrow') && drawingRef.current) finishPolyline();
+        if ((tool === 'line' || tool === 'arrow') && drawingRef.current) finishPolyline(true);
     };
 
-    // ---- Vertex editing for selected poly shapes ----
+    // Vertex editing for selected poly shapes
     const moveVertex = (ann, vi, absX, absY, record) => {
         const pts = [...ann.points];
         pts[vi * 2] = absX - ann.x;
@@ -320,15 +349,14 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
             const d = dist(lx, ly, mx, my);
             if (d < bestD) { bestD = d; best = i + 2; }
         }
-        const next = [...pts.slice(0, best), lx, ly, ...pts.slice(best)];
-        updateAnnotation(ann.id, { points: next }, true);
+        updateAnnotation(ann.id, { points: [...pts.slice(0, best), lx, ly, ...pts.slice(best)] }, true);
     };
 
-    // ---- Keyboard ----
+    // Keyboard
     useEffect(() => {
         const onKey = (e) => {
             if (editing) return;
-            if (e.key === 'Enter') { if (drawingRef.current) { e.preventDefault(); finishPolyline(); } }
+            if (e.key === 'Enter') { if (drawingRef.current) { e.preventDefault(); finishPolyline(true); } }
             else if (e.key === 'Escape') { if (drawingRef.current) cancelDrawing(); else setSelectedId(null); }
             else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) { e.preventDefault(); deleteSelected(); }
         };
@@ -337,9 +365,9 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editing, selectedId, labelEnds, fontSize]);
 
-    // ---- Save: flatten to PNG without UI handles ----
+    // Save: flatten to PNG without UI handles
     const handleSave = () => {
-        if (drawingRef.current) finishPolyline();
+        if (drawingRef.current) finishPolyline(true);
         setSelectedId(null);
         if (trRef.current) trRef.current.nodes([]);
         const stage = stageRef.current;
@@ -353,7 +381,7 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
         onSave({ annotations: annotationsRef.current, flattenedDataUrl: dataUrl, lastUtility: utility });
     };
 
-    // ---- Shape rendering ----
+    // Shape rendering
     const commonProps = (ann) => ({
         id: ann.id,
         name: 'annotation',
@@ -364,7 +392,7 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
     });
 
     const renderShape = (ann) => {
-        if (editing && editing.id === ann.id) return null; // hidden while editing text
+        if (editing && editing.id === ann.id) return null;
         const u = getUtility(ann.utility);
         if (ann.type === 'pen' || ann.type === 'line') {
             return <Line key={ann.id} {...commonProps(ann)} x={ann.x} y={ann.y} points={ann.points}
@@ -402,7 +430,6 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
                 fontSize={ann.fontSize} fontStyle="bold" fill={u.color} stroke="#000000" strokeWidth={0.5}
                 onDblClick={() => startEditing(ann)} onDblTap={() => startEditing(ann)} />;
         }
-        // textbox
         return <Label key={ann.id} {...commonProps(ann)} x={ann.x} y={ann.y}
             onDblClick={() => startEditing(ann)} onDblTap={() => startEditing(ann)}>
             <Tag fill={u.color} cornerRadius={4} stroke="#00000044" strokeWidth={1} />
@@ -413,6 +440,7 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
     const showVertices = tool === 'select' && selected && POLY_TYPES.includes(selected.type);
     const activeUtil = getUtility(utility);
     const swatchTextColor = activeUtil.color === '#FFFF00' ? '#b59b00' : activeUtil.color;
+    const isPoly = tool === 'line' || tool === 'arrow';
 
     return (
         <div className="annotator-overlay" onMouseDown={(e) => { if (e.target.classList.contains('annotator-overlay')) onCancel(); }}>
@@ -443,20 +471,16 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
                     <div className="tool-group">
                         <label className="range-control" title="Stroke width">
                             <FontAwesomeIcon icon={faPen} />
-                            <input type="range" min="1" max="20" value={strokeWidth}
-                                onChange={(e) => setStrokeWidth(Number(e.target.value))} />
+                            <input type="range" min="1" max="20" value={strokeWidth} onChange={(e) => setStrokeWidth(Number(e.target.value))} />
                         </label>
                         <label className="range-control" title="Font size">
                             <FontAwesomeIcon icon={faFont} />
-                            <input type="range" min="10" max="60" value={fontSize}
-                                onChange={(e) => setFontSize(Number(e.target.value))} />
+                            <input type="range" min="10" max="60" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} />
                         </label>
-                        <button type="button" className={`toggle-btn ${fillShapes ? 'on' : ''}`}
-                            title="Fill shapes" onClick={() => setFillShapes((v) => !v)}>
+                        <button type="button" className={`toggle-btn ${fillShapes ? 'on' : ''}`} title="Fill shapes" onClick={() => setFillShapes((v) => !v)}>
                             <FontAwesomeIcon icon={faFillDrip} /> Fill
                         </button>
-                        <button type="button" className={`toggle-btn ${labelEnds ? 'on' : ''}`}
-                            title="Add a text box at the end of each line/arrow" onClick={() => setLabelEnds((v) => !v)}>
+                        <button type="button" className={`toggle-btn ${labelEnds ? 'on' : ''}`} title="Add a text box at the end of each line/arrow" onClick={() => setLabelEnds((v) => !v)}>
                             <FontAwesomeIcon icon={faTag} /> End label
                         </button>
                     </div>
@@ -464,32 +488,24 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
                     <div className="tool-divider" />
 
                     <div className="tool-group">
-                        <button type="button" className="tool-btn" title="Undo" onClick={undo} disabled={histIndex === 0}>
-                            <FontAwesomeIcon icon={faRotateLeft} />
-                        </button>
-                        <button type="button" className="tool-btn" title="Redo" onClick={redo} disabled={histIndex >= history.length - 1}>
-                            <FontAwesomeIcon icon={faRotateRight} />
-                        </button>
-                        <button type="button" className="tool-btn danger" title="Delete selected (Del)" onClick={deleteSelected} disabled={!selectedId}>
-                            <FontAwesomeIcon icon={faTrash} />
-                        </button>
+                        <button type="button" className="tool-btn" title="Undo" onClick={undo} disabled={histIndex === 0}><FontAwesomeIcon icon={faRotateLeft} /></button>
+                        <button type="button" className="tool-btn" title="Redo" onClick={redo} disabled={histIndex >= history.length - 1}><FontAwesomeIcon icon={faRotateRight} /></button>
+                        <button type="button" className="tool-btn" title="Duplicate selected" onClick={duplicateSelected} disabled={!selectedId}><FontAwesomeIcon icon={faClone} /></button>
+                        <button type="button" className="tool-btn danger" title="Delete selected (Del)" onClick={deleteSelected} disabled={!selectedId}><FontAwesomeIcon icon={faTrash} /></button>
+                        <button type="button" className="tool-btn danger" title="Clear all" onClick={clearAll} disabled={!annotations.length}><FontAwesomeIcon icon={faEraser} /></button>
                     </div>
 
                     <div className="tool-group right">
-                        <button type="button" className="annotator-btn cancel" onClick={onCancel}>
-                            <FontAwesomeIcon icon={faXmark} /> Cancel
-                        </button>
-                        <button type="button" className="annotator-btn save" onClick={handleSave} disabled={!img}>
-                            <FontAwesomeIcon icon={faCheck} /> Done
-                        </button>
+                        <button type="button" className="annotator-btn cancel" onClick={onCancel}><FontAwesomeIcon icon={faXmark} /> Cancel</button>
+                        <button type="button" className="annotator-btn save" onClick={handleSave} disabled={!img}><FontAwesomeIcon icon={faCheck} /> Done</button>
                     </div>
                 </div>
 
                 <div className="annotator-hint">
                     <span>Active: <strong style={{ color: swatchTextColor }}>{activeUtil.label}</strong></span>
-                    {(tool === 'line' || tool === 'arrow')
-                        ? <span>Click to add points · <kbd>Enter</kbd> or double-click to finish · <kbd>Esc</kbd> to cancel · click the first point to close</span>
-                        : <span>Pick a tool, then draw. Double-click text to edit; double-click a line to add a vertex; drag handles to reshape.</span>}
+                    {isPoly
+                        ? <span><strong>Drag</strong> for a straight line, or <strong>click</strong> multiple points and press <kbd>Enter</kbd> / double-click to finish. Select it later to drag, add (double-click) or remove (double-click handle) vertices.</span>
+                        : <span>Pick a tool and draw. Double-click text to edit; drag the handles to resize/reshape.</span>}
                 </div>
 
                 <div className="annotator-canvas">

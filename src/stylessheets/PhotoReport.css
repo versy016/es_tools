@@ -2,6 +2,198 @@
    Photo Report tool (v2.0) — form + advanced annotation editor
    ============================================================ */
 
+/* Tool title bar */
+.tool-titlebar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.tool-titlebar h1 {
+    margin: 0;
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+}
+
+.tool-subtitle {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: .95rem;
+    max-width: 620px;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 13px 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: background .15s ease, transform .08s ease;
+    white-space: nowrap;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+}
+
+.btn-primary:active {
+    transform: translateY(1px);
+}
+
+.btn-primary:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+/* Section cards */
+.section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.section-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.section-head-icon {
+    width: 42px;
+    height: 42px;
+    flex: none;
+    border-radius: 12px;
+    background: var(--es-yellow-soft);
+    color: var(--es-yellow-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+}
+
+.section-head h2 {
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-size: 1.18rem;
+    font-weight: 700;
+}
+
+.section-head-sub {
+    display: block;
+    color: var(--muted);
+    font-size: .85rem;
+    margin-top: 2px;
+}
+
+.subhead {
+    margin: 22px 0 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+
+/* Selected-state for utility / QL chips */
+.utility-check.checked {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    color: var(--ink);
+}
+
+.ql-check.checked {
+    border-color: var(--es-yellow);
+    background: var(--es-yellow-soft);
+    color: var(--es-yellow-dark);
+}
+
+/* Drop zone */
+.dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 30px;
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    color: var(--muted);
+    cursor: pointer;
+    text-align: center;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
+    margin-bottom: 16px;
+}
+
+.dropzone:hover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.dropzone-icon {
+    font-size: 1.8rem;
+    margin-bottom: 4px;
+}
+
+.dropzone-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ink);
+}
+
+.dropzone:hover .dropzone-title {
+    color: var(--primary);
+}
+
+.dropzone-sub {
+    font-size: .82rem;
+}
+
+/* Photo preview with hover overlay */
+.photo-preview-wrap {
+    position: relative;
+    width: 340px;
+    max-width: 100%;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.photo-preview-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #fff;
+    font-weight: 700;
+    background: rgba(27, 34, 48, .45);
+    opacity: 0;
+    transition: opacity .15s ease;
+}
+
+.photo-preview-wrap:hover .photo-preview-overlay {
+    opacity: 1;
+}
+
 /* Utilities Located checkbox grid */
 .utilities-grid {
     display: grid;
@@ -153,18 +345,43 @@
 }
 
 .photo-preview {
-    width: 340px;
-    max-width: 100%;
+    display: block;
+    width: 100%;
     height: auto;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    cursor: pointer;
     object-fit: contain;
-    transition: filter .15s ease;
 }
 
-.photo-preview:hover {
-    filter: brightness(.94);
+/* Download links rendered as buttons */
+.download-link {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
+.download-link a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.download-link a:first-child {
+    background: var(--success);
+    color: #fff;
+}
+
+.download-link a:first-child:hover {
+    background: var(--success-dark);
+}
+
+.download-link a:last-child {
+    background: var(--surface);
+    color: var(--success-dark);
+    border: 1px solid #abefc6;
 }
 
 .photo-block-side {
