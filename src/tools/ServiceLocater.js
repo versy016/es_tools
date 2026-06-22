@@ -11,6 +11,7 @@ const ServiceLocater = ({ goBack }) => {
     const [client, setClient] = useState('');
     const [address, setAddress] = useState('');
     const [docLink, setDocLink] = useState('');
+    const [email, setEmail] = useState('');
     const [note, setNote] = useState('');
     const [notes, setNotes] = useState([
         "Services located in the area required using Radio Detection & Ground Penetrating Radar (GPR)",
@@ -57,7 +58,9 @@ const ServiceLocater = ({ goBack }) => {
             setProject('');
         }
     };
-
+    const handleEmailChange = (e) => {
+            setEmail(e.target.value);
+        };
     useEffect(() => {
         setupProjectsSearch(projectInputRef.current, setProject);
         setupClientsSearch(clientInputRef.current, setClient);
@@ -295,7 +298,8 @@ const ServiceLocater = ({ goBack }) => {
             sitename: address,
             addnotes: notes,
             photo_urls: fileUrls,
-            photo_data: imageNames.map((name, index) => ({ name, description: imageDescriptions[index] }))
+            photo_data: imageNames.map((name, index) => ({ name, description: imageDescriptions[index] })),
+
         };
 
         console.log('Form Data:', formData);
@@ -318,6 +322,31 @@ const ServiceLocater = ({ goBack }) => {
 
         setLoading(false);
     };
+
+    const handleSendEmail = async () => {
+            if (!docLink) {
+                alert('Please generate the document first.');
+                return;
+            }
+
+            setLoading(true);
+
+            const response = await fetch('https://your-backend-endpoint/send-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, docUrl: docLink }),
+            });
+
+            if (response.ok) {
+                alert('Email sent successfully.');
+            } else {
+                alert('Error sending email.');
+            }
+
+            setLoading(false);
+        };
 
     return (
         <div>
@@ -361,6 +390,10 @@ const ServiceLocater = ({ goBack }) => {
                             <label>
                                 Locater Mob. No:
                                 <input type="text" name="LocaterMob" placeholder="04xxx xxx xx" autoComplete="off"/>
+                            </label>
+                             <label>
+                                Email
+                                <input type="email" name="email" placeholder="Enter email" value={email} onChange={handleEmailChange} autoComplete="off"/>
                             </label>
                         </div>
                     </section>
@@ -541,6 +574,9 @@ const ServiceLocater = ({ goBack }) => {
 
                     <div className="buttons">
                         <button type="submit">Submit Report</button>
+                        <button type="button" onClick={handleSendEmail} disabled={!docLink}>
+                            Send Report via Email
+                        </button>
                     </div>
                 </form>
                 {docLink && (
@@ -550,6 +586,7 @@ const ServiceLocater = ({ goBack }) => {
                         </a>
                     </div>
                 )}
+                
                 {loading && (
                     <div className="loading-overlay">
                         <p>Processing document, please wait...</p>
