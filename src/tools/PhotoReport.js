@@ -5,15 +5,22 @@ import '../stylessheets/PhotoReport.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowLeft, faXmark, faPenToSquare, faGripVertical, faFilePdf,
-    faCloudArrowUp, faDownload, faUpRightFromSquare,
+    faCloudArrowUp, faDownload, faUpRightFromSquare, faCamera, faPaperPlane,
 } from '@fortawesome/free-solid-svg-icons';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { setupClientsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
 import { loadGoogleMapsScript } from '../scripts/googleMaps';
 import { UTILITIES, QUALITY_LEVELS } from '../report/legendColors';
-import PhotoAnnotator from '../components/PhotoAnnotator';
+import PhotoEditor from '../components/PhotoEditor';
+import CameraCapture from '../components/CameraCapture';
 import PotholePanel from '../components/PotholePanel';
 import PhotoReportDoc from '../report/PhotoReportPdf';
+
+// Internal copy of every generated report is emailed here.
+// TODO: change to bgosling@engsurveys.com.au after testing.
+const AUTO_REPORT_RECIPIENT = 'sverma@engsurveys.com.au';
+// Backend email endpoint (nodemailer/SMTP). Set REACT_APP_EMAIL_ENDPOINT in .env.
+const EMAIL_ENDPOINT = process.env.REACT_APP_EMAIL_ENDPOINT || '';
 
 const readFileAsDataURL = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -22,7 +29,16 @@ const readFileAsDataURL = (file) => new Promise((resolve, reject) => {
     reader.readAsDataURL(file);
 });
 
+const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+});
+
+const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
 const today = () => new Date().toISOString().slice(0, 10);
+const newId = () => `photo_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
 const Section = ({ step, title, subtitle, children }) => (
     <section className="form-section">
@@ -37,9 +53,7 @@ const Section = ({ step, title, subtitle, children }) => (
     </section>
 );
 
-// es_tools v2.0 "Photo Report" tool: collect cover/job details, annotate site
-// photos in the utility-legend colours, attach pothole photos, and generate a
-// PDF on the Engineering Surveys letterhead.
+// es_tools v2.0 "Photo Report" tool.
 const PhotoReport = ({ goBack }) => {
     const [form, setForm] = useState({
         date: today(),
@@ -58,6 +72,9 @@ const PhotoReport = ({ goBack }) => {
     const [qualityLevels, setQualityLevels] = useState({ A: true, B: true, C: false, D: false });
     const [photos, setPhotos] = useState([]);
     const [editingPhotoId, setEditingPhotoId] = useState(null);
+    const [showCamera, setShowCamera] = useState(false);
+    const [emailTo, setEmailTo] = useState('');
+    const [sendStatus, setSendStatus] = useState(''); // '' | 'sending' | 'sent' | 'error'
     const [pdfUrl, setPdfUrl] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -96,23 +113,14 @@ const PhotoReport = ({ goBack }) => {
 
     const toggleQuality = (q) => setQualityLevels((prev) => ({ ...prev, [q]: !prev[q] }));
 
-    const addPhotoFiles = async (files) => {
-        const list = Array.from(files).filter((f) => f.type.startsWith('image/'));
-        if (!list.length) return;
-        const srcs = await Promise.all(list.map(readFileAsDataURL));
-        const added = srcs.map((src, i) => ({
-            id: `photo_${Date.now()}_${i}`,
-            src,
-            annotations: [],
-            flattenedDataUrl: src,
-            lastUtility: 'water',
-            potholes: [],
-        }));
-        setPhotos((prev) => [...prev, ...added]);
-    };
+    const addPhoto = (src) => setPhotos((prev) => [...prev, {
+        id: newId(), src, flattenedDataUrl: src, designState: null, potholes: [],
+    }]);
 
-    const handlePhotoUpload = async (event) => {
-        await addPhotoFiles(event.target.files);
+    const handleFileUpload = async (event) => {
+        const files = Array.from(event.target.files).filter((f) => f.type.startsWith('image/'));
+        const srcs = await Promise.all(files.map(readFileAsDataURL));
+        srcs.forEach(addPhoto);
         event.target.value = '';
     };
 
@@ -133,25 +141,66 @@ const PhotoReport = ({ goBack }) => {
     const potholeCount = photos.reduce((n, p) => n + (p.potholes ? p.potholes.length : 0), 0);
     const qlSelected = QUALITY_LEVELS.filter((q) => qualityLevels[q]);
 
-    const handleAnnotatorSave = ({ annotations, flattenedDataUrl, lastUtility }) => {
-        updatePhoto(editingPhotoId, { annotations, flattenedDataUrl, lastUtility });
-        setEditingPhotoId(null);
+    const handleEditorSave = ({ flattenedDataUrl, designState }) => {
+        updatePhoto(editingPhotoId, { flattenedDataUrl, designState });
+    };
+
+    const buildPdfBlob = async () => {
+        const job = { ...form, utilitiesLocated, qualityLevels, photos };
+        const blob = await pdf(<PhotoReportDoc job={job} />).toBlob();
+        if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+        setPdfUrl(URL.createObjectURL(blob));
+        return blob;
     };
 
     const handleGenerate = async () => {
-        if (photos.length === 0) {
-            alert('Add at least one photo before generating the report.');
-            return;
-        }
+        if (photos.length === 0) { alert('Add at least one photo before generating the report.'); return; }
         setLoading(true);
-        if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         try {
-            const job = { ...form, utilitiesLocated, qualityLevels, photos };
-            const blob = await pdf(<PhotoReportDoc job={job} />).toBlob();
-            setPdfUrl(URL.createObjectURL(blob));
+            await buildPdfBlob();
         } catch (err) {
             console.error('Error generating PDF', err);
             alert('Something went wrong generating the PDF. See console for details.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGenerateAndEmail = async () => {
+        if (photos.length === 0) { alert('Add at least one photo before sending the report.'); return; }
+        if (emailTo && !isEmail(emailTo)) { alert('Please enter a valid client email, or leave it blank.'); return; }
+        setLoading(true);
+        setSendStatus('sending');
+        try {
+            const blob = await buildPdfBlob();
+            if (!EMAIL_ENDPOINT) {
+                setSendStatus('error');
+                alert('Email is not configured yet (REACT_APP_EMAIL_ENDPOINT is not set). The PDF was generated — use Download for now.');
+                return;
+            }
+            const pdfBase64 = await blobToBase64(blob);
+            const recipients = Array.from(new Set([
+                ...(isEmail(emailTo) ? [emailTo.trim()] : []),
+                AUTO_REPORT_RECIPIENT,
+            ]));
+            const filename = `Photo Report - ${form.siteAddress || 'report'}.pdf`;
+            const response = await fetch(EMAIL_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: recipients,
+                    subject: `Photo Report${form.siteAddress ? ' — ' + form.siteAddress : ''}`,
+                    text: `Please find attached the photo report${form.siteAddress ? ' for ' + form.siteAddress : ''}.\n\nGenerated via ES Tools.`,
+                    filename,
+                    pdfBase64,
+                }),
+            });
+            if (!response.ok) throw new Error(`Email endpoint returned ${response.status}`);
+            setSendStatus('sent');
+        } catch (err) {
+            console.error('Error sending email', err);
+            setSendStatus('error');
+            alert('Could not send the email. The PDF was generated — see console for details.');
         } finally {
             setLoading(false);
         }
@@ -166,7 +215,7 @@ const PhotoReport = ({ goBack }) => {
             <div className="pr-hero">
                 <div className="pr-hero-inner">
                     <h1>Photo Report</h1>
-                    <p>Annotate site photos with utility-legend lines &amp; labels, attach potholes, and export a PDF on the Engineering Surveys letterhead.</p>
+                    <p>Capture or upload site photos, annotate them, attach potholes, and export &amp; email a PDF on the Engineering Surveys letterhead.</p>
                     <div className="stat-strip">
                         <div className="stat-chip"><strong>{photos.length}</strong><span>Photos</span></div>
                         <div className="stat-chip"><strong>{potholeCount}</strong><span>Potholes</span></div>
@@ -179,41 +228,21 @@ const PhotoReport = ({ goBack }) => {
             <div className="pr-content">
                 <Section step="1" title="Job details" subtitle="Appears on the report cover page">
                     <div className="field-grid">
-                        <label>Date
-                            <input type="date" value={form.date} onChange={(e) => setField('date', e.target.value)} />
-                        </label>
-                        <label>Locator
-                            <input type="text" placeholder="Start typing for suggestions.." ref={locatorRef}
-                                value={form.locatorName} onChange={(e) => setField('locatorName', e.target.value)} autoComplete="off" />
-                        </label>
-                        <label>DBYD No
-                            <input type="text" value={form.dbydNo} onChange={(e) => setField('dbydNo', e.target.value)} />
-                        </label>
-                        <label>Site address
-                            <input type="text" ref={addressRef} value={form.siteAddress}
-                                onChange={(e) => setField('siteAddress', e.target.value)} autoComplete="off" />
-                        </label>
-                        <label>Scope of works
-                            <input type="text" value={form.scopeOfWorks} onChange={(e) => setField('scopeOfWorks', e.target.value)} />
-                        </label>
-                        <label>Client name
-                            <input type="text" placeholder="Start typing for suggestions.." ref={clientRef}
-                                value={form.clientName} onChange={(e) => setField('clientName', e.target.value)} autoComplete="off" />
-                        </label>
-                        <label>Client contact
-                            <input type="text" placeholder="Contact name" ref={contactRef}
-                                value={form.clientContact} onChange={(e) => setField('clientContact', e.target.value)} autoComplete="off" />
-                        </label>
-                        <label>Mobile no
-                            <input type="text" placeholder="04xxx xxx xxx" value={form.clientMobile}
-                                onChange={(e) => setField('clientMobile', e.target.value)} />
-                        </label>
-                        <label>DBYD email
-                            <input type="text" value={form.dbydEmail} onChange={(e) => setField('dbydEmail', e.target.value)} />
-                        </label>
-                        <label>Ref no
-                            <input type="text" value={form.refNo} onChange={(e) => setField('refNo', e.target.value)} />
-                        </label>
+                        <label>Date<input type="date" value={form.date} onChange={(e) => setField('date', e.target.value)} /></label>
+                        <label>Locator<input type="text" placeholder="Start typing for suggestions.." ref={locatorRef}
+                            value={form.locatorName} onChange={(e) => setField('locatorName', e.target.value)} autoComplete="off" /></label>
+                        <label>DBYD No<input type="text" value={form.dbydNo} onChange={(e) => setField('dbydNo', e.target.value)} /></label>
+                        <label>Site address<input type="text" ref={addressRef} value={form.siteAddress}
+                            onChange={(e) => setField('siteAddress', e.target.value)} autoComplete="off" /></label>
+                        <label>Scope of works<input type="text" value={form.scopeOfWorks} onChange={(e) => setField('scopeOfWorks', e.target.value)} /></label>
+                        <label>Client name<input type="text" placeholder="Start typing for suggestions.." ref={clientRef}
+                            value={form.clientName} onChange={(e) => setField('clientName', e.target.value)} autoComplete="off" /></label>
+                        <label>Client contact<input type="text" placeholder="Contact name" ref={contactRef}
+                            value={form.clientContact} onChange={(e) => setField('clientContact', e.target.value)} autoComplete="off" /></label>
+                        <label>Mobile no<input type="text" placeholder="04xxx xxx xxx" value={form.clientMobile}
+                            onChange={(e) => setField('clientMobile', e.target.value)} /></label>
+                        <label>DBYD email<input type="text" value={form.dbydEmail} onChange={(e) => setField('dbydEmail', e.target.value)} /></label>
+                        <label>Ref no<input type="text" value={form.refNo} onChange={(e) => setField('refNo', e.target.value)} /></label>
                     </div>
                 </Section>
 
@@ -243,13 +272,20 @@ const PhotoReport = ({ goBack }) => {
                         onChange={(e) => setField('comments', e.target.value)} placeholder="Add any comments…" />
                 </Section>
 
-                <Section step="4" title="Photos" subtitle="Each photo becomes a report page with its potholes below">
-                    <label className="dropzone">
-                        <FontAwesomeIcon icon={faCloudArrowUp} className="dropzone-icon" />
-                        <span className="dropzone-title">Click to add photos</span>
-                        <span className="dropzone-sub">JPG or PNG · add several at once</span>
-                        <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} hidden />
-                    </label>
+                <Section step="4" title="Photos" subtitle="Take a photo on the spot or pick from files — each becomes a report page">
+                    <div className="upload-actions">
+                        <label className="dropzone">
+                            <FontAwesomeIcon icon={faCloudArrowUp} className="dropzone-icon" />
+                            <span className="dropzone-title">Choose from files</span>
+                            <span className="dropzone-sub">JPG or PNG · add several at once</span>
+                            <input type="file" accept="image/*" multiple onChange={handleFileUpload} hidden />
+                        </label>
+                        <button type="button" className="camera-btn" onClick={() => setShowCamera(true)}>
+                            <FontAwesomeIcon icon={faCamera} className="dropzone-icon" />
+                            <span className="dropzone-title">Take a photo</span>
+                            <span className="dropzone-sub">Use the device camera</span>
+                        </button>
+                    </div>
 
                     {photos.length > 0 && (
                         <DragDropContext onDragEnd={onDragEnd}>
@@ -297,10 +333,22 @@ const PhotoReport = ({ goBack }) => {
                     )}
                 </Section>
 
+                <Section step="5" title="Send report" subtitle="Email the PDF when you generate it">
+                    <div className="field-grid">
+                        <label>Client email (optional)
+                            <input type="email" value={emailTo} placeholder="client@example.com"
+                                onChange={(e) => setEmailTo(e.target.value)} autoComplete="off" />
+                        </label>
+                    </div>
+                    <p className="muted-note">A copy is always sent to <strong>{AUTO_REPORT_RECIPIENT}</strong>.</p>
+                </Section>
+
                 <div className="action-bar">
                     <div className="action-bar-text">
                         <strong>Ready to export?</strong>
                         <span>{photos.length} photo{photos.length === 1 ? '' : 's'} · {potholeCount} pothole{potholeCount === 1 ? '' : 's'} will be included.</span>
+                        {sendStatus === 'sent' && <span className="send-ok"><FontAwesomeIcon icon={faPaperPlane} /> Email sent</span>}
+                        {sendStatus === 'error' && <span className="send-err">Email not sent — check setup</span>}
                     </div>
                     <div className="action-bar-buttons">
                         {pdfUrl && (
@@ -313,15 +361,22 @@ const PhotoReport = ({ goBack }) => {
                                 </a>
                             </>
                         )}
-                        <button type="button" className="btn-primary" onClick={handleGenerate} disabled={loading}>
-                            <FontAwesomeIcon icon={faFilePdf} /> {loading ? 'Generating…' : 'Generate PDF'}
+                        <button type="button" className="btn-ghost" onClick={handleGenerate} disabled={loading}>
+                            <FontAwesomeIcon icon={faFilePdf} /> Generate PDF
+                        </button>
+                        <button type="button" className="btn-primary" onClick={handleGenerateAndEmail} disabled={loading}>
+                            <FontAwesomeIcon icon={faPaperPlane} /> {loading ? 'Working…' : 'Generate & email'}
                         </button>
                     </div>
                 </div>
             </div>
 
             {editingPhoto && (
-                <PhotoAnnotator photo={editingPhoto} onSave={handleAnnotatorSave} onCancel={() => setEditingPhotoId(null)} />
+                <PhotoEditor photo={editingPhoto} onSave={handleEditorSave} onClose={() => setEditingPhotoId(null)} />
+            )}
+
+            {showCamera && (
+                <CameraCapture onCapture={addPhoto} onClose={() => setShowCamera(false)} />
             )}
         </div>
     );

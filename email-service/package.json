@@ -1,0 +1,10 @@
+{
+  "name": "estools-email-service",
+  "version": "1.0.0",
+  "description": "AWS Lambda that emails the ES Tools Photo Report PDF via SMTP (nodemailer).",
+  "main": "index.js",
+  "private": true,
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  }
+}
