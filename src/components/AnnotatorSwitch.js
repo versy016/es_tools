@@ -3,19 +3,11 @@ import '../stylessheets/engines.css';
 
 // Annotation engines, lazy-loaded so each library only downloads when selected.
 const KonvaEngine = lazy(() => import('./PhotoAnnotator'));
-const FabricEngine = lazy(() => import('./engines/FabricEditor'));
 const ExcalidrawEngine = lazy(() => import('./engines/ExcalidrawEditor'));
-const TuiEngine = lazy(() => import('./engines/TuiEditor'));
-const SketchEngine = lazy(() => import('./engines/SketchEditor'));
-const FilerobotEngine = lazy(() => import('./PhotoEditor'));
 
 const ENGINES = [
     { id: 'konva', name: 'Custom', Comp: KonvaEngine },
-    { id: 'fabric', name: 'Fabric.js', Comp: FabricEngine },
     { id: 'excalidraw', name: 'Excalidraw', Comp: ExcalidrawEngine },
-    { id: 'tui', name: 'Toast UI', Comp: TuiEngine },
-    { id: 'sketch', name: 'Freehand', Comp: SketchEngine },
-    { id: 'filerobot', name: 'Filerobot', Comp: FilerobotEngine },
 ];
 
 const STORE_KEY = 'es_tools_annot_engine';
@@ -23,7 +15,10 @@ const STORE_KEY = 'es_tools_annot_engine';
 // Wraps every annotation engine and lets the user switch between them live on the
 // same photo. Each engine reports back via onSave({ flattenedDataUrl, ... }).
 const AnnotatorSwitch = ({ photo, onSave, onClose }) => {
-    const [engineId, setEngineId] = useState(() => localStorage.getItem(STORE_KEY) || 'konva');
+    const [engineId, setEngineId] = useState(() => {
+        const saved = localStorage.getItem(STORE_KEY);
+        return ENGINES.some((e) => e.id === saved) ? saved : 'konva';
+    });
     const eng = ENGINES.find((e) => e.id === engineId) || ENGINES[0];
     const Comp = eng.Comp;
 

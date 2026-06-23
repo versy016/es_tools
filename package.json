@@ -26,7 +26,6 @@
     "aws-sdk": "^2.1651.0",
     "docxtemplater": "^3.69.0",
     "docxtemplater-image-module-free": "^1.1.1",
-    "fabric": "^5.5.2",
     "google-maps": "^4.3.3",
     "konva": "^9.3.22",
     "pdf-lib": "^1.17.1",
@@ -35,15 +34,11 @@
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.3.1",
-    "react-filerobot-image-editor": "^4.9.1",
     "react-konva": "^18.2.16",
     "react-router-dom": "^6.23.1",
     "react-scripts": "5.0.1",
-    "react-sketch-canvas": "^6.2.0",
     "react-sortablejs": "^6.1.4",
     "roughjs": "^4.6.6",
-    "styled-components": "^5.3.11",
-    "tui-image-editor": "^3.15.3",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
