@@ -8,13 +8,14 @@ Cognito + Amplify S3).
 2. In **Project Settings → API**, copy the **Project URL** and the **anon public** key.
 
 ## 2. Configure the web app
-Create `es_tools/.env`:
+Create `es_tools/.env.local` (git-ignored):
 ```
 REACT_APP_SUPABASE_URL=https://<your-project>.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=<anon public key>
+REACT_APP_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
-Then rebuild / restart (`npm start`). Until these are set the app shows a
-"Connect Supabase" screen instead of crashing.
+Use the **publishable** key (new format) — or `REACT_APP_SUPABASE_ANON_KEY` for older
+projects; both are accepted. Then restart (`npm start`). Until these are set the app shows
+a "Connect Supabase" screen instead of crashing.
 
 ## 3. Create the schema
 Open **SQL editor** in Supabase, paste the contents of `schema.sql`, and run it.
