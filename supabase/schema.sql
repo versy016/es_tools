@@ -98,3 +98,15 @@ create policy "reports bucket: owner rw" on storage.objects
   with check (bucket_id = 'reports' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "reports bucket: manager read" on storage.objects
   for select using (bucket_id = 'reports' and public.is_manager());
+
+-- Report templates (e.g. the Service Location .docx). Any signed-in user can read
+-- (the app renders from them); only managers/admins can upload/replace.
+insert into storage.buckets (id, name, public)
+  values ('templates', 'templates', false)
+  on conflict (id) do nothing;
+
+create policy "templates: read signed-in" on storage.objects
+  for select using (bucket_id = 'templates' and auth.uid() is not null);
+create policy "templates: manager write" on storage.objects
+  for all using (bucket_id = 'templates' and public.is_manager())
+  with check (bucket_id = 'templates' and public.is_manager());

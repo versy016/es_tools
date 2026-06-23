@@ -5,12 +5,14 @@ import { faArrowLeft, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { setupClientsSearch, setupProjectsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
 import { loadGoogleMapsScript } from '../scripts/googleMaps';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { renderDocx, docxToPdf } from '../services/serviceReportService';
 
 const ServiceLocater = ({ goBack }) => {
     const [project, setProject] = useState('');
     const [client, setClient] = useState('');
     const [address, setAddress] = useState('');
     const [docLink, setDocLink] = useState('');
+    const [pdfLink, setPdfLink] = useState('');
     const [email, setEmail] = useState('');
     const [note, setNote] = useState('');
     const [notes, setNotes] = useState([
@@ -211,54 +213,6 @@ const ServiceLocater = ({ goBack }) => {
         setImageDescriptions(newDescriptions);
     };
 
-    const getPresignedUrl = async (fileName, fileType) => {
-        const response = await fetch('https://kc84cxp392.execute-api.ap-southeast-2.amazonaws.com/dev/presignedurl', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                fileName,
-                contentType: fileType
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            return data.uploadUrl;
-        } else {
-            throw new Error('Error generating presigned URL');
-        }
-    };
-
-    const uploadFileToS3 = async (file, url) => {
-        return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open('PUT', url, true);
-            xhr.setRequestHeader('Content-Type', file.type);
-
-            xhr.upload.onprogress = (event) => {
-                if (event.lengthComputable) {
-                    console.log(`Upload progress for ${file.name}: ${Math.round((event.loaded / event.total) * 100)}%`);
-                }
-            };
-
-            xhr.onload = () => {
-                if (xhr.status === 200) {
-                    resolve();
-                } else {
-                    reject(new Error(`Failed to upload file ${file.name}: ${xhr.statusText}`));
-                }
-            };
-
-            xhr.onerror = () => {
-                reject(new Error(`Failed to upload file ${file.name}: ${xhr.statusText}`));
-            };
-
-            xhr.send(file);
-        });
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
@@ -267,60 +221,49 @@ const ServiceLocater = ({ goBack }) => {
         }
 
         setLoading(true);
-        const fileUrls = [];
-        for (let i = 0; i < imageFiles.length; i++) {
-            const file = imageFiles[i];
-            const url = await getPresignedUrl(file.name, file.type);
-            await uploadFileToS3(file, url);
-            fileUrls.push(url.split('?')[0]); // store the file URL without query parameters
+        try {
+            const filteredChecklist = checklist.filter(item => item.selected || item.quality.length > 0).map(item => ({
+                assetType: item.type,
+                quality: item.quality,
+                comment: item.comment
+            }));
+            const reportForm = {
+                date: e.target.date.value,
+                clientOrProject: project.project || client.title || '',
+                jobLocation: address,
+                contact: e.target.contact.value,
+                contactMob: e.target.ContactMob.value,
+                surveyor: e.target.surveyor.value,
+                locaterMob: e.target.LocaterMob.value,
+                checklist: filteredChecklist,
+                dbydjobno: e.target.dbydJobNumber.value,
+                dbyddate: e.target.dbydDateRequested.value,
+                dbydavailable: e.target.dbydPlansAvailable.value,
+                dbydplans: e.target.dbydPlansCoverAreas.value,
+                SWMS: e.target.swmsCompleted.value,
+                plansupply: e.target.dbydPlansSupplied.value,
+                sitename: address,
+                addnotes: notes,
+                photos: imagePreviews,
+            };
+
+            if (docLink) URL.revokeObjectURL(docLink);
+            if (pdfLink) URL.revokeObjectURL(pdfLink);
+            setPdfLink('');
+
+            // Render the .docx in the browser from the template.
+            const docxBlob = await renderDocx(reportForm);
+            setDocLink(URL.createObjectURL(docxBlob));
+
+            // Optionally convert to PDF (needs the converter endpoint configured).
+            const pdfBlob = await docxToPdf(docxBlob, 'Service Location Field Report.docx');
+            if (pdfBlob) setPdfLink(URL.createObjectURL(pdfBlob));
+        } catch (err) {
+            console.error('Error generating the document', err);
+            alert('Something went wrong generating the report. See console for details.');
+        } finally {
+            setLoading(false);
         }
-
-        const filteredChecklist = checklist.filter(item => item.selected || item.quality.length > 0).map(item => ({
-            assetType: item.type,
-            quality: item.quality,
-            comment: item.comment
-        }));
-        const formData = {
-            date: e.target.date.value,
-            client: project.project || client.title,
-            jobLocation: address,
-            contact: e.target.contact.value,
-            contactMob: e.target.ContactMob.value,
-            surveyor: e.target.surveyor.value,
-            locaterMob: e.target.LocaterMob.value,
-            checklist: filteredChecklist,
-            dbydjobno: e.target.dbydJobNumber.value,
-            dbyddate: e.target.dbydDateRequested.value,
-            dbydavailable: e.target.dbydPlansAvailable.value,
-            dbydplans: e.target.dbydPlansCoverAreas.value,
-            SWMS: e.target.swmsCompleted.value,
-            plansupply: e.target.dbydPlansSupplied.value,
-            sitename: address,
-            addnotes: notes,
-            photo_urls: fileUrls,
-            photo_data: imageNames.map((name, index) => ({ name, description: imageDescriptions[index] })),
-
-        };
-
-        console.log('Form Data:', formData);
-
-        const response = await fetch('https://2ydho3cldk.execute-api.ap-southeast-2.amazonaws.com/dev/ServiceLocatorFile', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ data: formData }),
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            setDocLink(result.docUrl);
-            console.info('Document generated successfully');
-        } else {
-            console.error('Error generating the document');
-        }
-
-        setLoading(false);
     };
 
     const handleSendEmail = async () => {
@@ -581,9 +524,14 @@ const ServiceLocater = ({ goBack }) => {
                 </form>
                 {docLink && (
                     <div className="download-link">
-                        <a href={docLink} download="updated_document.docx">
-                            Download Populated Report
+                        <a href={docLink} download="Service Location Field Report.docx">
+                            Download Word (.docx)
                         </a>
+                        {pdfLink
+                            ? <a href={pdfLink} download="Service Location Field Report.pdf">Download PDF</a>
+                            : <span style={{ display: 'block', marginTop: '8px', color: '#9CA3AF', fontSize: '.9rem' }}>
+                                PDF export becomes available once the converter is configured.
+                            </span>}
                     </div>
                 )}
                 

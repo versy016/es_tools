@@ -35,6 +35,25 @@ for each new user.
 2. The Login screen's "Continue with Microsoft" button already calls
    `signInWithOAuth({ provider: 'azure' })`.
 
+## 6. Service Location template + PDF export
+The Service Location report is rendered **in the browser** from a `.docx` template
+(`public/templates/service-location.docx`) — no AWS Lambda. To let admins swap the
+letterhead without a redeploy, upload the template to the `templates` bucket:
+- Storage → `templates` bucket → upload `service-location.docx` (same filename).
+- The app prefers the bucket copy and falls back to the bundled one.
+- If you edit the Word template, re-run `node scripts/prep-template.js` so the
+  `{tags}` and the `{#photos}…{/photos}` image loop stay intact.
+
+**PDF export** converts that rendered `.docx` to PDF via the `docx-to-pdf` Edge Function
+(`supabase/functions/docx-to-pdf`), which forwards to a free **Gotenberg** instance:
+```
+supabase functions deploy docx-to-pdf --no-verify-jwt
+supabase secrets set GOTENBERG_URL=https://<your-gotenberg-host>
+```
+Then set `REACT_APP_DOCX_PDF_ENDPOINT=https://<project>.functions.supabase.co/docx-to-pdf`.
+Until configured, the tool produces the `.docx` and shows a "PDF available once the
+converter is configured" note.
+
 ## What this replaces
 - Cognito login → Supabase Auth.
 - Amplify S3 (`reports/`, `profile/`) → Supabase Storage (`reports` bucket) + `reports`
