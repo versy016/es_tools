@@ -1,47 +1,73 @@
 /* ============================================================
-   ES Tools — global design system
-   Design tokens + base element styling shared by every tool.
+   ES Tools — design system (from the approved "Brand-led" handoff)
+   Warm cream surfaces, Engineering Surveys yellow + charcoal,
+   Plus Jakarta Sans. Tokens are consumed across every stylesheet.
    ============================================================ */
 :root {
   /* Brand */
   --es-yellow: #f5a623;
-  --es-yellow-dark: #d98e0b;
-  --es-yellow-soft: #fff6e6;
+  --es-yellow-hover: #e89712;
+  --es-yellow-dark: #c8870c;   /* yellow text on light bg (AA), eyebrows */
+  --es-yellow-soft: #fef3dd;   /* yellow tint chips / soft highlights */
 
   /* Ink / text */
   --ink: #1b2230;
-  --ink-soft: #3c4659;
-  --muted: #6b7585;
+  --ink-hover: #283040;
+  --ink-soft: #475467;
+  --muted: #6b7280;
+  --faint: #9ca3af;
 
   /* Surfaces */
-  --bg: #eef1f6;
-  --surface: #ffffff;
-  --surface-2: #f7f9fc;
+  --bg: #fbf7f0;               /* warm cream page */
+  --surface: #ffffff;          /* cards, panels, inputs */
+  --surface-2: #fbf7f0;        /* subtle / search / section fills */
+  --surface-active: #fbf5ea;   /* active tool card */
+  --surface-tint: #fef3dd;     /* yellow tint */
 
   /* Lines */
-  --border: #e3e8f0;
-  --border-strong: #d2d9e6;
+  --border: #ece7dd;           /* hairline */
+  --border-2: #efe8da;         /* nav / slightly stronger */
+  --border-strong: #e4dccd;    /* input borders */
+  --border-active: #efe6d4;    /* active tool card border */
 
-  /* Accents */
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
-  --primary-soft: #eaf1ff;
-  --success: #16a34a;
-  --success-dark: #15803d;
-  --danger: #dc2626;
-  --danger-dark: #b91c1c;
+  /* Primary action = charcoal (design uses charcoal + yellow, no blue) */
+  --primary: #1b2230;
+  --primary-dark: #283040;
+  --primary-soft: rgba(245, 166, 35, .18); /* yellow focus ring */
+
+  --success: #2e9e6b;
+  --success-dark: #1e7a52;
+  --danger: #b42318;
+  --danger-dark: #912018;
+
+  /* Status pills */
+  --status-draft-fg: #9a6b00;  --status-draft-bg: #fef3dd;
+  --status-sent-fg: #475467;   --status-sent-bg: #f2f4f7;
+  --status-approved-fg: #1e7a52; --status-approved-bg: #e9f6f0;
+
+  /* Role pills */
+  --role-surveyor-fg: #9a6b00; --role-surveyor-bg: #fef3dd;
+  --role-manager-fg: #2a4fb5;  --role-manager-bg: #e7edfa;
+  --role-admin-fg: #1e7a52;    --role-admin-bg: #e9f6f0;
+
+  /* Severity (potholes) */
+  --sev-high-fg: #b42318; --sev-high-bg: #fdecea;
+  --sev-med-fg: #9a6b00;  --sev-med-bg: #fef3dd;
+  --sev-low-fg: #1e7a52;  --sev-low-bg: #e9f6f0;
 
   /* Radius */
-  --radius-sm: 9px;
-  --radius: 14px;
-  --radius-lg: 20px;
+  --radius-sm: 10px;   /* inputs */
+  --radius: 14px;      /* badges / monograms */
+  --radius-lg: 18px;   /* cards */
+  --radius-pill: 999px;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .1);
-  --shadow: 0 6px 20px rgba(16, 24, 40, .08);
-  --shadow-lg: 0 22px 50px rgba(16, 24, 40, .20);
+  --shadow-sm: 0 1px 6px rgba(27, 34, 48, .05);
+  --shadow: 0 2px 10px rgba(27, 34, 48, .05);
+  --shadow-lg: 0 10px 24px rgba(27, 34, 48, .09);
+  --shadow-yellow: 0 5px 14px rgba(245, 166, 35, .30);
 
-  --font: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 * {
@@ -70,6 +96,7 @@ code {
 h1, h2, h3, h4 {
   color: var(--ink);
   line-height: 1.25;
+  letter-spacing: -.01em;
 }
 
 kbd {
@@ -81,7 +108,17 @@ kbd {
   font-family: var(--font);
 }
 
-/* Thin modern scrollbars */
+/* Entrance / motion helpers (from the prototype) */
+@keyframes dc-pop {
+  from { transform: translateY(9px); opacity: .6; }
+  to { transform: none; opacity: 1; }
+}
+
+.dc-pop {
+  animation: dc-pop .4s ease both;
+}
+
+/* Thin warm scrollbars */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
@@ -94,9 +131,5 @@ kbd {
   background: var(--border-strong);
   border-radius: 8px;
   border: 2px solid transparent;
-  background-clip: padding-box;
-}
-*::-webkit-scrollbar-thumb:hover {
-  background: #b7c0d0;
   background-clip: padding-box;
 }

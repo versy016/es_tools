@@ -1,31 +1,48 @@
 import './App.css';
-import '@aws-amplify/ui-react/styles.css';
+import './stylessheets/screens.css';
 import { fetchUserAttributes } from 'aws-amplify/auth';
 import React, { useEffect, useState } from 'react';
-import { Authenticator } from '@aws-amplify/ui-react';
+import { Authenticator, ThemeProvider } from '@aws-amplify/ui-react';
 import { Amplify } from 'aws-amplify';
-import { ThemeProvider } from '@aws-amplify/ui-react';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import amplifyconfig from './amplifyconfiguration.json';
 import studioTheme from './ui-components/studioTheme';
 import NavBar from './components/Navbar';
-import ToolCard  from './components/ToolCard';
+import { ToastProvider } from './components/Toast';
+import Dashboard from './screens/Dashboard';
+import Reports from './screens/Reports';
+import UserManagement from './screens/UserManagement';
+import Profile from './screens/Profile';
 import ServiceLocater from './tools/ServiceLocater';
-import ServiceLocaterpdf from './tools/ServiceLocaterpdf';
 import PhotoReport from './tools/PhotoReport';
-//import FileUpload from './components/FileUpload';
 
 Amplify.configure(amplifyconfig);
 
-const styles = {
- 
+const AppShell = ({ userName, signOut }) => {
+  const [search, setSearch] = useState('');
+  return (
+    <div className="App">
+      <NavBar userName={userName} search={search} onSearch={setSearch} />
+      <main className="app-main">
+        <Outlet context={{ search, userName, signOut }} />
+      </main>
+    </div>
+  );
 };
+
+// Wrap a goBack-style tool so it can navigate back to the dashboard via the router.
+const withBack = (Component) => function Wrapped() {
+  const navigate = useNavigate();
+  return <Component goBack={() => navigate('/dashboard')} />;
+};
+const PhotoReportRoute = withBack(PhotoReport);
+const ServiceLocaterRoute = withBack(ServiceLocater);
 
 const App = ({ signOut }) => {
   const [userName, setUserName] = useState(null);
-  const [currentTool, setCurrentTool] = useState(null);
 
   useEffect(() => {
-    const fetchUserName = async () => {
+    (async () => {
       try {
         const attributes = await fetchUserAttributes();
         setUserName(attributes.name);
@@ -33,65 +50,37 @@ const App = ({ signOut }) => {
         console.error(error);
         setUserName('User');
       }
-    };
-    fetchUserName();
+    })();
   }, []);
-  const goBack = () => {
-    setCurrentTool(null);
-  };
-  const renderTool = () => {
-    switch (currentTool) {
-      case 'service-locater':
-        return <ServiceLocater goBack={goBack} />;
-      case 'service-locater-pdf':
-        return <ServiceLocaterpdf goBack={goBack} />;
-      case 'photo-report':
-        return <PhotoReport goBack={goBack} />;
-      default:
-        return (
-          <div className="tools-home">
-            <header className="tools-home-header">
-              <p className="tools-home-eyebrow">Engineering Surveys</p>
-              <h1>{userName ? `Welcome, ${userName}` : 'Tools'}</h1>
-              <p>Select a tool to get started. New tools are added here as they become available.</p>
-            </header>
-            <div className="tool-cards-container">
-              <ToolCard
-                image="/images/Service_Location_Report.png"
-                title="Service Location Field Report"
-                description="Create a Service Location Field Report — capture job details, asset checklist, and site photos, then generate the populated report."
-                onClick={() => setCurrentTool('service-locater')}
-              />
-              <ToolCard
-                image="/images/Service_Location_Report.png"
-                title="Pothole Report Generator"
-                description="Annotate site photos with utility-legend lines and labels, attach potholes, and generate a Photo Report PDF on the Engineering Surveys letterhead."
-                onClick={() => setCurrentTool('photo-report')}
-              />
-            </div>
-          </div>
 
-        );
-    }
-  };
   return (
-    <div className="App">
-      <NavBar userName={userName} signOut={signOut} />
-           {renderTool()}
-
-    </div>
+    <Routes>
+      <Route element={<AppShell userName={userName} signOut={signOut} />}>
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/users" element={<UserManagement />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/tools/photo-report" element={<PhotoReportRoute />} />
+        <Route path="/tools/service-location" element={<ServiceLocaterRoute />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Route>
+    </Routes>
   );
 };
+
 const AppWithAuth = () => (
-  <div style={styles.container}>
-    <Authenticator >
+  <BrowserRouter>
+    <Authenticator>
       {({ signOut }) => (
         <ThemeProvider theme={studioTheme}>
-          <App signOut={signOut} />
+          <ToastProvider>
+            <App signOut={signOut} />
+          </ToastProvider>
         </ThemeProvider>
       )}
     </Authenticator>
-  </div>
+  </BrowserRouter>
 );
 
 export default AppWithAuth;

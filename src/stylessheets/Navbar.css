@@ -1,126 +1,148 @@
-.navbar {
+.nav {
     position: sticky;
     top: 0;
-    z-index: 900;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 22px;
-    background: rgba(27, 34, 48, .92);
-    backdrop-filter: saturate(140%) blur(8px);
-    border-bottom: 3px solid var(--es-yellow);
-    color: #fff;
-}
-
-.navbar-brand {
+    z-index: 30;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-2);
+    height: 66px;
+    padding: 0 28px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 26px;
 }
 
-.navbar-logo {
-    height: 40px;
-    width: auto;
-}
-
-.navbar-title {
-    font-weight: 800;
-    font-size: 1.12rem;
-    letter-spacing: .02em;
-    color: #fff;
-}
-
-.navbar-right {
-    position: relative;
-}
-
-.navbar-profile {
+.nav-brand {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(255, 255, 255, .08);
-    border: 1px solid rgba(255, 255, 255, .14);
-    color: #fff;
-    padding: 6px 12px 6px 6px;
-    border-radius: 999px;
     cursor: pointer;
-    transition: background .15s ease;
 }
 
-.navbar-profile:hover {
-    background: rgba(255, 255, 255, .16);
-}
-
-.navbar-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--es-yellow);
-    color: #1b2230;
+.nav-wordmark {
     font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: .95rem;
-}
-
-.navbar-username {
-    font-size: .9rem;
-    font-weight: 600;
-    max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.dropdown-menu {
-    position: absolute;
-    right: 0;
-    top: 52px;
-    min-width: 190px;
-    background: var(--surface);
+    font-size: 15px;
+    letter-spacing: -.01em;
     color: var(--ink);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-lg);
-    padding: 12px;
-    z-index: 1000;
 }
 
-.dropdown-hello {
-    margin: 0 0 10px;
-    font-size: .85rem;
-    color: var(--muted);
-}
-
-.dropdown-hello strong {
-    color: var(--ink);
-    font-size: .95rem;
-}
-
-.dropdown-signout {
-    width: 100%;
+.nav-links {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: var(--danger);
-    color: #fff;
+    gap: 4px;
+}
+
+.nav-link {
     border: none;
-    border-radius: var(--radius-sm);
-    padding: 9px 12px;
+    background: none;
     cursor: pointer;
-    font-size: .9rem;
-    font-weight: 600;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--muted);
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    text-decoration: none;
+    transition: background .15s ease, color .15s ease;
+}
+
+.nav-link:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+}
+
+.nav-link.active {
+    background: var(--ink);
+    color: #fff;
+}
+
+.nav-search {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.nav-search svg {
+    position: relative;
+    margin-right: -28px;
+    z-index: 1;
+    opacity: .4;
+    align-self: center;
+    margin-left: 13px;
+}
+
+.nav-search input {
+    width: 340px;
+    max-width: 100%;
+    padding: 9px 14px 9px 38px;
+    border: 1.5px solid var(--border-2);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: var(--font);
+    background: var(--surface-2);
+    outline: none;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.nav-search input:focus {
+    border-color: var(--es-yellow);
+    background: var(--surface);
+}
+
+.nav-profile {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font);
+    padding: 4px 8px 4px 4px;
+    border-radius: var(--radius-pill);
     transition: background .15s ease;
 }
 
-.dropdown-signout:hover {
-    background: var(--danger-dark);
+.nav-profile:hover {
+    background: var(--surface-2);
 }
 
-@media (max-width: 600px) {
-    .navbar-username {
+.nav-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--es-yellow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex: none;
+}
+
+.nav-id {
+    text-align: left;
+    line-height: 1.2;
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.nav-role {
+    font-size: 11px;
+    color: var(--faint);
+}
+
+@media (max-width: 860px) {
+    .nav {
+        gap: 14px;
+        padding: 0 14px;
+    }
+    .nav-search,
+    .nav-role {
         display: none;
     }
 }
