@@ -4,7 +4,7 @@ import '../stylessheets/ServiceLocater.css';
 import '../stylessheets/PhotoReport.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faArrowLeft, faXmark, faPenToSquare, faGripVertical, faFilePdf,
+    faXmark, faPenToSquare, faGripVertical,
     faCloudArrowUp, faDownload, faUpRightFromSquare, faCamera, faPaperPlane,
 } from '@fortawesome/free-solid-svg-icons';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
@@ -15,6 +15,7 @@ import PhotoEditor from '../components/PhotoEditor';
 import CameraCapture from '../components/CameraCapture';
 import PotholePanel from '../components/PotholePanel';
 import PhotoReportDoc from '../report/PhotoReportPdf';
+import { useToast } from '../components/Toast';
 
 // Internal copy of every generated report is emailed here.
 // TODO: change to bgosling@engsurveys.com.au after testing.
@@ -55,6 +56,7 @@ const Section = ({ step, title, subtitle, children }) => (
 
 // es_tools v2.0 "Photo Report" tool.
 const PhotoReport = ({ goBack }) => {
+    const showToast = useToast();
     const [form, setForm] = useState({
         date: today(),
         locatorName: '',
@@ -74,7 +76,6 @@ const PhotoReport = ({ goBack }) => {
     const [editingPhotoId, setEditingPhotoId] = useState(null);
     const [showCamera, setShowCamera] = useState(false);
     const [emailTo, setEmailTo] = useState('');
-    const [sendStatus, setSendStatus] = useState(''); // '' | 'sending' | 'sent' | 'error'
     const [pdfUrl, setPdfUrl] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -138,15 +139,23 @@ const PhotoReport = ({ goBack }) => {
     };
 
     const editingPhoto = photos.find((p) => p.id === editingPhotoId);
-    const potholeCount = photos.reduce((n, p) => n + (p.potholes ? p.potholes.length : 0), 0);
-    const qlSelected = QUALITY_LEVELS.filter((q) => qualityLevels[q]);
 
     const handleEditorSave = ({ flattenedDataUrl, designState }) => {
         updatePhoto(editingPhotoId, { flattenedDataUrl, designState });
     };
 
+    const loadSignoff = () => {
+        try {
+            const profile = JSON.parse(localStorage.getItem('es_tools_profile') || '{}');
+            const signature = localStorage.getItem('es_tools_signature') || '';
+            return { ...profile, signature };
+        } catch {
+            return {};
+        }
+    };
+
     const buildPdfBlob = async () => {
-        const job = { ...form, utilitiesLocated, qualityLevels, photos };
+        const job = { ...form, utilitiesLocated, qualityLevels, photos, signoff: loadSignoff() };
         const blob = await pdf(<PhotoReportDoc job={job} />).toBlob();
         if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         setPdfUrl(URL.createObjectURL(blob));
@@ -158,6 +167,7 @@ const PhotoReport = ({ goBack }) => {
         setLoading(true);
         try {
             await buildPdfBlob();
+            showToast('PDF generated');
         } catch (err) {
             console.error('Error generating PDF', err);
             alert('Something went wrong generating the PDF. See console for details.');
@@ -170,11 +180,9 @@ const PhotoReport = ({ goBack }) => {
         if (photos.length === 0) { alert('Add at least one photo before sending the report.'); return; }
         if (emailTo && !isEmail(emailTo)) { alert('Please enter a valid client email, or leave it blank.'); return; }
         setLoading(true);
-        setSendStatus('sending');
         try {
             const blob = await buildPdfBlob();
             if (!EMAIL_ENDPOINT) {
-                setSendStatus('error');
                 alert('Email is not configured yet (REACT_APP_EMAIL_ENDPOINT is not set). The PDF was generated — use Download for now.');
                 return;
             }
@@ -196,10 +204,9 @@ const PhotoReport = ({ goBack }) => {
                 }),
             });
             if (!response.ok) throw new Error(`Email endpoint returned ${response.status}`);
-            setSendStatus('sent');
+            showToast('Branded PDF generated & emailed to client');
         } catch (err) {
             console.error('Error sending email', err);
-            setSendStatus('error');
             alert('Could not send the email. The PDF was generated — see console for details.');
         } finally {
             setLoading(false);
@@ -208,24 +215,39 @@ const PhotoReport = ({ goBack }) => {
 
     return (
         <div className="photo-report">
-            <div className="back-link" onClick={goBack}>
-                <FontAwesomeIcon icon={faArrowLeft} /> Back to Tools
-            </div>
-
-            <div className="pr-hero">
-                <div className="pr-hero-inner">
-                    <h1>Photo Report</h1>
-                    <p>Capture or upload site photos, annotate them, attach potholes, and export &amp; email a PDF on the Engineering Surveys letterhead.</p>
-                    <div className="stat-strip">
-                        <div className="stat-chip"><strong>{photos.length}</strong><span>Photos</span></div>
-                        <div className="stat-chip"><strong>{potholeCount}</strong><span>Potholes</span></div>
-                        <div className="stat-chip"><strong>{utilitiesLocated.length}</strong><span>Utilities</span></div>
-                        <div className="stat-chip"><strong>{qlSelected.length ? qlSelected.join(' ') : '—'}</strong><span>Quality</span></div>
+            <div className="pr-content">
+                <div className="tool-topbar">
+                    <div className="tool-topbar-left">
+                        <nav className="breadcrumb">
+                            <span className="crumb-link" onClick={goBack}>Dashboard</span>
+                            <span className="crumb-sep">/</span>
+                            <span>Tools</span>
+                            <span className="crumb-sep">/</span>
+                            <span className="crumb-current">Photo &amp; pothole report</span>
+                        </nav>
+                        <div className="tool-title-row">
+                            <h1>Photo &amp; pothole report</h1>
+                            <span className="pill pill-draft">Draft · autosaved</span>
+                        </div>
+                    </div>
+                    <div className="tool-actions">
+                        {pdfUrl && (
+                            <>
+                                <a className="btn-outline sm" href={pdfUrl} download={`Photo Report - ${form.siteAddress || 'report'}.pdf`}>
+                                    <FontAwesomeIcon icon={faDownload} /> Download
+                                </a>
+                                <a className="btn-outline sm" href={pdfUrl} target="_blank" rel="noreferrer">
+                                    <FontAwesomeIcon icon={faUpRightFromSquare} /> Open
+                                </a>
+                            </>
+                        )}
+                        <button type="button" className="btn-outline" onClick={handleGenerate} disabled={loading}>Generate PDF</button>
+                        <button type="button" className="btn-yellow" onClick={handleGenerateAndEmail} disabled={loading}>
+                            <FontAwesomeIcon icon={faPaperPlane} /> {loading ? 'Working…' : 'Export & email PDF'}
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <div className="pr-content">
                 <Section step="1" title="Job details" subtitle="Appears on the report cover page">
                     <div className="field-grid">
                         <label>Date<input type="date" value={form.date} onChange={(e) => setField('date', e.target.value)} /></label>
@@ -343,32 +365,6 @@ const PhotoReport = ({ goBack }) => {
                     <p className="muted-note">A copy is always sent to <strong>{AUTO_REPORT_RECIPIENT}</strong>.</p>
                 </Section>
 
-                <div className="action-bar">
-                    <div className="action-bar-text">
-                        <strong>Ready to export?</strong>
-                        <span>{photos.length} photo{photos.length === 1 ? '' : 's'} · {potholeCount} pothole{potholeCount === 1 ? '' : 's'} will be included.</span>
-                        {sendStatus === 'sent' && <span className="send-ok"><FontAwesomeIcon icon={faPaperPlane} /> Email sent</span>}
-                        {sendStatus === 'error' && <span className="send-err">Email not sent — check setup</span>}
-                    </div>
-                    <div className="action-bar-buttons">
-                        {pdfUrl && (
-                            <>
-                                <a className="btn-ghost" href={pdfUrl} download={`Photo Report - ${form.siteAddress || 'report'}.pdf`}>
-                                    <FontAwesomeIcon icon={faDownload} /> Download
-                                </a>
-                                <a className="btn-ghost" href={pdfUrl} target="_blank" rel="noreferrer">
-                                    <FontAwesomeIcon icon={faUpRightFromSquare} /> Open
-                                </a>
-                            </>
-                        )}
-                        <button type="button" className="btn-ghost" onClick={handleGenerate} disabled={loading}>
-                            <FontAwesomeIcon icon={faFilePdf} /> Generate PDF
-                        </button>
-                        <button type="button" className="btn-primary" onClick={handleGenerateAndEmail} disabled={loading}>
-                            <FontAwesomeIcon icon={faPaperPlane} /> {loading ? 'Working…' : 'Generate & email'}
-                        </button>
-                    </div>
-                </div>
             </div>
 
             {editingPhoto && (

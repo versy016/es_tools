@@ -4,6 +4,7 @@ import SignaturePad from '../components/SignaturePad';
 import { useToast } from '../components/Toast';
 
 const SIG_KEY = 'es_tools_signature';
+const PROFILE_KEY = 'es_tools_profile';
 
 const Profile = () => {
     const showToast = useToast();
@@ -27,7 +28,16 @@ const Profile = () => {
             setSig(saved);
             if (padRef.current) padRef.current.fromDataURL(saved);
         }
+        try {
+            const p = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+            if (p) setProfile((prev) => ({ ...prev, ...p }));
+        } catch { /* ignore */ }
     }, []);
+
+    const saveProfile = () => {
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+        showToast('Profile saved');
+    };
 
     const save = () => {
         if (!padRef.current || padRef.current.isEmpty()) { showToast('Draw or upload a signature first'); return; }
@@ -74,7 +84,7 @@ const Profile = () => {
                         <input type="email" value={profile.email} placeholder="name@engsurveys.com.au" onChange={(e) => setField('email', e.target.value)} />
                     </label>
                     <div className="profile-actions">
-                        <button type="button" className="btn-charcoal" onClick={() => showToast('Profile saved')}>Save profile</button>
+                        <button type="button" className="btn-charcoal" onClick={saveProfile}>Save profile</button>
                         <button type="button" className="btn-outline" onClick={signOut}>Sign out</button>
                     </div>
                 </div>

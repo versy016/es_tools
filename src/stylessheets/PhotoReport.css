@@ -21,9 +21,63 @@
 .photo-report input:focus,
 .photo-report textarea:focus,
 .photo-report select:focus {
-    border-color: var(--primary);
+    border-color: var(--es-yellow);
     outline: none;
     box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+/* Tool topbar: breadcrumb + title + actions */
+.tool-topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--faint);
+    margin-bottom: 10px;
+}
+
+.crumb-link {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.crumb-link:hover {
+    color: var(--es-yellow-dark);
+}
+
+.crumb-current {
+    color: var(--ink);
+    font-weight: 700;
+}
+
+.tool-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.tool-title-row h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+}
+
+.tool-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 /* Hero band */

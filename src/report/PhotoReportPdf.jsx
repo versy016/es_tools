@@ -60,6 +60,13 @@ const styles = StyleSheet.create({
     qlBoxOn: { backgroundColor: ES_YELLOW, borderColor: ES_DARK },
     qlBoxText: { fontFamily: 'Helvetica-Bold', fontSize: 11 },
     comments: { borderWidth: 1, borderColor: BORDER, padding: 6, marginTop: 6, minHeight: 50 },
+    // Sign-off
+    signoff: { marginTop: 12, borderTopWidth: 1, borderTopColor: ES_YELLOW, paddingTop: 8 },
+    signoffTitle: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: '#666', marginBottom: 4, textTransform: 'uppercase' },
+    signoffImg: { height: 40, objectFit: 'contain', marginBottom: 2 },
+    signoffRule: { borderTopWidth: 1, borderTopColor: ES_DARK, width: 200, marginBottom: 3 },
+    signoffName: { fontSize: 11, fontFamily: 'Helvetica-Bold' },
+    signoffMeta: { fontSize: 8.5, color: '#444', marginTop: 1 },
     // Legend page
     legendRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
     legendDash: { width: 46, height: 8, marginRight: 10, borderWidth: 0.5, borderColor: '#999' },
@@ -171,6 +178,17 @@ const CoverPage = ({ job }) => {
 
             <View style={styles.sectionBar}><Text style={styles.sectionBarText}>COMMENTS</Text></View>
             <Text style={styles.comments}>{job.comments || ' '}</Text>
+
+            {job.signoff && (job.signoff.signature || job.signoff.fullName) ? (
+                <View style={styles.signoff} wrap={false}>
+                    <Text style={styles.signoffTitle}>Located &amp; reported by</Text>
+                    {job.signoff.signature ? <Image style={styles.signoffImg} src={job.signoff.signature} /> : null}
+                    <View style={styles.signoffRule} />
+                    <Text style={styles.signoffName}>{job.signoff.fullName || job.locatorName || ''}</Text>
+                    <Text style={styles.signoffMeta}>{[job.signoff.role, job.signoff.accreditation].filter(Boolean).join(' · ')}</Text>
+                    <Text style={styles.signoffMeta}>{[job.signoff.mobile, job.signoff.email].filter(Boolean).join(' · ')}</Text>
+                </View>
+            ) : null}
 
             <Footer />
         </Page>
