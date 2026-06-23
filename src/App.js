@@ -9,6 +9,7 @@ import amplifyconfig from './amplifyconfiguration.json';
 import studioTheme from './ui-components/studioTheme';
 import NavBar from './components/Navbar';
 import { ToastProvider } from './components/Toast';
+import { authTheme, AuthHeader } from './components/authConfig';
 import Dashboard from './screens/Dashboard';
 import Reports from './screens/Reports';
 import UserManagement from './screens/UserManagement';
@@ -71,15 +72,17 @@ const App = ({ signOut }) => {
 
 const AppWithAuth = () => (
   <BrowserRouter>
-    <Authenticator>
-      {({ signOut }) => (
-        <ThemeProvider theme={studioTheme}>
-          <ToastProvider>
-            <App signOut={signOut} />
-          </ToastProvider>
-        </ThemeProvider>
-      )}
-    </Authenticator>
+    <ThemeProvider theme={authTheme}>
+      <Authenticator components={{ Header: AuthHeader }}>
+        {({ signOut }) => (
+          <ThemeProvider theme={studioTheme}>
+            <ToastProvider>
+              <App signOut={signOut} />
+            </ToastProvider>
+          </ThemeProvider>
+        )}
+      </Authenticator>
+    </ThemeProvider>
   </BrowserRouter>
 );
 

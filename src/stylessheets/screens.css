@@ -653,6 +653,31 @@
     margin-top: 2px;
 }
 
+/* ---- Auth (login) branding ---- */
+[data-amplify-authenticator] {
+    --amplify-components-button-primary-background-color: var(--es-yellow);
+    padding: 40px 16px;
+}
+
+.auth-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 28px 0 6px;
+}
+
+.auth-wordmark {
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--ink);
+}
+
+.auth-tagline {
+    font-size: 13px;
+    color: var(--muted);
+}
+
 /* ---- Toast ---- */
 .toast {
     position: fixed;
