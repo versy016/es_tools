@@ -1,0 +1,216 @@
+/* ============================================================
+   Annotation engines — shared modal chrome + engine switcher
+   ============================================================ */
+
+.eng-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 20, 30, .82);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 12px;
+}
+
+.eng-modal {
+    width: 96vw;
+    max-width: 1500px;
+    height: 92vh;
+    background: var(--surface, #fff);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 22px 50px rgba(16, 24, 40, .35);
+}
+
+.eng-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #f4f6fa;
+    border-bottom: 1px solid #e3e8f0;
+}
+
+.eng-title {
+    font-weight: 600;
+    color: #1b2230;
+    font-size: 14px;
+}
+
+.eng-btn {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #d2d9e6;
+    background: #fff;
+    border-radius: 9px;
+    cursor: pointer;
+    color: #475467;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+}
+
+.eng-btn:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+.eng-btn.on {
+    background: #1b2230;
+    border-color: #1b2230;
+    color: #fff;
+}
+
+.eng-btn.danger:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+}
+
+.eng-divider {
+    width: 1px;
+    align-self: stretch;
+    background: #d2d9e6;
+    margin: 2px 4px;
+}
+
+.eng-swatches {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.eng-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 2px solid rgba(0, 0, 0, .15);
+    cursor: pointer;
+    padding: 0;
+}
+
+.eng-swatch.on {
+    border-color: #1b2230;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #2563eb;
+}
+
+.eng-swatches input[type="color"] {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #d2d9e6;
+    border-radius: 6px;
+    background: none;
+    cursor: pointer;
+}
+
+.eng-range {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 700;
+}
+
+.eng-range input[type="range"] {
+    width: 90px;
+    accent-color: #2563eb;
+}
+
+.eng-spacer {
+    flex: 1;
+}
+
+.eng-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+}
+
+.eng-action.save { background: #16a34a; }
+.eng-action.save:hover { background: #15803d; }
+.eng-action.cancel { background: #64748b; }
+.eng-action.cancel:hover { background: #475569; }
+
+.eng-stage {
+    flex: 1;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #11151d;
+    overflow: auto;
+}
+
+.eng-loading {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+/* Bottom-centre live engine switcher (floats above each engine's own UI) */
+.engine-switch {
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(27, 34, 48, .96);
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 999px;
+    padding: 6px 10px;
+    z-index: 3000;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .35);
+}
+
+.engine-switch-label {
+    color: #9ca3af;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 0 6px;
+}
+
+.engine-chip {
+    border: none;
+    background: transparent;
+    color: #d7deea;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 13px;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.engine-chip:hover {
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
+}
+
+.engine-chip.on {
+    background: #f5a623;
+    color: #1b2230;
+}
+
+/* Fabric needs the canvas wrapper to size naturally */
+.eng-stage .canvas-container {
+    box-shadow: 0 4px 18px rgba(0, 0, 0, .4);
+}

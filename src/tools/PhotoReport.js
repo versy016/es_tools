@@ -11,7 +11,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { setupClientsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
 import { loadGoogleMapsScript } from '../scripts/googleMaps';
 import { UTILITIES, QUALITY_LEVELS } from '../report/legendColors';
-import PhotoEditor from '../components/PhotoEditor';
+import AnnotatorSwitch from '../components/AnnotatorSwitch';
 import CameraCapture from '../components/CameraCapture';
 import PotholePanel from '../components/PotholePanel';
 import PhotoReportDoc from '../report/PhotoReportPdf';
@@ -142,8 +142,9 @@ const PhotoReport = ({ goBack }) => {
 
     const editingPhoto = photos.find((p) => p.id === editingPhotoId);
 
-    const handleEditorSave = ({ flattenedDataUrl, designState }) => {
-        updatePhoto(editingPhotoId, { flattenedDataUrl, designState });
+    const handleEditorSave = (result) => {
+        updatePhoto(editingPhotoId, { flattenedDataUrl: result.flattenedDataUrl, designState: result.designState });
+        setEditingPhotoId(null);
     };
 
     const reportId = useRef(`rep_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
@@ -383,7 +384,7 @@ const PhotoReport = ({ goBack }) => {
             </div>
 
             {editingPhoto && (
-                <PhotoEditor photo={editingPhoto} onSave={handleEditorSave} onClose={() => setEditingPhotoId(null)} />
+                <AnnotatorSwitch photo={editingPhoto} onSave={handleEditorSave} onClose={() => setEditingPhotoId(null)} />
             )}
 
             {showCamera && (
