@@ -16,6 +16,8 @@ import CameraCapture from '../components/CameraCapture';
 import PotholePanel from '../components/PotholePanel';
 import PhotoReportDoc from '../report/PhotoReportPdf';
 import { useToast } from '../components/Toast';
+import { saveReport } from '../services/reportsService';
+import { getSignoff } from '../services/profileService';
 
 // Internal copy of every generated report is emailed here.
 // TODO: change to bgosling@engsurveys.com.au after testing.
@@ -144,30 +146,42 @@ const PhotoReport = ({ goBack }) => {
         updatePhoto(editingPhotoId, { flattenedDataUrl, designState });
     };
 
-    const loadSignoff = () => {
-        try {
-            const profile = JSON.parse(localStorage.getItem('es_tools_profile') || '{}');
-            const signature = localStorage.getItem('es_tools_signature') || '';
-            return { ...profile, signature };
-        } catch {
-            return {};
-        }
-    };
+    const reportId = useRef(`rep_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
 
     const buildPdfBlob = async () => {
-        const job = { ...form, utilitiesLocated, qualityLevels, photos, signoff: loadSignoff() };
+        const job = { ...form, utilitiesLocated, qualityLevels, photos, signoff: await getSignoff() };
         const blob = await pdf(<PhotoReportDoc job={job} />).toBlob();
         if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         setPdfUrl(URL.createObjectURL(blob));
         return blob;
     };
 
+    const persistReport = async (blob, status) => {
+        const potholeCount = photos.reduce((n, p) => n + (p.potholes ? p.potholes.length : 0), 0);
+        await saveReport({
+            id: reportId.current,
+            blob,
+            meta: {
+                id: reportId.current,
+                title: `Photo report — ${form.siteAddress || 'Untitled site'}`,
+                meta: `${photos.length} photo${photos.length === 1 ? '' : 's'} · ${potholeCount} pothole${potholeCount === 1 ? '' : 's'} · ${new Date().toLocaleDateString('en-AU')}`,
+                siteAddress: form.siteAddress,
+                client: emailTo || form.clientName || '',
+                status,
+                createdAt: Date.now(),
+                photoCount: photos.length,
+                potholeCount,
+            },
+        });
+    };
+
     const handleGenerate = async () => {
         if (photos.length === 0) { alert('Add at least one photo before generating the report.'); return; }
         setLoading(true);
         try {
-            await buildPdfBlob();
-            showToast('PDF generated');
+            const blob = await buildPdfBlob();
+            await persistReport(blob, 'Draft');
+            showToast('PDF generated & saved');
         } catch (err) {
             console.error('Error generating PDF', err);
             alert('Something went wrong generating the PDF. See console for details.');
@@ -204,6 +218,7 @@ const PhotoReport = ({ goBack }) => {
                 }),
             });
             if (!response.ok) throw new Error(`Email endpoint returned ${response.status}`);
+            await persistReport(blob, 'Sent');
             showToast('Branded PDF generated & emailed to client');
         } catch (err) {
             console.error('Error sending email', err);

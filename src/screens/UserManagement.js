@@ -1,36 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useToast } from '../components/Toast';
+import EmptyState from '../components/EmptyState';
+import { listUsers, setUserActive, inviteUser, isConfigured } from '../services/usersService';
 
-const USERS = [
-    { id: 'u1', name: 'Ben Gosling', email: 'bgosling@engsurveys.com.au', role: 'Manager', tools: ['Photo report', 'Service location'], active: true },
-    { id: 'u2', name: 'Ethan Humphries', email: 'ehumphries@engsurveys.com.au', role: 'Surveyor', tools: ['Photo report'], active: true },
-    { id: 'u3', name: 'Shivam Verma', email: 'sverma@engsurveys.com.au', role: 'Admin', tools: ['Photo report', 'Service location', 'Site survey'], active: true },
-    { id: 'u4', name: 'Dave Mitchell', email: 'dmitchell@engsurveys.com.au', role: 'Surveyor', tools: ['Photo report'], active: false },
-];
-
-const AUDIT = [
-    { who: 'Shivam Verma', what: 'invited dmitchell@engsurveys.com.au as Surveyor', when: 'Today, 9:14am' },
-    { who: 'Ben Gosling', what: 'approved report SL‑20448', when: 'Yesterday, 4:02pm' },
-    { who: 'Shivam Verma', what: 'assigned Site survey to E. Humphries', when: '21 Jun, 11:30am' },
-];
-
-const roleClass = (r) => `pill pill-role-${r.toLowerCase()}`;
-const initials = (n) => n.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+const roleClass = (r) => `pill pill-role-${String(r || 'surveyor').toLowerCase()}`;
+const initials = (n) => (n || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
 const UserManagement = () => {
     const showToast = useToast();
-    const [users, setUsers] = useState(USERS);
+    const [data, setData] = useState(null); // null = loading
+    const configured = isConfigured();
 
+    const refresh = () => listUsers().then(setData);
+    useEffect(() => { refresh(); }, []);
+
+    const users = (data && data.users) || [];
+    const audit = (data && data.audit) || [];
     const total = users.length;
     const active = users.filter((u) => u.active).length;
     const pending = users.filter((u) => !u.active).length;
 
-    const toggle = (id) => {
-        setUsers((prev) => prev.map((u) => {
-            if (u.id !== id) return u;
-            showToast(`${u.name} ${u.active ? 'deactivated' : 'activated'}`);
-            return { ...u, active: !u.active };
-        }));
+    const toggle = async (u) => {
+        const ok = await setUserActive(u.username || u.email, !u.active);
+        if (ok) { showToast(`${u.name || u.email} ${u.active ? 'deactivated' : 'activated'}`); refresh(); }
+        else showToast('Could not update user');
+    };
+
+    const invite = async () => {
+        const email = window.prompt('Email address to invite:');
+        if (!email) return;
+        const ok = await inviteUser(email, 'Surveyor');
+        if (ok) { showToast('Invite sent'); refresh(); }
+        else showToast('Could not send invite');
     };
 
     return (
@@ -40,7 +41,7 @@ const UserManagement = () => {
                     <h1>User management</h1>
                     <p>Manage who can access ES Tools and what they can do.</p>
                 </div>
-                <button type="button" className="btn-yellow" onClick={() => showToast('Invite sent')}>
+                <button type="button" className="btn-yellow" onClick={invite} disabled={!configured}>
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M23 11h-6" /></svg>
                     Invite user
                 </button>
@@ -52,33 +53,46 @@ const UserManagement = () => {
                 <div className="stat-tile"><div className="stat-label">Pending invites</div><div className="stat-value">{pending}</div></div>
             </div>
 
-            <div className="list-card">
-                <div className="user-row user-head">
-                    <span>User</span><span>Role</span><span>Tools</span><span>Status</span><span></span>
+            {data === null ? (
+                <div className="list-card"><div className="loading-row">Loading users…</div></div>
+            ) : users.length === 0 ? (
+                <EmptyState
+                    title={configured ? 'No users found' : 'User management not connected'}
+                    sub={configured
+                        ? 'Invite your first team member to get started.'
+                        : 'Set REACT_APP_ADMIN_ENDPOINT and deploy the admin service to manage users and roles.'}
+                />
+            ) : (
+                <div className="list-card">
+                    <div className="user-row user-head"><span>User</span><span>Role</span><span>Tools</span><span>Status</span><span></span></div>
+                    {users.map((u) => (
+                        <div key={u.username || u.email} className="user-row">
+                            <div className="user-cell">
+                                <span className="user-avatar">{initials(u.name)}</span>
+                                <div><div className="user-name">{u.name || u.email}</div><div className="user-email">{u.email}</div></div>
+                            </div>
+                            <span className={roleClass(u.role)}>{u.role || 'Surveyor'}</span>
+                            <div className="tool-chips">
+                                {(u.tools || []).map((t) => <span key={t} className="tool-chip">{t}</span>)}
+                            </div>
+                            <span className={`status-dot ${u.active ? 'active' : 'inactive'}`}>
+                                <span className="dot" />{u.active ? 'Active' : 'Inactive'}
+                            </span>
+                            <button type="button" className="btn-outline sm" onClick={() => toggle(u)}>
+                                {u.active ? 'Deactivate' : 'Activate'}
+                            </button>
+                        </div>
+                    ))}
                 </div>
-                {users.map((u) => (
-                    <div key={u.id} className="user-row">
-                        <div className="user-cell">
-                            <span className="user-avatar">{initials(u.name)}</span>
-                            <div><div className="user-name">{u.name}</div><div className="user-email">{u.email}</div></div>
-                        </div>
-                        <span className={roleClass(u.role)}>{u.role}</span>
-                        <div className="tool-chips">
-                            {u.tools.map((t) => <span key={t} className="tool-chip">{t}</span>)}
-                        </div>
-                        <span className={`status-dot ${u.active ? 'active' : 'inactive'}`}>
-                            <span className="dot" />{u.active ? 'Active' : 'Inactive'}
-                        </span>
-                        <button type="button" className="btn-outline sm" onClick={() => toggle(u.id)}>
-                            {u.active ? 'Deactivate' : 'Activate'}
-                        </button>
-                    </div>
-                ))}
-            </div>
+            )}
 
             <div className="audit-card">
                 <h2>Audit log</h2>
-                {AUDIT.map((a, i) => (
+                {data === null ? (
+                    <div className="loading-row">Loading…</div>
+                ) : audit.length === 0 ? (
+                    <EmptyState title="No activity yet" sub="Administrative actions will be logged here." />
+                ) : audit.map((a, i) => (
                     <div key={i} className="audit-row">
                         <span className="audit-dot" />
                         <div className="audit-text"><strong>{a.who}</strong> {a.what}</div>

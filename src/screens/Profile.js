@@ -2,9 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import SignaturePad from '../components/SignaturePad';
 import { useToast } from '../components/Toast';
-
-const SIG_KEY = 'es_tools_signature';
-const PROFILE_KEY = 'es_tools_profile';
+import { loadProfile, saveProfile, loadSignature, saveSignature } from '../services/profileService';
 
 const Profile = () => {
     const showToast = useToast();
@@ -15,7 +13,7 @@ const Profile = () => {
     const [profile, setProfile] = useState({
         fullName: userName || '',
         role: 'Surveyor',
-        accreditation: 'DBYD Accredited Locator',
+        accreditation: '',
         mobile: '',
         email: '',
     });
@@ -23,31 +21,29 @@ const Profile = () => {
     const setField = (k, v) => setProfile((p) => ({ ...p, [k]: v }));
 
     useEffect(() => {
-        const saved = localStorage.getItem(SIG_KEY);
-        if (saved) {
-            setSig(saved);
-            if (padRef.current) padRef.current.fromDataURL(saved);
-        }
-        try {
-            const p = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
-            if (p) setProfile((prev) => ({ ...prev, ...p }));
-        } catch { /* ignore */ }
+        loadProfile().then((p) => { if (p) setProfile((prev) => ({ ...prev, ...p })); });
+        loadSignature().then((saved) => {
+            if (saved) {
+                setSig(saved);
+                if (padRef.current) padRef.current.fromDataURL(saved);
+            }
+        });
     }, []);
 
-    const saveProfile = () => {
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    const onSaveProfile = async () => {
+        await saveProfile(profile);
         showToast('Profile saved');
     };
 
-    const save = () => {
+    const onSaveSignature = async () => {
         if (!padRef.current || padRef.current.isEmpty()) { showToast('Draw or upload a signature first'); return; }
         const url = padRef.current.toDataURL();
-        localStorage.setItem(SIG_KEY, url);
+        await saveSignature(url);
         setSig(url);
         showToast('Signature saved');
     };
 
-    const clear = () => { padRef.current && padRef.current.clear(); };
+    const clear = () => { if (padRef.current) padRef.current.clear(); };
 
     const upload = (e) => {
         const file = e.target.files[0];
@@ -75,7 +71,7 @@ const Profile = () => {
                         <input type="text" value={profile.role} readOnly className="readonly" />
                     </label>
                     <label className="field">Accreditation / licence
-                        <input type="text" value={profile.accreditation} onChange={(e) => setField('accreditation', e.target.value)} />
+                        <input type="text" value={profile.accreditation} placeholder="e.g. DBYD Accredited Locator" onChange={(e) => setField('accreditation', e.target.value)} />
                     </label>
                     <label className="field">Mobile
                         <input type="text" value={profile.mobile} placeholder="04xx xxx xxx" onChange={(e) => setField('mobile', e.target.value)} />
@@ -84,7 +80,7 @@ const Profile = () => {
                         <input type="email" value={profile.email} placeholder="name@engsurveys.com.au" onChange={(e) => setField('email', e.target.value)} />
                     </label>
                     <div className="profile-actions">
-                        <button type="button" className="btn-charcoal" onClick={saveProfile}>Save profile</button>
+                        <button type="button" className="btn-charcoal" onClick={onSaveProfile}>Save profile</button>
                         <button type="button" className="btn-outline" onClick={signOut}>Sign out</button>
                     </div>
                 </div>
@@ -97,7 +93,7 @@ const Profile = () => {
                         <button type="button" className="btn-outline sm" onClick={clear}>Clear</button>
                         <button type="button" className="btn-outline sm" onClick={() => fileRef.current && fileRef.current.click()}>Upload</button>
                         <input ref={fileRef} type="file" accept="image/*" hidden onChange={upload} />
-                        <button type="button" className="btn-yellow sm" onClick={save}>Save signature</button>
+                        <button type="button" className="btn-yellow sm" onClick={onSaveSignature}>Save signature</button>
                     </div>
 
                     <div className="sig-preview-label">How this appears on reports</div>

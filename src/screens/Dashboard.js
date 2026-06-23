@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { TOOLS } from '../data/toolsRegistry';
 import ToolTile from '../components/ToolTile';
+import EmptyState from '../components/EmptyState';
 import { useToast } from '../components/Toast';
+import { listReports, getReportUrl } from '../services/reportsService';
 
 const FAVS_KEY = 'es_tools_favs';
 const loadFavs = () => {
@@ -17,14 +19,8 @@ const greeting = () => {
 };
 
 const todayLabel = () => new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
-
-const statusClass = (s) => `pill pill-${s.toLowerCase()}`;
-
-const RECENT = [
-    { id: 'r1', mono: 'WC', title: 'Photo report — Westfield Carpark', meta: 'Job SL‑20471 · 4 photos · autosaved 2m ago', status: 'Draft', badgeBg: '#1B2230', badgeFg: '#F5A623' },
-    { id: 'r2', mono: 'YK', title: 'Photo report — Yankalilla', meta: 'Job SL‑20455 · Sent 23 Jun', status: 'Sent', badgeBg: '#FEF3DD', badgeFg: '#9A6B00' },
-    { id: 'r3', mono: 'MS', title: 'Service location — Main South Rd', meta: 'Job SL‑20448 · Approved 21 Jun', status: 'Approved', badgeBg: '#E9F6F0', badgeFg: '#1E7A52' },
-];
+const statusClass = (s) => `pill pill-${String(s || 'draft').toLowerCase()}`;
+const monogram = (s) => (s || 'PR').replace(/[^A-Za-z]/g, ' ').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || 'PR';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -32,12 +28,15 @@ const Dashboard = () => {
     const { search = '', userName } = useOutletContext() || {};
     const [favs, setFavs] = useState(loadFavs);
     const [view, setView] = useState('grid');
+    const [reports, setReports] = useState(null); // null = loading
+
+    useEffect(() => { listReports().then(setReports); }, []);
 
     const firstName = (userName || 'there').split(' ')[0];
     const q = search.trim().toLowerCase();
-    const tools = q
-        ? TOOLS.filter((t) => (t.name + ' ' + t.desc).toLowerCase().includes(q))
-        : TOOLS;
+    const tools = q ? TOOLS.filter((t) => (t.name + ' ' + t.desc).toLowerCase().includes(q)) : TOOLS;
+    const recent = (reports || []).slice(0, 4);
+    const draftCount = (reports || []).filter((r) => (r.status || '').toLowerCase() === 'draft').length;
 
     const toggleFav = (id) => {
         setFavs((prev) => {
@@ -52,12 +51,18 @@ const Dashboard = () => {
         else showToast(`${tool.name} is coming soon`);
     };
 
+    const openReport = async (r) => {
+        const url = await getReportUrl(r.id);
+        if (url) window.open(url, '_blank', 'noreferrer');
+        else showToast('Could not open this report');
+    };
+
     return (
         <div className="page dc-pop">
             <div className="page-head">
                 <p className="page-eyebrow">{todayLabel()}</p>
                 <h1>{greeting()}, {firstName}</h1>
-                <p>You have 2 drafts in progress — pick up where you left off.</p>
+                <p>{draftCount > 0 ? `You have ${draftCount} draft${draftCount === 1 ? '' : 's'} in progress.` : 'Pick a tool to start a new report.'}</p>
             </div>
 
             <div className="resume-card" onClick={() => navigate('/tools/photo-report')}>
@@ -69,11 +74,11 @@ const Dashboard = () => {
                     </svg>
                 </div>
                 <div className="resume-body">
-                    <div className="resume-eyebrow">CONTINUE WHERE YOU LEFT OFF</div>
-                    <div className="resume-title">Photo report — Westfield Carpark</div>
-                    <div className="resume-meta">Job SL‑20471 · 4 photos · 3 potholes · autosaved 2m ago</div>
+                    <div className="resume-eyebrow">{recent.length ? 'CONTINUE WHERE YOU LEFT OFF' : 'START HERE'}</div>
+                    <div className="resume-title">{recent.length ? recent[0].title : 'New photo & pothole report'}</div>
+                    <div className="resume-meta">{recent.length ? recent[0].meta : 'Capture photos, annotate, attach potholes and export a branded PDF.'}</div>
                 </div>
-                <div className="resume-cta">Resume
+                <div className="resume-cta">{recent.length ? 'Resume' : 'Start'}
                     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#F5A623" strokeWidth="2.4"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                 </div>
             </div>
@@ -114,14 +119,18 @@ const Dashboard = () => {
 
             <div className="recent-card">
                 <h2>Recent reports</h2>
-                {RECENT.map((r) => (
-                    <div key={r.id} className="recent-row" onClick={() => navigate('/reports')}>
-                        <div className="recent-mono" style={{ background: r.badgeBg, color: r.badgeFg }}>{r.mono}</div>
+                {reports === null ? (
+                    <div className="loading-row">Loading…</div>
+                ) : recent.length === 0 ? (
+                    <EmptyState title="No reports yet" sub="Reports you generate will appear here." />
+                ) : recent.map((r) => (
+                    <div key={r.id} className="recent-row" onClick={() => openReport(r)}>
+                        <div className="recent-mono" style={{ background: '#1B2230', color: '#F5A623' }}>{monogram(r.title)}</div>
                         <div className="recent-text">
                             <div className="recent-title">{r.title}</div>
                             <div className="recent-meta">{r.meta}</div>
                         </div>
-                        <span className={statusClass(r.status)}>{r.status}</span>
+                        <span className={statusClass(r.status)}>{r.status || 'Draft'}</span>
                     </div>
                 ))}
             </div>

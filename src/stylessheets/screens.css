@@ -267,6 +267,42 @@
     margin-bottom: 4px;
 }
 
+.empty-sub {
+    font-size: 13px;
+    color: var(--faint);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 46px 24px;
+    color: var(--faint);
+    background: var(--surface);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+}
+
+.empty-state-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 4px;
+}
+
+.empty-state-sub {
+    font-size: 13px;
+}
+
+.empty-state-action {
+    margin-top: 14px;
+}
+
+.loading-row {
+    padding: 26px;
+    text-align: center;
+    color: var(--faint);
+    font-size: 14px;
+}
+
 /* ---- Recent / list cards ---- */
 .recent-card,
 .list-card,
