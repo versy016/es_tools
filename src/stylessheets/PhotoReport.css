@@ -80,6 +80,24 @@
     flex-wrap: wrap;
 }
 
+.tool-actions-bottom {
+    justify-content: flex-end;
+    margin-top: 8px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+@media (max-width: 600px) {
+    .tool-actions-bottom {
+        justify-content: stretch;
+    }
+    .tool-actions-bottom .btn-yellow,
+    .tool-actions-bottom .btn-outline {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
 /* Hero band */
 .pr-hero {
     background: var(--surface-2);

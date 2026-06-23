@@ -246,22 +246,6 @@ const PhotoReport = ({ goBack }) => {
                             <span className="pill pill-draft">Draft · autosaved</span>
                         </div>
                     </div>
-                    <div className="tool-actions">
-                        {pdfUrl && (
-                            <>
-                                <a className="btn-outline sm" href={pdfUrl} download={`Photo Report - ${form.siteAddress || 'report'}.pdf`}>
-                                    <FontAwesomeIcon icon={faDownload} /> Download
-                                </a>
-                                <a className="btn-outline sm" href={pdfUrl} target="_blank" rel="noreferrer">
-                                    <FontAwesomeIcon icon={faUpRightFromSquare} /> Open
-                                </a>
-                            </>
-                        )}
-                        <button type="button" className="btn-outline" onClick={handleGenerate} disabled={loading}>Generate PDF</button>
-                        <button type="button" className="btn-yellow" onClick={handleGenerateAndEmail} disabled={loading}>
-                            <FontAwesomeIcon icon={faPaperPlane} /> {loading ? 'Working…' : 'Export & email PDF'}
-                        </button>
-                    </div>
                 </div>
 
                 <Section step="1" title="Job details" subtitle="Appears on the report cover page">
@@ -380,6 +364,23 @@ const PhotoReport = ({ goBack }) => {
                     </div>
                     <p className="muted-note">A copy is always sent to <strong>{AUTO_REPORT_RECIPIENT}</strong>.</p>
                 </Section>
+
+                <div className="tool-actions tool-actions-bottom">
+                    {pdfUrl && (
+                        <>
+                            <a className="btn-outline sm" href={pdfUrl} download={`Photo Report - ${form.siteAddress || 'report'}.pdf`}>
+                                <FontAwesomeIcon icon={faDownload} /> Download
+                            </a>
+                            <a className="btn-outline sm" href={pdfUrl} target="_blank" rel="noreferrer">
+                                <FontAwesomeIcon icon={faUpRightFromSquare} /> Open
+                            </a>
+                        </>
+                    )}
+                    <button type="button" className="btn-outline" onClick={handleGenerate} disabled={loading}>Generate PDF</button>
+                    <button type="button" className="btn-yellow" onClick={handleGenerateAndEmail} disabled={loading}>
+                        <FontAwesomeIcon icon={faPaperPlane} /> {loading ? 'Working…' : 'Export & email PDF'}
+                    </button>
+                </div>
 
             </div>
 
