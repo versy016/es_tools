@@ -4,14 +4,16 @@ import '../stylessheets/engines.css';
 // Annotation engines, lazy-loaded so each library only downloads when selected.
 const KonvaEngine = lazy(() => import('./PhotoAnnotator'));
 const FabricEngine = lazy(() => import('./engines/FabricEditor'));
+const ExcalidrawEngine = lazy(() => import('./engines/ExcalidrawEditor'));
+const TuiEngine = lazy(() => import('./engines/TuiEditor'));
 const SketchEngine = lazy(() => import('./engines/SketchEditor'));
 const FilerobotEngine = lazy(() => import('./PhotoEditor'));
 
-// Excalidraw is available in engines/ExcalidrawEditor.js but needs a webpack override
-// (CRACO) to build under CRA — re-enable once that's added.
 const ENGINES = [
     { id: 'konva', name: 'Custom', Comp: KonvaEngine },
     { id: 'fabric', name: 'Fabric.js', Comp: FabricEngine },
+    { id: 'excalidraw', name: 'Excalidraw', Comp: ExcalidrawEngine },
+    { id: 'tui', name: 'Toast UI', Comp: TuiEngine },
     { id: 'sketch', name: 'Freehand', Comp: SketchEngine },
     { id: 'filerobot', name: 'Filerobot', Comp: FilerobotEngine },
 ];
