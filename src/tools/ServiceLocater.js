@@ -13,6 +13,7 @@ const ServiceLocater = ({ goBack }) => {
     const [address, setAddress] = useState('');
     const [docLink, setDocLink] = useState('');
     const [pdfLink, setPdfLink] = useState('');
+    const [dbydByClient, setDbydByClient] = useState(false);
     const [email, setEmail] = useState('');
     const [note, setNote] = useState('');
     const [notes, setNotes] = useState([
@@ -242,6 +243,7 @@ const ServiceLocater = ({ goBack }) => {
                 dbydplans: e.target.dbydPlansCoverAreas.value,
                 SWMS: e.target.swmsCompleted.value,
                 plansupply: e.target.dbydPlansSupplied.value,
+                dbydByClient,
                 sitename: address,
                 addnotes: notes,
                 photos: imagePreviews,
@@ -419,7 +421,11 @@ const ServiceLocater = ({ goBack }) => {
 
                     <section className="dbyd">
                         <h2>DBYD Details</h2>
-                        <div className="dbyd-grid">
+                        <label className="dbyd-client-toggle">
+                            <input type="checkbox" checked={dbydByClient} onChange={(e) => setDbydByClient(e.target.checked)} />
+                            DBYD to be supplied by client
+                        </label>
+                        <div className="dbyd-grid" style={dbydByClient ? { opacity: 0.45, pointerEvents: 'none' } : undefined}>
                             <label>
                                 DBYD Job Number:
                                 <input type="text" name="dbydJobNumber" />
@@ -461,8 +467,10 @@ const ServiceLocater = ({ goBack }) => {
 
                     <section className="site-notes">
                         <h2>Site Notes</h2>
-                        <textarea name="note" value={note} onChange={handleNoteChange} rows="4" style={{ width: '45rem' }}></textarea>
-                        <button type="button" onClick={addNote}>Add Note</button>
+                        <div className="note-input">
+                            <textarea name="note" value={note} onChange={handleNoteChange} rows="4"></textarea>
+                            <button type="button" className="add-note-btn" onClick={addNote}>Add Note</button>
+                        </div>
                         <ul>
                             {notes.map((note, index) => (
                                 <li key={index}>{note}</li>

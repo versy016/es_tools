@@ -62,6 +62,7 @@ const buildData = (form) => {
         dbydplans: form.dbydplans || '',
         SWMS: form.SWMS || '',
         plansupply: form.plansupply || '',
+        dbydByClient: !!form.dbydByClient,
         sitename: form.sitename || '',
         addnotes: Array.isArray(form.addnotes) ? form.addnotes.join('\n') : (form.addnotes || ''),
         photos: (form.photos || []).map((p) => ({ data: p })),

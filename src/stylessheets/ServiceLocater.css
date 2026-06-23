@@ -276,9 +276,36 @@ input {
 }
 
 /* Site notes list */
+.note-input {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
 .site-notes textarea {
     width: 100%;
     resize: vertical;
+}
+
+.add-note-btn {
+    align-self: flex-start;
+}
+
+/* DBYD supplied-by-client toggle */
+.dbyd-client-toggle {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+
+.dbyd-client-toggle input {
+    width: 16px;
+    height: 16px;
 }
 
 .site-notes ul {
