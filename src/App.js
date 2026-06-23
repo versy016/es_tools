@@ -1,15 +1,11 @@
 import './App.css';
 import './stylessheets/screens.css';
-import { fetchUserAttributes } from 'aws-amplify/auth';
-import React, { useEffect, useState } from 'react';
-import { Authenticator, ThemeProvider } from '@aws-amplify/ui-react';
-import { Amplify } from 'aws-amplify';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
-import amplifyconfig from './amplifyconfiguration.json';
-import studioTheme from './ui-components/studioTheme';
 import NavBar from './components/Navbar';
 import { ToastProvider } from './components/Toast';
-import { authTheme, AuthHeader } from './components/authConfig';
+import { AuthProvider, useAuth } from './auth/AuthProvider';
+import Login from './screens/Login';
 import Dashboard from './screens/Dashboard';
 import Reports from './screens/Reports';
 import UserManagement from './screens/UserManagement';
@@ -17,15 +13,16 @@ import Profile from './screens/Profile';
 import ServiceLocater from './tools/ServiceLocater';
 import PhotoReport from './tools/PhotoReport';
 
-Amplify.configure(amplifyconfig);
+const roleLabel = (r) => (r || 'surveyor').replace(/^./, (c) => c.toUpperCase());
 
-const AppShell = ({ userName, signOut }) => {
+const AppShell = () => {
+  const { userName, role, signOut } = useAuth();
   const [search, setSearch] = useState('');
   return (
     <div className="App">
-      <NavBar userName={userName} search={search} onSearch={setSearch} />
+      <NavBar userName={userName} role={roleLabel(role)} search={search} onSearch={setSearch} />
       <main className="app-main">
-        <Outlet context={{ search, userName, signOut }} />
+        <Outlet context={{ search, userName, signOut, role }} />
       </main>
     </div>
   );
@@ -39,51 +36,45 @@ const withBack = (Component) => function Wrapped() {
 const PhotoReportRoute = withBack(PhotoReport);
 const ServiceLocaterRoute = withBack(ServiceLocater);
 
-const App = ({ signOut }) => {
-  const [userName, setUserName] = useState(null);
+const Routed = () => (
+  <Routes>
+    <Route element={<AppShell />}>
+      <Route index element={<Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/reports" element={<Reports />} />
+      <Route path="/users" element={<UserManagement />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/tools/photo-report" element={<PhotoReportRoute />} />
+      <Route path="/tools/service-location" element={<ServiceLocaterRoute />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Route>
+  </Routes>
+);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const attributes = await fetchUserAttributes();
-        setUserName(attributes.name);
-      } catch (error) {
-        console.error(error);
-        setUserName('User');
-      }
-    })();
-  }, []);
+const ConfigureNotice = () => (
+  <div className="boot-notice">
+    <h2>Connect Supabase</h2>
+    <p>Set <code>REACT_APP_SUPABASE_URL</code> and <code>REACT_APP_SUPABASE_ANON_KEY</code> in a
+      <code>.env</code> file, then restart. See <code>supabase/README.md</code>.</p>
+  </div>
+);
 
-  return (
-    <Routes>
-      <Route element={<AppShell userName={userName} signOut={signOut} />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/users" element={<UserManagement />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/tools/photo-report" element={<PhotoReportRoute />} />
-        <Route path="/tools/service-location" element={<ServiceLocaterRoute />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Route>
-    </Routes>
-  );
+const Gate = () => {
+  const { configured, loading, session } = useAuth();
+  if (!configured) return <ConfigureNotice />;
+  if (loading) return <div className="boot-notice"><p>Loading…</p></div>;
+  if (!session) return <Login />;
+  return <Routed />;
 };
 
-const AppWithAuth = () => (
+const AppRoot = () => (
   <BrowserRouter>
-    <ThemeProvider theme={authTheme}>
-      <Authenticator components={{ Header: AuthHeader }}>
-        {({ signOut }) => (
-          <ThemeProvider theme={studioTheme}>
-            <ToastProvider>
-              <App signOut={signOut} />
-            </ToastProvider>
-          </ThemeProvider>
-        )}
-      </Authenticator>
-    </ThemeProvider>
+    <AuthProvider>
+      <ToastProvider>
+        <Gate />
+      </ToastProvider>
+    </AuthProvider>
   </BrowserRouter>
 );
 
-export default AppWithAuth;
+export default AppRoot;

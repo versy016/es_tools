@@ -1,46 +1,76 @@
-import { uploadData, list, getUrl, downloadData, remove } from 'aws-amplify/storage';
+import { supabase, REPORTS_BUCKET } from '../lib/supabase';
 
-// Reports are persisted to the app's S3 bucket (per-user, accessLevel "private").
-// PDF lives at reports/<id>.pdf and its metadata at reports/<id>.json.
-// Every call is guarded so the UI degrades to an empty state if storage is unavailable.
+// Reports: PDF in the Supabase "reports" bucket (path <uid>/<id>.pdf), metadata in the
+// "reports" table. RLS gives each user their own + lets managers/admins see all.
+// Every call is guarded so the UI degrades to an empty state if Supabase is unavailable.
 
-const OPTS = { accessLevel: 'private' };
-const keyOf = (i) => i.key || i.path || '';
+const uid = async () => {
+    const { data } = await supabase.auth.getUser();
+    return data?.user?.id || null;
+};
+
+const rowToReport = (r) => ({
+    id: r.id,
+    title: r.title,
+    meta: r.meta,
+    status: r.status,
+    siteAddress: r.site_address,
+    client: r.client,
+    storagePath: r.storage_path,
+    createdAt: r.created_at ? new Date(r.created_at).getTime() : 0,
+});
 
 export const saveReport = async ({ id, blob, meta }) => {
+    if (!supabase) return false;
     try {
-        await uploadData({ key: `reports/${id}.pdf`, data: blob, options: { ...OPTS, contentType: 'application/pdf' } }).result;
-        const metaBlob = new Blob([JSON.stringify(meta)], { type: 'application/json' });
-        await uploadData({ key: `reports/${id}.json`, data: metaBlob, options: { ...OPTS, contentType: 'application/json' } }).result;
+        const userId = await uid();
+        const path = `${userId}/${id}.pdf`;
+        const up = await supabase.storage.from(REPORTS_BUCKET).upload(path, blob, { upsert: true, contentType: 'application/pdf' });
+        if (up.error) throw up.error;
+        const { error } = await supabase.from('reports').upsert({
+            id,
+            title: meta.title,
+            site_address: meta.siteAddress,
+            client: meta.client,
+            status: meta.status,
+            photo_count: meta.photoCount,
+            pothole_count: meta.potholeCount,
+            storage_path: path,
+            meta: meta.meta,
+        });
+        if (error) throw error;
         return true;
     } catch (err) {
-        console.warn('saveReport failed (storage unavailable?)', err);
+        console.warn('saveReport failed', err);
         return false;
     }
 };
 
 export const listReports = async () => {
+    if (!supabase) return [];
     try {
-        const res = await list({ prefix: 'reports/', options: { ...OPTS, listAll: true } });
-        const metas = (res.items || []).filter((i) => keyOf(i).endsWith('.json'));
-        const out = [];
-        for (const m of metas) {
-            try {
-                const { body } = await downloadData({ key: keyOf(m), options: OPTS }).result;
-                out.push(JSON.parse(await body.text()));
-            } catch { /* skip unreadable item */ }
-        }
-        return out.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        const { data, error } = await supabase.from('reports').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        return (data || []).map(rowToReport);
     } catch (err) {
-        console.warn('listReports failed (storage unavailable?)', err);
+        console.warn('listReports failed', err);
         return [];
     }
 };
 
+const pathOf = async (id) => {
+    const { data } = await supabase.from('reports').select('storage_path').eq('id', id).single();
+    return data?.storage_path || null;
+};
+
 export const getReportUrl = async (id) => {
+    if (!supabase) return null;
     try {
-        const { url } = await getUrl({ key: `reports/${id}.pdf`, options: { ...OPTS, expiresIn: 300 } });
-        return url.toString();
+        const path = await pathOf(id);
+        if (!path) return null;
+        const { data, error } = await supabase.storage.from(REPORTS_BUCKET).createSignedUrl(path, 300);
+        if (error) throw error;
+        return data?.signedUrl || null;
     } catch (err) {
         console.warn('getReportUrl failed', err);
         return null;
@@ -48,9 +78,13 @@ export const getReportUrl = async (id) => {
 };
 
 export const getReportBlob = async (id) => {
+    if (!supabase) return null;
     try {
-        const { body } = await downloadData({ key: `reports/${id}.pdf`, options: OPTS }).result;
-        return await body.blob();
+        const path = await pathOf(id);
+        if (!path) return null;
+        const { data, error } = await supabase.storage.from(REPORTS_BUCKET).download(path);
+        if (error) throw error;
+        return data;
     } catch (err) {
         console.warn('getReportBlob failed', err);
         return null;
@@ -58,9 +92,11 @@ export const getReportBlob = async (id) => {
 };
 
 export const removeReport = async (id) => {
+    if (!supabase) return false;
     try {
-        await remove({ key: `reports/${id}.pdf`, options: OPTS });
-        await remove({ key: `reports/${id}.json`, options: OPTS });
+        const path = await pathOf(id);
+        if (path) await supabase.storage.from(REPORTS_BUCKET).remove([path]);
+        await supabase.from('reports').delete().eq('id', id);
         return true;
     } catch (err) {
         console.warn('removeReport failed', err);

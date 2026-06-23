@@ -1,8 +1,26 @@
-@import "@aws-amplify/ui-react/styles.css";
-
 .App {
   min-height: 100vh;
   background: var(--bg);
+}
+
+.boot-notice {
+  max-width: 520px;
+  margin: 18vh auto 0;
+  text-align: center;
+  padding: 28px;
+  color: var(--muted);
+}
+
+.boot-notice h2 {
+  margin: 0 0 10px;
+}
+
+.boot-notice code {
+  background: var(--surface-tint);
+  color: var(--es-yellow-dark);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: .9em;
 }
 
 .app-main {

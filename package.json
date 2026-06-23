@@ -16,6 +16,7 @@
     "@react-pdf-viewer/toolbar": "^3.12.0",
     "@react-pdf-viewer/zoom": "^3.12.0",
     "@react-pdf/renderer": "^3.4.5",
+    "@supabase/supabase-js": "^2.108.2",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",

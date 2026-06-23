@@ -1,63 +1,93 @@
-import { uploadData, downloadData } from 'aws-amplify/storage';
+import { supabase } from '../lib/supabase';
 
-// Profile + signature persistence. Source of truth is S3 (per-user, "private"),
+// Profile + signature live in the Supabase "profiles" table (one row per auth user),
 // mirrored to localStorage so the PDF sign-off can read the signature synchronously.
 
-const OPTS = { accessLevel: 'private' };
 const PROFILE_LS = 'es_tools_profile';
 const SIG_LS = 'es_tools_signature';
 
 const lsGet = (k, fallback) => {
-    try { return JSON.parse(localStorage.getItem(k) || 'null') ?? fallback; } catch { return fallback; }
+    try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? fallback : v; }
+    catch { return fallback; }
 };
 
+const uid = async () => {
+    const { data } = await supabase.auth.getUser();
+    return data?.user?.id || null;
+};
+
+const rowToProfile = (r) => ({
+    fullName: r.full_name || '',
+    role: r.role || 'surveyor',
+    accreditation: r.accreditation || '',
+    mobile: r.mobile || '',
+    email: r.email || '',
+});
+
 export const loadProfile = async () => {
+    if (!supabase) return lsGet(PROFILE_LS, null);
     try {
-        const { body } = await downloadData({ key: 'profile/profile.json', options: OPTS }).result;
-        const profile = JSON.parse(await body.text());
+        const userId = await uid();
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+        if (error) throw error;
+        const profile = rowToProfile(data);
         localStorage.setItem(PROFILE_LS, JSON.stringify(profile));
+        if (data.signature) localStorage.setItem(SIG_LS, data.signature);
         return profile;
-    } catch {
+    } catch (err) {
+        console.warn('loadProfile failed', err);
         return lsGet(PROFILE_LS, null);
     }
 };
 
 export const saveProfile = async (profile) => {
     localStorage.setItem(PROFILE_LS, JSON.stringify(profile));
+    if (!supabase) return false;
     try {
-        const blob = new Blob([JSON.stringify(profile)], { type: 'application/json' });
-        await uploadData({ key: 'profile/profile.json', data: blob, options: { ...OPTS, contentType: 'application/json' } }).result;
+        const userId = await uid();
+        const { error } = await supabase.from('profiles').update({
+            full_name: profile.fullName,
+            accreditation: profile.accreditation,
+            mobile: profile.mobile,
+            email: profile.email,
+        }).eq('id', userId);
+        if (error) throw error;
         return true;
     } catch (err) {
-        console.warn('saveProfile to S3 failed (kept locally)', err);
+        console.warn('saveProfile failed (kept locally)', err);
         return false;
     }
 };
 
 export const loadSignature = async () => {
+    if (!supabase) return localStorage.getItem(SIG_LS) || '';
     try {
-        const { body } = await downloadData({ key: 'profile/signature.txt', options: OPTS }).result;
-        const dataUrl = await body.text();
-        localStorage.setItem(SIG_LS, dataUrl);
-        return dataUrl;
-    } catch {
+        const userId = await uid();
+        const { data, error } = await supabase.from('profiles').select('signature').eq('id', userId).single();
+        if (error) throw error;
+        const sig = data?.signature || '';
+        if (sig) localStorage.setItem(SIG_LS, sig);
+        return sig;
+    } catch (err) {
+        console.warn('loadSignature failed', err);
         return localStorage.getItem(SIG_LS) || '';
     }
 };
 
 export const saveSignature = async (dataUrl) => {
     localStorage.setItem(SIG_LS, dataUrl);
+    if (!supabase) return false;
     try {
-        const blob = new Blob([dataUrl], { type: 'text/plain' });
-        await uploadData({ key: 'profile/signature.txt', data: blob, options: { ...OPTS, contentType: 'text/plain' } }).result;
+        const userId = await uid();
+        const { error } = await supabase.from('profiles').update({ signature: dataUrl }).eq('id', userId);
+        if (error) throw error;
         return true;
     } catch (err) {
-        console.warn('saveSignature to S3 failed (kept locally)', err);
+        console.warn('saveSignature failed (kept locally)', err);
         return false;
     }
 };
 
-// Combined sign-off block used when generating the PDF.
 export const getSignoff = async () => {
     const profile = (await loadProfile()) || lsGet(PROFILE_LS, {}) || {};
     const signature = await loadSignature();
