@@ -14,6 +14,7 @@ import { UTILITIES, QUALITY_LEVELS } from '../report/legendColors';
 import AnnotatorSwitch from '../components/AnnotatorSwitch';
 import CameraCapture from '../components/CameraCapture';
 import PotholePanel from '../components/PotholePanel';
+import Section from '../components/FormSection';
 import PhotoReportDoc from '../report/PhotoReportPdf';
 import { useToast } from '../components/Toast';
 import { saveReport } from '../services/reportsService';
@@ -42,19 +43,6 @@ const blobToBase64 = (blob) => new Promise((resolve, reject) => {
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
 const today = () => new Date().toISOString().slice(0, 10);
 const newId = () => `photo_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-
-const Section = ({ step, title, subtitle, children }) => (
-    <section className="form-section">
-        <div className="form-section-head">
-            <span className="form-section-step">{step}</span>
-            <div>
-                <h2>{title}</h2>
-                {subtitle && <span className="form-section-sub">{subtitle}</span>}
-            </div>
-        </div>
-        <div className="form-section-body">{children}</div>
-    </section>
-);
 
 // es_tools v2.0 "Photo Report" tool.
 const PhotoReport = ({ goBack }) => {

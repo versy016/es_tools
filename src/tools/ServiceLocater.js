@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../stylessheets/ServiceLocater.css';
+import '../stylessheets/PhotoReport.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faFilePdf, faPaperPlane, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { setupClientsSearch, setupProjectsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
 import { loadGoogleMapsScript } from '../scripts/googleMaps';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { renderDocx, docxToPdf } from '../services/serviceReportService';
+import FormSection from '../components/FormSection';
 
 const ServiceLocater = ({ goBack }) => {
     const [project, setProject] = useState('');
@@ -294,15 +296,24 @@ const ServiceLocater = ({ goBack }) => {
         };
 
     return (
-        <div>
-            <div className="back-link" onClick={goBack}>
-                <FontAwesomeIcon icon={faArrowLeft} /> Back to Tools
-            </div>
-            <div className="service-locater">
-                <h1>Service Location Field Report</h1>
+        <div className="photo-report">
+            <div className="pr-content">
+                <div className="tool-topbar">
+                    <div className="tool-topbar-left">
+                        <nav className="breadcrumb">
+                            <span className="crumb-link" onClick={goBack}>Dashboard</span>
+                            <span className="crumb-sep">/</span>
+                            <span>Tools</span>
+                            <span className="crumb-sep">/</span>
+                            <span className="crumb-current">Service Location report</span>
+                        </nav>
+                        <div className="tool-title-row">
+                            <h1>Service Location Field Report</h1>
+                        </div>
+                    </div>
+                </div>
                 <form onSubmit={handleSubmit}>
-                    <section className="job-details">
-                        <h2>Job Details</h2>
+                    <FormSection step="1" title="Job details">
                         <div className="job-details-grid">
                             <label>
                                 Date:
@@ -341,10 +352,10 @@ const ServiceLocater = ({ goBack }) => {
                                 <input type="email" name="email" placeholder="Enter email" value={email} onChange={handleEmailChange} autoComplete="off"/>
                             </label>
                         </div>
-                    </section>
-                    <section className="checklist">
-                        <h2>Checklist (Standard)</h2>
-                        <label style={{marginRight: '39rem'}}>
+                    </FormSection>
+                    <FormSection step="2" title="Checklist (standard)">
+                        <div className="checklist">
+                        <label className="select-all-label">
                             <input type="checkbox" checked={selectAll} onChange={handleSelectAll} /> Select All
                         </label>
                         <table>
@@ -417,10 +428,10 @@ const ServiceLocater = ({ goBack }) => {
                                 ))}
                             </tbody>
                         </table>
-                    </section>
+                        </div>
+                    </FormSection>
 
-                    <section className="dbyd">
-                        <h2>DBYD Details</h2>
+                    <FormSection step="3" title="DBYD details">
                         <label className="dbyd-client-toggle">
                             <input type="checkbox" checked={dbydByClient} onChange={(e) => setDbydByClient(e.target.checked)} />
                             DBYD to be supplied by client
@@ -463,10 +474,9 @@ const ServiceLocater = ({ goBack }) => {
                                 </select>
                             </label>
                         </div>
-                    </section>
+                    </FormSection>
 
-                    <section className="site-notes">
-                        <h2>Site Notes</h2>
+                    <FormSection step="4" title="Site notes">
                         <div className="note-input">
                             <textarea name="note" value={note} onChange={handleNoteChange} rows="4"></textarea>
                             <button type="button" className="add-note-btn" onClick={addNote}>Add Note</button>
@@ -476,10 +486,9 @@ const ServiceLocater = ({ goBack }) => {
                                 <li key={index}>{note}</li>
                             ))}
                         </ul>
-                    </section>
+                    </FormSection>
 
-                    <section className="photos">
-                        <h2>Photos</h2>
+                    <FormSection step="5" title="Photos">
                         <input type="file" accept="image/*" multiple onChange={handleFileUpload} />
                         <DragDropContext onDragEnd={onDragEnd}>
                             <Droppable droppableId="photos" direction="horizontal">
@@ -521,27 +530,29 @@ const ServiceLocater = ({ goBack }) => {
                                 )}
                             </Droppable>
                         </DragDropContext>
-                    </section>
+                    </FormSection>
 
-                    <div className="buttons">
-                        <button type="submit">Submit Report</button>
-                        <button type="button" onClick={handleSendEmail} disabled={!docLink}>
-                            Send Report via Email
+                    <div className="tool-actions tool-actions-bottom">
+                        {docLink && (
+                            <>
+                                <a className="btn-outline sm" href={docLink} download="Service Location Field Report.docx">
+                                    <FontAwesomeIcon icon={faDownload} /> Word
+                                </a>
+                                {pdfLink && (
+                                    <a className="btn-outline sm" href={pdfLink} download="Service Location Field Report.pdf">
+                                        <FontAwesomeIcon icon={faDownload} /> PDF
+                                    </a>
+                                )}
+                            </>
+                        )}
+                        <button type="button" className="btn-outline" onClick={handleSendEmail} disabled={!docLink}>
+                            <FontAwesomeIcon icon={faPaperPlane} /> Send via email
+                        </button>
+                        <button type="submit" className="btn-yellow">
+                            <FontAwesomeIcon icon={faFilePdf} /> {loading ? 'Generating…' : 'Generate report'}
                         </button>
                     </div>
                 </form>
-                {docLink && (
-                    <div className="download-link">
-                        <a href={docLink} download="Service Location Field Report.docx">
-                            Download Word (.docx)
-                        </a>
-                        {pdfLink
-                            ? <a href={pdfLink} download="Service Location Field Report.pdf">Download PDF</a>
-                            : <span style={{ display: 'block', marginTop: '8px', color: '#9CA3AF', fontSize: '.9rem' }}>
-                                PDF export becomes available once the converter is configured.
-                            </span>}
-                    </div>
-                )}
                 
                 {loading && (
                     <div className="loading-overlay">
