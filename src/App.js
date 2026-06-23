@@ -10,7 +10,6 @@ import studioTheme from './ui-components/studioTheme';
 import NavBar from './components/Navbar';
 import ToolCard  from './components/ToolCard';
 import ServiceLocater from './tools/ServiceLocater';
-import DroneRecord from './tools/DroneFlightRecord';
 import ServiceLocaterpdf from './tools/ServiceLocaterpdf';
 import PhotoReport from './tools/PhotoReport';
 //import FileUpload from './components/FileUpload';
@@ -46,8 +45,6 @@ const App = ({ signOut }) => {
         return <ServiceLocater goBack={goBack} />;
       case 'service-locater-pdf':
         return <ServiceLocaterpdf goBack={goBack} />;
-      case 'Drone-Flight-Record':
-        return <DroneRecord goBack={goBack} />;
       case 'photo-report':
         return <PhotoReport goBack={goBack} />;
       default:
@@ -70,12 +67,6 @@ const App = ({ signOut }) => {
                 title="Pothole Report Generator"
                 description="Annotate site photos with utility-legend lines and labels, attach potholes, and generate a Photo Report PDF on the Engineering Surveys letterhead."
                 onClick={() => setCurrentTool('photo-report')}
-              />
-              <ToolCard
-                image="/images/Service_Location_Report.png"
-                title="Drone Flight Record"
-                description="Record drone flight details and generate the corresponding flight record document."
-                onClick={() => setCurrentTool('Drone-Flight-Record')}
               />
             </div>
           </div>
