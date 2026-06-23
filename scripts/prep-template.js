@@ -13,8 +13,10 @@ let xml = zip.file('word/document.xml').asText();
 // Collapse any run-boundary XML (and stray whitespace) that sits inside { … }.
 xml = xml.replace(/\{[^{}]*\}/g, (m) => m.replace(/<[^>]+>/g, '').replace(/\s+/g, ''));
 
-// Multiple photos: loop + image tag.
-xml = xml.replace(/\{photos\}/g, '{#photos}{%data}{/photos}');
+// Multiple photos: loop + image tag. The image module requires the {%data} tag to
+// be alone in its own <w:t> run, so split the loop across three runs in the paragraph.
+xml = xml.replace(/\{photos\}/g,
+    '{#photos}</w:t></w:r><w:r><w:t xml:space="preserve">{%data}</w:t></w:r><w:r><w:t xml:space="preserve">{/photos}');
 
 zip.file('word/document.xml', xml);
 fs.writeFileSync(file, zip.generate({ type: 'nodebuffer' }));
