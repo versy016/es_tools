@@ -9,11 +9,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../stylessheets/ServiceLocater.css';
 import '../stylessheets/PhotoReport.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faFilePdf, faPaperPlane, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faFilePdf, faPaperPlane, faDownload, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { setupClientsSearch, setupProjectsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
 import { loadGoogleMapsScript, attachAddressAutocomplete } from '../scripts/googleMaps';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { renderDocx, docxToPdf } from '../services/serviceReportService';
+import { renderDocx, docxToPdf, isPdfConfigured } from '../services/serviceReportService';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 import FormSection from '../components/FormSection';
 
@@ -56,6 +56,8 @@ const ServiceLocater = ({ goBack }) => {
         { type: 'Unknown Services', quality: '', comment: '', selected: false }
     ]);
     const [loading, setLoading] = useState(false);
+    const [uploadingPhotos, setUploadingPhotos] = useState(false); // spinner while previews decode
+    const [showSuccess, setShowSuccess] = useState(false);         // centred "report generated" modal
 
     // Refs for the inputs that receive Algolia/Maps autocomplete imperatively.
     const projectInputRef = useRef(null);
@@ -124,6 +126,8 @@ const ServiceLocater = ({ goBack }) => {
     // (empty) descriptions are appended in lock-step so indices stay aligned.
     const handleFileUpload = (event) => {
         const files = Array.from(event.target.files);
+        if (files.length === 0) return;
+        setUploadingPhotos(true); // show the loading animation until every preview decodes
         const fileNames = files.map(file => file.name);
         const promises = files.map(file => {
             return new Promise((resolve, reject) => {
@@ -143,6 +147,8 @@ const ServiceLocater = ({ goBack }) => {
             setImageDescriptions(prev => [...prev, ...fileNames.map(() => '')]);
         }).catch(error => {
             console.error("Error loading images", error);
+        }).finally(() => {
+            setUploadingPhotos(false);
         });
     };
 
@@ -284,6 +290,8 @@ const ServiceLocater = ({ goBack }) => {
             // Optionally convert to PDF (needs the converter endpoint configured).
             const pdfBlob = await docxToPdf(docxBlob, 'Service Location Field Report.docx');
             if (pdfBlob) setPdfLink(URL.createObjectURL(pdfBlob));
+
+            setShowSuccess(true); // centred confirmation with the download options
         } catch (err) {
             console.error('Error generating the document', err);
             alert('Something went wrong generating the report. See console for details.');
@@ -536,6 +544,9 @@ const ServiceLocater = ({ goBack }) => {
                             + Add photos
                             <input type="file" accept="image/*" multiple onChange={handleFileUpload} hidden />
                         </label>
+                        {uploadingPhotos && (
+                            <div className="photo-loading"><span className="spinner" /> Loading photos…</div>
+                        )}
                         <DragDropContext onDragEnd={onDragEnd}>
                             <Droppable droppableId="photos" direction="horizontal">
                                 {(provided) => (
@@ -609,7 +620,39 @@ const ServiceLocater = ({ goBack }) => {
                 
                 {loading && (
                     <div className="loading-overlay">
-                        <p>Processing document, please wait...</p>
+                        <p><span className="spinner spinner-light" /> Generating report, please wait…</p>
+                    </div>
+                )}
+
+                {showSuccess && (
+                    <div className="success-overlay" onClick={() => setShowSuccess(false)}>
+                        <div className="success-card" onClick={(e) => e.stopPropagation()}>
+                            <div className="success-check"><FontAwesomeIcon icon={faCheck} /></div>
+                            <h3>Report generated</h3>
+                            <p>Your Service Location Field Report is ready to download.</p>
+                            <div className="success-actions">
+                                <a className="btn-yellow" href={docLink} download="Service Location Field Report.docx" onClick={() => setShowSuccess(false)}>
+                                    <FontAwesomeIcon icon={faDownload} /> Download Word
+                                </a>
+                                {pdfLink ? (
+                                    <a className="btn-outline" href={pdfLink} download="Service Location Field Report.pdf" onClick={() => setShowSuccess(false)}>
+                                        <FontAwesomeIcon icon={faFilePdf} /> Download PDF
+                                    </a>
+                                ) : (
+                                    <button type="button" className="btn-outline" disabled>
+                                        <FontAwesomeIcon icon={faFilePdf} /> PDF unavailable
+                                    </button>
+                                )}
+                            </div>
+                            {!pdfLink && (
+                                <p className="success-note">
+                                    {isPdfConfigured()
+                                        ? 'PDF conversion failed — the Word file is ready to download.'
+                                        : 'Set REACT_APP_DOCX_PDF_ENDPOINT in your .env to enable PDF export.'}
+                                </p>
+                            )}
+                            <button type="button" className="success-close" onClick={() => setShowSuccess(false)}>Close</button>
+                        </div>
                     </div>
                 )}
             </div>

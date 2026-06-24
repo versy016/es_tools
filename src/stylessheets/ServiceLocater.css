@@ -431,6 +431,117 @@ input {
     font-weight: 600;
 }
 
+.loading-overlay p {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Spinner (photo upload + generating) */
+.spinner {
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid var(--border-strong);
+    border-top-color: var(--es-yellow);
+    border-radius: 50%;
+    animation: es-spin .7s linear infinite;
+    flex: none;
+}
+
+.spinner-light {
+    width: 22px;
+    height: 22px;
+    border-color: rgba(255, 255, 255, .35);
+    border-top-color: #fff;
+}
+
+@keyframes es-spin { to { transform: rotate(360deg); } }
+
+.photo-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    color: var(--ink-soft);
+    font-weight: 600;
+    font-size: .9rem;
+}
+
+/* "Report generated" success modal */
+.success-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(27, 34, 48, .55);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3500;
+    padding: 16px;
+    animation: es-fade .15s ease;
+}
+
+@keyframes es-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.success-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    animation: dc-pop .25s ease both;
+}
+
+.success-check {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--success);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 16px;
+}
+
+.success-card h3 {
+    margin: 0 0 6px;
+    font-size: 1.3rem;
+}
+
+.success-card p {
+    margin: 0 0 20px;
+    color: var(--muted);
+}
+
+.success-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.success-note {
+    margin: 14px 0 0 !important;
+    font-size: .82rem;
+    color: var(--faint);
+}
+
+.success-close {
+    margin-top: 18px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: .9rem;
+    cursor: pointer;
+}
+
+.success-close:hover { color: var(--ink); }
+
 /* Responsive */
 @media (max-width: 768px) {
 
