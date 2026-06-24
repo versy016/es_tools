@@ -3,81 +3,92 @@
 // Gateway Lambda proxy that injects them and returns the hits. This module manipulates
 // the DOM directly (vanilla), so callers pass a raw <input> element, not a React ref.
 
-// Query the Lambda proxy for one index and hand the raw hit array to `callback`. Network/
-// parse errors are logged and swallowed (the dropdown simply doesn't appear).
-const searchAlgolia = async (indexName, query, callback) => {
-  try {
-    const response = await fetch(`https://jflxgo3g5f.execute-api.ap-southeast-2.amazonaws.com/dev/?service=algolia&indexName=${indexName}&query=${query}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-
-    const hits = await response.json();
-    callback(hits);
-  } catch (error) {
-    console.error('Error:', error);
-  }
+// Query the Lambda proxy for one index. `signal` lets an in-flight request be aborted
+// when the user types again (avoids out-of-order responses). Returns the hit array.
+const searchAlgolia = async (indexName, query, signal) => {
+  const url = `https://jflxgo3g5f.execute-api.ap-southeast-2.amazonaws.com/dev/?service=algolia&indexName=${indexName}&query=${encodeURIComponent(query)}`;
+  const response = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' }, signal });
+  if (!response.ok) throw new Error('Network response was not ok');
+  return response.json();
 };
 
-// Render a suggestion dropdown under the input. `displayAttribute` is which hit field to
-// show; on mousedown (fires before blur) the input is filled, the full hit is stashed on
-// dataset.selected, and onSelect(hit) is invoked.
-const displayDropdown = (inputElement, results, displayAttribute, onSelect) => {
-  const dropdown = document.createElement('div');
-  dropdown.classList.add('dropdown');
-  
-  results.forEach(result => {
+// Remove the dropdown for an input, if present.
+const clearDropdown = (inputElement) => {
+  const existing = inputElement.parentNode.querySelector('.dropdown');
+  if (existing) existing.remove();
+};
+
+// Render (or update) the suggestion dropdown UNDER the input. The container is reused
+// across keystrokes — only the item rows are swapped — so the box doesn't flash/recreate
+// on every response (the previous teardown-and-recreate caused heavy flicker).
+const renderDropdown = (inputElement, results, displayAttribute, onSelect) => {
+  const parent = inputElement.parentNode;
+  // No results → make sure nothing is shown.
+  if (!Array.isArray(results) || results.length === 0) {
+    clearDropdown(inputElement);
+    return;
+  }
+
+  parent.style.position = 'relative'; // anchor the absolutely-positioned dropdown
+  let dropdown = parent.querySelector('.dropdown');
+  if (!dropdown) {
+    dropdown = document.createElement('div');
+    dropdown.classList.add('dropdown');
+    parent.appendChild(dropdown);
+  }
+
+  // Replace the rows in place (container stays mounted → no flicker).
+  dropdown.replaceChildren();
+  results.forEach((result) => {
     const item = document.createElement('div');
     item.classList.add('dropdown-item');
-    item.textContent = result[displayAttribute];
+    item.textContent = result[displayAttribute] || '';
+    // mousedown fires before the input's blur, so the selection isn't lost to the close.
     item.addEventListener('mousedown', (e) => {
-      e.preventDefault(); // Prevents the blur event
-      inputElement.value = result[displayAttribute];
-      inputElement.dataset.selected = JSON.stringify(result);  // Store selected item data
+      e.preventDefault();
+      inputElement.value = result[displayAttribute] || '';
+      inputElement.dataset.selected = JSON.stringify(result);
       clearDropdown(inputElement);
-      onSelect(result);  // Call the onSelect function with the selected value
+      onSelect(result);
     });
     dropdown.appendChild(item);
   });
-
-  clearDropdown(inputElement);
-  // Anchor the absolutely-positioned dropdown to the input's wrapper so it sits directly
-  // under the input at the input's width, instead of overflowing across the form.
-  inputElement.parentNode.style.position = 'relative';
-  inputElement.parentNode.appendChild(dropdown);
 };
 
-// Remove any existing dropdown sibling of the input.
-const clearDropdown = (inputElement) => {
-  const existingDropdown = inputElement.parentNode.querySelector('.dropdown');
-  if (existingDropdown) {
-    existingDropdown.remove();
-  }
-};
-
-// Wire the input: on each keystroke (non-empty), query Algolia and render results;
-// clear the dropdown when emptied. Generic over index + display field.
+// Wire the input: debounce keystrokes, abort the previous request, ignore stale responses,
+// and render results in place. Guarded so it only binds once per input (React StrictMode
+// invokes effects twice in dev, which would otherwise stack listeners and double the flicker).
 const setupSearch = (inputElement, indexName, displayAttribute, onSelect) => {
+  if (!inputElement || inputElement.dataset.algoliaBound) return;
+  inputElement.dataset.algoliaBound = '1';
+
+  let debounce = null;   // keystroke debounce timer
+  let controller = null; // aborts the in-flight fetch
+  let seq = 0;           // request sequence, to drop out-of-order responses
+
   inputElement.addEventListener('input', (event) => {
-    const query = event.target.value;
-    if (query.length > 0) {
-      searchAlgolia(indexName, query, (results) => {
-        displayDropdown(inputElement, results, displayAttribute, onSelect);
-      });
-    } else {
-      clearDropdown(inputElement);
-    }
+    const query = event.target.value.trim();
+    clearTimeout(debounce);
+    if (controller) controller.abort();
+
+    if (query.length === 0) { clearDropdown(inputElement); return; }
+
+    debounce = setTimeout(() => {
+      const mySeq = ++seq;
+      controller = new AbortController();
+      searchAlgolia(indexName, query, controller.signal)
+        .then((results) => {
+          if (mySeq === seq) renderDropdown(inputElement, results, displayAttribute, onSelect);
+        })
+        .catch((err) => {
+          if (err.name !== 'AbortError') console.error('Algolia error:', err);
+        });
+    }, 180);
   });
 
-  // Remove the blur event handler
-  inputElement.removeEventListener('blur', () => {
-    setTimeout(() => clearDropdown(inputElement), 100); // Delay to allow click event
+  // Close shortly after blur (the delay lets a suggestion's mousedown land first).
+  inputElement.addEventListener('blur', () => {
+    setTimeout(() => clearDropdown(inputElement), 120);
   });
 };
 
