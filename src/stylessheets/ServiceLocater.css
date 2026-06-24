@@ -219,63 +219,119 @@ input {
     background: var(--primary-soft);
 }
 
-/* Image thumbnails (v1) */
+/* Styled file picker (the native input is hidden) */
+.photo-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border: 1.5px dashed var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    font-weight: 600;
+    font-size: .92rem;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+
+.photo-upload-btn:hover {
+    border-color: var(--es-yellow);
+    background: var(--es-yellow-soft);
+    color: var(--es-yellow-dark);
+}
+
+/* Photo cards — image on top, name/description fields below. Drag to reorder. */
 .image-previews {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
 }
 
 .image-container {
     position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: box-shadow .15s ease, transform .08s ease;
+}
+
+.image-container:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.image-frame {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: var(--surface-2);
+    cursor: grab;
+}
+
+.image-frame:active {
+    cursor: grabbing;
 }
 
 .image-thumbnail {
-    width: 110px;
-    height: 110px;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
+    display: block;
 }
 
-.image-description,
-.image-name {
-    width: 110px;
-    margin-top: 6px;
-    text-align: center;
-    font-size: .85rem;
-    border: none;
-    border-bottom: 1px solid var(--border-strong);
-    background: none;
-}
-
-.image-description:focus,
-.image-name:focus {
-    outline: none;
-    border-bottom-color: var(--primary);
+.image-index {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(27, 34, 48, .82);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 4px 9px;
+    border-radius: var(--radius-pill);
+    pointer-events: none;
 }
 
 .remove-image,
 .remove-button {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    background: var(--danger);
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(27, 34, 48, .82);
     color: #fff;
     border: none;
-    border-radius: 50%;
-    width: 22px;
-    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    transition: background .15s ease;
 }
 
 .remove-image:hover,
 .remove-button:hover {
-    background: var(--danger-dark);
+    background: var(--danger);
+}
+
+.image-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+}
+
+.image-fields input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.image-fields .image-name {
+    font-weight: 600;
 }
 
 /* Site notes list */

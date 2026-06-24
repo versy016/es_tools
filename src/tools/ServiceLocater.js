@@ -532,7 +532,10 @@ const ServiceLocater = ({ goBack }) => {
                     {/* Step 5 — photos: upload, then drag to reorder; each thumbnail has an
                         editable name + description that flow into the docx. */}
                     <FormSection step="5" title="Photos">
-                        <input type="file" accept="image/*" multiple onChange={handleFileUpload} />
+                        <label className="photo-upload-btn">
+                            + Add photos
+                            <input type="file" accept="image/*" multiple onChange={handleFileUpload} hidden />
+                        </label>
                         <DragDropContext onDragEnd={onDragEnd}>
                             <Droppable droppableId="photos" direction="horizontal">
                                 {(provided) => (
@@ -546,24 +549,29 @@ const ServiceLocater = ({ goBack }) => {
                                                         {...provided.draggableProps}
                                                         {...provided.dragHandleProps}
                                                     >
-                                                        <img src={preview} alt={`Preview ${index + 1}`} className="image-thumbnail" />
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Description"
-                                                            value={imageDescriptions[index]}
-                                                            onChange={(e) => handleImageDescriptionChange(index, e.target.value)}
-                                                            className="image-description"
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Image Name"
-                                                            value={imageNames[index]}
-                                                            onChange={(e) => handleImageNameChange(index, e.target.value)}
-                                                            className="image-name"
-                                                        />
-                                                        <button type="button" className="remove-image" onClick={() => handleRemoveImage(index)}>
-                                                            <FontAwesomeIcon icon={faTimes} />
-                                                        </button>
+                                                        <div className="image-frame">
+                                                            <span className="image-index">{index + 1}</span>
+                                                            <img src={preview} alt={`Preview ${index + 1}`} className="image-thumbnail" />
+                                                            <button type="button" className="remove-image" onClick={() => handleRemoveImage(index)} aria-label="Remove photo">
+                                                                <FontAwesomeIcon icon={faTimes} />
+                                                            </button>
+                                                        </div>
+                                                        <div className="image-fields">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Photo name"
+                                                                value={imageNames[index]}
+                                                                onChange={(e) => handleImageNameChange(index, e.target.value)}
+                                                                className="image-name"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Description (optional)"
+                                                                value={imageDescriptions[index]}
+                                                                onChange={(e) => handleImageDescriptionChange(index, e.target.value)}
+                                                                className="image-description"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 )}
                                             </Draggable>
