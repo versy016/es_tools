@@ -286,9 +286,11 @@ input {
     gap: 10px;
 }
 
-.site-notes textarea {
+.note-input textarea {
     width: 100%;
+    min-height: 90px;
     resize: vertical;
+    box-sizing: border-box;
 }
 
 .add-note-btn {

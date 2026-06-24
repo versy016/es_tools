@@ -26,6 +26,18 @@
     box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
+/* Disabled fields (e.g. Client/Project are mutually exclusive) read greyed out, with a
+   not-allowed cursor on hover. */
+.photo-report input:disabled,
+.photo-report textarea:disabled,
+.photo-report select:disabled {
+    background: var(--surface-2);
+    color: var(--faint);
+    border-color: var(--border);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
 /* Tool topbar: breadcrumb + title + actions */
 .tool-topbar {
     display: flex;
