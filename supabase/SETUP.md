@@ -54,8 +54,10 @@ optional. To manage it centrally: Storage → `templates` bucket → upload
 - **Authentication → URL Configuration**: add your app origin (e.g.
   `http://localhost:3000` and the deployed URL) to **Redirect URLs** so invite and
   OAuth callbacks land back in the app.
-- **Microsoft (optional)**: Authentication → Providers → **Azure**; the app's
-  `signInWithMicrosoft()` already targets `provider: 'azure'`.
+- **Google (optional)**: Authentication → Providers → **Google**; the app's
+  `signInWithGoogle()` targets `provider: 'google'`. Create a Google OAuth client
+  (Cloud Console), and add the callback URL Supabase shows you to that client's
+  authorized redirect URIs. For Workspace-only access, keep its consent screen Internal.
 
 ## 5. Edge functions
 

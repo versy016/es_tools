@@ -30,11 +30,11 @@ for each new user.
 - Roles: `admin` (manage everyone), `manager` (see all reports + approve),
   `surveyor` (own reports only).
 
-## 5. (Optional) Sign in with Microsoft 365
-1. In Supabase **Authentication → Providers → Azure**, enable it and paste your
-   Azure app registration's client ID/secret (redirect URL is shown there).
-2. The Login screen's "Continue with Microsoft" button already calls
-   `signInWithOAuth({ provider: 'azure' })`.
+## 5. (Optional) Sign in with Google
+1. In Supabase **Authentication → Providers → Google**, enable it and paste your
+   Google OAuth client ID/secret (the callback URL is shown there).
+2. The Login screen's "Continue with Google" button already calls
+   `signInWithOAuth({ provider: 'google' })`.
 
 ## 6. Service Location template + PDF export
 The Service Location report is rendered **in the browser** from a `.docx` template

@@ -184,7 +184,7 @@
 
 .login-or span { padding: 0 12px; }
 
-.login-ms {
+.login-oauth {
     width: 100%;
     display: flex;
     align-items: center;
@@ -200,7 +200,7 @@
     cursor: pointer;
 }
 
-.login-ms:hover { background: var(--surface-2); }
+.login-oauth:hover { background: var(--surface-2); }
 
 .login-switch {
     text-align: center;

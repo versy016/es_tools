@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 // Supabase auth context for the whole app. Holds the live session, the signed-in
 // user's profile row, and a loading flag, and exposes the auth actions (sign in/up,
-// Microsoft OAuth, sign out, profile reload). Wrap the tree in <AuthProvider> and read
+// Google OAuth, sign out, profile reload). Wrap the tree in <AuthProvider> and read
 // state via useAuth(). When Supabase isn't configured the actions no-op gracefully
 // (see NOT_CONFIGURED) so the app still renders.
 
@@ -72,10 +72,10 @@ export const AuthProvider = ({ children }) => {
             supabase
                 ? supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } })
                 : Promise.resolve(NOT_CONFIGURED),
-        // SSO via Azure AD (Microsoft); redirects back to this origin after auth.
-        signInWithMicrosoft: () =>
+        // SSO via Google (Workspace); redirects back to this origin after auth.
+        signInWithGoogle: () =>
             supabase
-                ? supabase.auth.signInWithOAuth({ provider: 'azure', options: { redirectTo: window.location.origin } })
+                ? supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
                 : Promise.resolve(NOT_CONFIGURED),
         // Sign out; onAuthStateChange clears session/profile.
         signOut: async () => { if (supabase) await supabase.auth.signOut(); },

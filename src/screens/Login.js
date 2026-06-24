@@ -1,5 +1,5 @@
 // Login.js — branded split-screen sign-in / sign-up. Toggles between email+password
-// sign-in and sign-up, offers Microsoft OAuth, and surfaces auth errors and the
+// sign-in and sign-up, offers Google OAuth, and surfaces auth errors and the
 // post-signup "confirm your email" notice. Rendered by the Gate when signed out.
 import React, { useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
@@ -15,7 +15,7 @@ const Logo = ({ light }) => (
 );
 
 const Login = () => {
-    const { signIn, signUp, signInWithMicrosoft } = useAuth();
+    const { signIn, signUp, signInWithGoogle } = useAuth();
     const [mode, setMode] = useState('signin'); // signin | signup — drives form fields and copy
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -86,11 +86,16 @@ const Login = () => {
                         {busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
                     </button>
 
-                    {/* Microsoft OAuth — redirects out to the org identity provider. */}
+                    {/* Google OAuth — redirects out to the org identity provider. */}
                     <div className="login-or"><span>or</span></div>
-                    <button type="button" className="login-ms" onClick={signInWithMicrosoft}>
-                        <svg width="16" height="16" viewBox="0 0 23 23" aria-hidden="true"><rect width="10" height="10" x="1" y="1" fill="#F25022" /><rect width="10" height="10" x="12" y="1" fill="#7FBA00" /><rect width="10" height="10" x="1" y="12" fill="#00A4EF" /><rect width="10" height="10" x="12" y="12" fill="#FFB900" /></svg>
-                        Continue with Microsoft
+                    <button type="button" className="login-oauth" onClick={signInWithGoogle}>
+                        <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+                            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z" />
+                            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+                            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.3 26.7 36 24 36c-5.2 0-9.6-3.3-11.2-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z" />
+                            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C40.9 36 44 30.5 44 24c0-1.3-.1-2.3-.4-3.5z" />
+                        </svg>
+                        Continue with Google
                     </button>
 
                     {/* Toggle between sign-in and sign-up, clearing any stale error. */}
