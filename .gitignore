@@ -50,3 +50,6 @@ supabase/.temp/
 
 # Local template backups
 *.backup.docx
+
+# Service-template build working files
+public/templates/_*
