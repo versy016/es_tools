@@ -65,6 +65,35 @@ const ServiceLocater = ({ goBack }) => {
     const addressInputRef = useRef(null);
     const contactInputRef = useRef(null);
     const locaterInputRef = useRef(null);
+    const formRef = useRef(null);
+
+    // TEMP (testing): fill every field with sample data so a report can be generated
+    // quickly — upload photos manually. Remove this fn + its button before release.
+    const quickFill = () => {
+        setProject('');
+        setClient({ name: 'Westside Plumbing Pty Ltd', title: 'Westside Plumbing Pty Ltd' });
+        setAddress('123 Test Street, Adelaide SA 5000');
+        setEmail('test@engsurveys.com.au');
+        setDbydByClient(false);
+        setChecklist((prev) => prev.map((it, i) => (
+            i < 4 ? { ...it, selected: true, quality: 'B', comment: 'Located with GPR' } : it
+        )));
+        const f = formRef.current;
+        if (!f) return;
+        const set = (name, val) => { const el = f.querySelector(`[name="${name}"]`); if (el) el.value = val; };
+        const today = new Date().toISOString().slice(0, 10);
+        set('date', today);
+        set('contact', 'John Tester');
+        set('ContactMob', '0400 000 000');
+        set('surveyor', 'Sam Locator');
+        set('LocaterMob', '0411 111 111');
+        set('dbydJobNumber', 'DBYD-12345');
+        set('dbydDateRequested', today);
+        set('dbydPlansAvailable', 'Yes');
+        set('dbydPlansCoverAreas', 'Yes');
+        set('swmsCompleted', 'Yes');
+        set('dbydPlansSupplied', 'Yes');
+    };
 
     // Typing a project clears client (and vice versa) so only one is ever set.
     const handleProjectChange = (e) => {
@@ -353,11 +382,17 @@ const ServiceLocater = ({ goBack }) => {
                         </nav>
                         <div className="tool-title-row">
                             <h1>Service Location Field Report</h1>
+                            {/* TEMP testing helper — remove before release */}
+                            <button type="button" onClick={quickFill} style={{
+                                marginLeft: 'auto', padding: '6px 12px', fontSize: '.8rem', fontWeight: 600,
+                                border: '1.5px dashed var(--es-yellow)', background: 'var(--es-yellow-soft)',
+                                color: 'var(--es-yellow-dark)', borderRadius: '8px', cursor: 'pointer',
+                            }}>⚡ Quick fill (test)</button>
                         </div>
                     </div>
                 </div>
                 {/* Submitting the form triggers handleSubmit → docx/PDF generation */}
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} ref={formRef}>
                     {/* Step 1 — job details. Project/Client/Contact/Locater carry Algolia
                         autocomplete; Job Location carries Maps. Project & Client are
                         mutually disabled. ContactMob/LocaterMob are uncontrolled (filled imperatively). */}
