@@ -95,7 +95,8 @@ export const renderDocx = async (form) => {
         const zip = new PizZip(content);
         const imageModule = new ImageModule({
             getImage: (tagValue) => base64ToArrayBuffer(tagValue),
-            getSize: () => [450, 320],
+            // ~280px wide lets two photos sit side by side on an A4 line (the loop is inline).
+            getSize: () => [280, 205],
         });
         const doc = new Docxtemplater(zip, { modules: [imageModule], paragraphLoop: true, linebreaks: true });
         doc.render(buildData(form));
