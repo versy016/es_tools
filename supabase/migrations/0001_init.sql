@@ -1,23 +1,12 @@
 -- ES Tools — Supabase schema, RLS and storage (idempotent: safe to re-run).
 -- Apply with `supabase db push`, or paste into the SQL editor. See supabase/SETUP.md.
 
--- ───────────────────────── Roles helper ─────────────────────────
--- Roles live on the profile row: 'admin' | 'manager' | 'surveyor'.
--- current_role() is SECURITY DEFINER so the RLS policies that call it don't recurse.
-
-create or replace function public.current_role() returns text
-language sql stable security definer set search_path = public as $$
-  select coalesce((select role from public.profiles where id = auth.uid()), 'surveyor');
-$$;
-
--- Convenience predicates used throughout the RLS policies below.
-create or replace function public.is_manager() returns boolean
-language sql stable as $$ select public.current_role() in ('admin','manager'); $$;
-
-create or replace function public.is_admin() returns boolean
-language sql stable as $$ select public.current_role() = 'admin'; $$;
+-- Don't validate function bodies against tables that may not exist yet at parse time.
+-- (Belt-and-suspenders; the objects below are also ordered so dependencies come first.)
+set check_function_bodies = off;
 
 -- ───────────────────────── Profiles ─────────────────────────
+-- Created FIRST because the role-helper functions below read from it.
 create table if not exists public.profiles (
   id            uuid primary key references auth.users(id) on delete cascade,
   email         text,
@@ -32,6 +21,22 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+-- ───────────────────────── Roles helper ─────────────────────────
+-- Roles live on the profile row: 'admin' | 'manager' | 'surveyor'.
+-- current_role() is SECURITY DEFINER so the RLS policies that call it don't recurse.
+create or replace function public.current_role() returns text
+language sql stable security definer set search_path = public as $$
+  select coalesce((select role from public.profiles where id = auth.uid()), 'surveyor');
+$$;
+
+-- Convenience predicates used throughout the RLS policies below.
+create or replace function public.is_manager() returns boolean
+language sql stable as $$ select public.current_role() in ('admin','manager'); $$;
+
+create or replace function public.is_admin() returns boolean
+language sql stable as $$ select public.current_role() = 'admin'; $$;
+
+-- ───────────────────────── Profiles policies ─────────────────────────
 -- Read: your own row, or any row if you're a manager/admin (powers the Users screen).
 -- Update: your own row; admins may update anyone (role/active changes). Insert: self only
 -- (the handle_new_user trigger runs as definer, so it's exempt from this check).
