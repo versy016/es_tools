@@ -90,12 +90,16 @@ Workspace Admin console needed):
    Google Drive API**.
 2. **OAuth consent screen** → User Type **Internal** (engsurveys.com.au only — no Google
    verification, long-lived tokens) → add the scope `https://www.googleapis.com/auth/drive`.
-3. **Credentials → Create credentials → OAuth client ID → Desktop app**. Note the
-   **Client ID** and **Client secret**.
-4. Get a refresh token once (easiest: [OAuth Playground](https://developers.google.com/oauthplayground)
-   → gear icon → "Use your own OAuth credentials" → paste the client ID/secret → authorize
-   the Drive scope as a Workspace user → "Exchange authorization code for tokens" → copy
-   the **refresh_token**).
+3. **Credentials → Create credentials → OAuth client ID → Web application**. Under
+   **Authorized redirect URIs** add `https://developers.google.com/oauthplayground`.
+   Note the **Client ID** and **Client secret**.
+4. Get a refresh token once via the [OAuth Playground](https://developers.google.com/oauthplayground):
+   - Gear icon → tick **Use your own OAuth credentials** → paste the client ID/secret.
+     Confirm **Access type: Offline** and **Force prompt: Consent Screen** → Close.
+   - Step 1: in **Input your own scopes** paste `https://www.googleapis.com/auth/drive`
+     → **Authorize APIs** → sign in as a Workspace user → Allow.
+   - Step 2: **Exchange authorization code for tokens** → copy the **refresh_token**
+     (starts with `1//`).
 5. Secrets:
    ```bash
    # supabase/functions/.env  (git-ignored)
@@ -104,9 +108,9 @@ Workspace Admin console needed):
    GOOGLE_REFRESH_TOKEN=1//xxxx
    ```
 
-> Use a **Desktop-app** client (so the Playground flow works) and keep the consent screen
-> **Internal** (or Published). An **External + Testing** screen expires the refresh token
-> after 7 days, which would silently break conversions.
+> The OAuth client must be a **Web application** with the playground redirect URI above
+> (a Desktop client gives `redirect_uri_mismatch`). Keep the consent screen **Internal**
+> (or Published) — an **External + Testing** screen expires the refresh token after 7 days.
 
 #### Apply + test
 
