@@ -110,8 +110,8 @@ export const renderDocx = async (form) => {
     }
 };
 
-// Convert a rendered .docx blob to PDF via the converter endpoint (Gotenberg /
-// CloudConvert behind a Supabase Edge Function). Returns null if not configured.
+// Convert a rendered .docx blob to PDF via the converter endpoint (the docx-to-pdf
+// Supabase Edge Function, which uses the Google Drive API). Returns null if not configured.
 export const docxToPdf = async (docxBlob, filename = 'report.docx') => {
     if (!PDF_ENDPOINT) return null;
     try {

@@ -72,13 +72,44 @@ supabase secrets set SMTP_HOST=smtp.yourhost.com SMTP_PORT=587 \
   SMTP_FROM="Engineering Surveys <office@engsurveys.com.au>"
 #   add SMTP_SECURE=true only if you use implicit TLS on port 465
 
-# (Optional) Service Location PDF export via Gotenberg.
+# (Optional) Service Location PDF export via the Google Drive API (see step 5a).
 supabase functions deploy docx-to-pdf --no-verify-jwt
-supabase secrets set GOTENBERG_URL=https://your-gotenberg-host
 ```
 
 `admin-users` needs no secrets — `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are
 injected into the function runtime automatically.
+
+### 5a. Google Drive PDF converter (optional)
+
+`docx-to-pdf` converts the Service Location `.docx` to PDF by uploading it to Google
+Drive as a Google Doc, exporting that as PDF, and deleting the temp file — so the data
+stays inside your Workspace tenant. One-time Google setup:
+
+1. **Google Cloud** → create/pick a project → **Enable APIs → Google Drive API**.
+2. **Create a service account** → **Keys → Add key → JSON** (downloads a key file with
+   `client_email` and `private_key`).
+3. **Workspace Admin console** → **Security → Access and data control → API controls →
+   Domain-wide delegation → Add new**: paste the service account's **Client ID** and the
+   scope `https://www.googleapis.com/auth/drive`, then Authorise.
+4. Set the secrets (an env file avoids escaping the multi-line key):
+
+   ```bash
+   # supabase/functions/.env  (git-ignored)
+   GOOGLE_SA_EMAIL=es-tools@your-project.iam.gserviceaccount.com
+   GOOGLE_SA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+   GOOGLE_IMPERSONATE_SUBJECT=office@engsurveys.com.au   # a real Workspace user to act as
+   ```
+   ```bash
+   supabase secrets set --env-file supabase/functions/.env
+   ```
+
+`GOOGLE_IMPERSONATE_SUBJECT` must be a real user in your domain — the temp Doc is created
+in (and deleted from) that user's Drive. Test:
+
+```bash
+curl -X POST https://rqjywiqdeqzdzlyfmden.functions.supabase.co/docx-to-pdf \
+  -F "file=@public/templates/service-location.docx" -o out.pdf
+```
 
 > Note: `send-report` is deployed `--no-verify-jwt` (it's hit by a plain `fetch`). It's
 > an internal endpoint guarded by CORS; if you want to lock it down further, add a shared
@@ -109,7 +140,7 @@ Restart `npm start` after editing env files.
 3. **Photo Report**: create → **Generate** saves a row in `reports` + a PDF in the
    `reports` bucket → it appears on **Dashboard** and **Reports** → download works →
    **Export & email** sends via `send-report`.
-4. **Service Location**: generate the `.docx` (and PDF if Gotenberg is deployed) →
+4. **Service Location**: generate the `.docx` (and PDF if docx-to-pdf is deployed) →
    **Send via email** works; address autocomplete biases to Australia.
 5. **RBAC**: a `surveyor` doesn't see **Users** and is redirected from `/users`; an
    `admin` sees it, can invite a user (they get an email), and change a role — each

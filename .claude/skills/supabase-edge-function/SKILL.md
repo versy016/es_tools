@@ -8,7 +8,7 @@ description: Scaffold or modify a Supabase Edge Function in es_tools following t
 Functions live in `supabase/functions/<name>/index.ts` and run on Deno (NOT Node — no
 `require`, no npm; import via `https://esm.sh/...` or `https://deno.land/x/...`). Match the
 three existing ones: `admin-users` (privileged, JWT-verified), `send-report` (public SMTP),
-`docx-to-pdf` (public Gotenberg proxy).
+`docx-to-pdf` (public Google Drive PDF proxy).
 
 ## House style (copy this skeleton)
 

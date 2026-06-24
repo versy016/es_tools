@@ -47,7 +47,9 @@ supabase functions deploy send-report --no-verify-jwt
 supabase secrets set SMTP_HOST=... SMTP_PORT=587 SMTP_USER=... SMTP_PASS=... \
   SMTP_FROM="Engineering Surveys <office@engsurveys.com.au>"
 supabase functions deploy docx-to-pdf --no-verify-jwt # optional (Service Location PDF)
-supabase secrets set GOTENBERG_URL=https://your-gotenberg-host
+# docx-to-pdf converts via the Google Drive API (Workspace) — needs a service account
+# with domain-wide delegation; set GOOGLE_SA_EMAIL / GOOGLE_SA_PRIVATE_KEY /
+# GOOGLE_IMPERSONATE_SUBJECT. Full steps in supabase/SETUP.md §5a.
 ```
 
 `admin-users` needs no secrets — `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` are injected.
