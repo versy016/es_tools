@@ -1,20 +1,12 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-// User management on Supabase: the "profiles" table is the user list (read/role/active
-// gated by RLS — only admins can change others), and the "audit" table is the log.
-// Inviting brand-new users needs the service-role key, so it is done from the Supabase
-// dashboard (or a future edge function) — see supabase/README.md.
+// User management on Supabase. Reads (the user list + audit log) come straight from
+// the "profiles"/"audit" tables under RLS — only managers/admins can see them. Writes
+// that need elevated rights (inviting a brand-new account, banning a login, changing a
+// role) go through the "admin-users" edge function, which runs with the service-role key
+// and re-checks that the caller is an admin before acting. See supabase/SETUP.md.
 
 export const isConfigured = () => isSupabaseConfigured();
-
-const writeAudit = async (what) => {
-    if (!supabase) return;
-    try {
-        const { data } = await supabase.auth.getUser();
-        const who = data?.user?.email || 'Someone';
-        await supabase.from('audit').insert({ who, what });
-    } catch { /* non-fatal */ }
-};
 
 export const listUsers = async () => {
     if (!supabase) return { users: [], audit: [] };
@@ -42,28 +34,25 @@ export const listUsers = async () => {
     }
 };
 
-export const setUserActive = async (username, active) => {
+// Calls the admin-users edge function. supabase.functions.invoke automatically attaches
+// the caller's JWT, which the function verifies (and checks the admin role) server-side.
+const adminAction = async (action, payload) => {
     if (!supabase) return false;
     try {
-        const { error } = await supabase.from('profiles').update({ active }).eq('id', username);
+        const { data, error } = await supabase.functions.invoke('admin-users', { body: { action, ...payload } });
         if (error) throw error;
-        await writeAudit(`${active ? 'activated' : 'deactivated'} a user`);
-        return true;
-    } catch (err) { console.warn('setUserActive failed', err); return false; }
+        return data?.ok !== false;
+    } catch (err) {
+        console.warn(`admin-users:${action} failed`, err);
+        return false;
+    }
 };
 
-export const setUserRole = async (username, role) => {
-    if (!supabase) return false;
-    try {
-        const { error } = await supabase.from('profiles').update({ role: role.toLowerCase() }).eq('id', username);
-        if (error) throw error;
-        await writeAudit(`set a user's role to ${role}`);
-        return true;
-    } catch (err) { console.warn('setUserRole failed', err); return false; }
-};
+export const inviteUser = (email, role = 'surveyor') =>
+    adminAction('invite', { email: String(email).trim(), role: String(role).toLowerCase() });
 
-// Inviting a brand-new account requires the service-role key (not available client-side).
-export const inviteUser = async () => {
-    console.warn('inviteUser: invite new users from the Supabase dashboard (Authentication → Users).');
-    return false;
-};
+export const setUserRole = (userId, role) =>
+    adminAction('setRole', { userId, role: String(role).toLowerCase() });
+
+export const setUserActive = (userId, active) =>
+    adminAction('setActive', { userId, active: !!active });

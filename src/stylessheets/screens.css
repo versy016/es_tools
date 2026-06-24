@@ -520,6 +520,27 @@
     border-radius: var(--radius-pill);
 }
 
+/* Role pill rendered as an editable <select> in user management.
+   Keeps the .pill-role-* colours; just makes it interactive. */
+.role-select {
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    padding: 4px 10px;
+    cursor: pointer;
+    width: fit-content;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.role-select:focus {
+    outline: none;
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
 .status-dot {
     display: inline-flex;
     align-items: center;

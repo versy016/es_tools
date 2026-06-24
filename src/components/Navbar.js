@@ -13,9 +13,10 @@ const Logo = () => (
 
 const initials = (name) => (name || 'User').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
-const NavBar = ({ userName, role = 'Surveyor', search, onSearch }) => {
+const NavBar = ({ userName, role = 'Surveyor', search, onSearch, onSignOut }) => {
     const navigate = useNavigate();
     const linkClass = ({ isActive }) => `nav-link ${isActive ? 'active' : ''}`;
+    const canManageUsers = ['admin', 'manager'].includes(String(role).toLowerCase());
 
     return (
         <nav className="nav">
@@ -27,7 +28,7 @@ const NavBar = ({ userName, role = 'Surveyor', search, onSearch }) => {
             <div className="nav-links">
                 <NavLink to="/dashboard" className={linkClass}>Dashboard</NavLink>
                 <NavLink to="/reports" className={linkClass}>Reports</NavLink>
-                <NavLink to="/users" className={linkClass}>Users</NavLink>
+                {canManageUsers && <NavLink to="/users" className={linkClass}>Users</NavLink>}
             </div>
 
             <div className="nav-search">
@@ -46,6 +47,14 @@ const NavBar = ({ userName, role = 'Surveyor', search, onSearch }) => {
                     <span className="nav-role">{role}</span>
                 </span>
             </button>
+
+            {onSignOut && (
+                <button type="button" className="nav-signout" onClick={onSignOut} title="Sign out" aria-label="Sign out">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                    </svg>
+                </button>
+            )}
         </nav>
     );
 };

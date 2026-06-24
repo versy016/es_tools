@@ -136,6 +136,26 @@
     color: var(--faint);
 }
 
+.nav-signout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--border-2);
+    background: var(--surface);
+    border-radius: var(--radius-pill);
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.nav-signout:hover {
+    background: var(--surface-2);
+    color: var(--danger);
+    border-color: var(--border-strong);
+}
+
 @media (max-width: 860px) {
     .nav {
         gap: 14px;

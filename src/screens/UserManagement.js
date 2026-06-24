@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useToast } from '../components/Toast';
 import EmptyState from '../components/EmptyState';
-import { listUsers, setUserActive, inviteUser, isConfigured } from '../services/usersService';
+import { listUsers, setUserActive, setUserRole, inviteUser, isConfigured } from '../services/usersService';
+
+const ROLES = ['Surveyor', 'Manager', 'Admin'];
 
 const roleClass = (r) => `pill pill-role-${String(r || 'surveyor').toLowerCase()}`;
 const initials = (n) => (n || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -34,6 +36,13 @@ const UserManagement = () => {
         else showToast('Could not send invite');
     };
 
+    const changeRole = async (u, role) => {
+        if (role === u.role) return;
+        const ok = await setUserRole(u.username || u.email, role);
+        if (ok) { showToast(`${u.name || u.email} is now ${role}`); refresh(); }
+        else showToast('Could not change role');
+    };
+
     return (
         <div className="page dc-pop">
             <div className="page-head row-between">
@@ -60,7 +69,7 @@ const UserManagement = () => {
                     title={configured ? 'No users found' : 'User management not connected'}
                     sub={configured
                         ? 'Invite your first team member to get started.'
-                        : 'Set REACT_APP_ADMIN_ENDPOINT and deploy the admin service to manage users and roles.'}
+                        : 'Connect Supabase and run supabase/SETUP.md to manage users and roles.'}
                 />
             ) : (
                 <div className="list-card">
@@ -71,7 +80,10 @@ const UserManagement = () => {
                                 <span className="user-avatar">{initials(u.name)}</span>
                                 <div><div className="user-name">{u.name || u.email}</div><div className="user-email">{u.email}</div></div>
                             </div>
-                            <span className={roleClass(u.role)}>{u.role || 'Surveyor'}</span>
+                            <select className={`role-select ${roleClass(u.role)}`} value={u.role || 'Surveyor'}
+                                onChange={(e) => changeRole(u, e.target.value)} aria-label="Change role">
+                                {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                            </select>
                             <div className="tool-chips">
                                 {(u.tools || []).map((t) => <span key={t} className="tool-chip">{t}</span>)}
                             </div>

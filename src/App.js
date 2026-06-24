@@ -20,7 +20,7 @@ const AppShell = () => {
   const [search, setSearch] = useState('');
   return (
     <div className="App">
-      <NavBar userName={userName} role={roleLabel(role)} search={search} onSearch={setSearch} />
+      <NavBar userName={userName} role={roleLabel(role)} search={search} onSearch={setSearch} onSignOut={signOut} />
       <main className="app-main">
         <Outlet context={{ search, userName, signOut, role }} />
       </main>
@@ -36,13 +36,21 @@ const withBack = (Component) => function Wrapped() {
 const PhotoReportRoute = withBack(PhotoReport);
 const ServiceLocaterRoute = withBack(ServiceLocater);
 
+// Only managers/admins may reach user management; everyone else is bounced to the dashboard.
+const RequireManager = ({ children }) => {
+  const { role } = useAuth();
+  return ['admin', 'manager'].includes(String(role).toLowerCase())
+    ? children
+    : <Navigate to="/dashboard" replace />;
+};
+
 const Routed = () => (
   <Routes>
     <Route element={<AppShell />}>
       <Route index element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/reports" element={<Reports />} />
-      <Route path="/users" element={<UserManagement />} />
+      <Route path="/users" element={<RequireManager><UserManagement /></RequireManager>} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/tools/photo-report" element={<PhotoReportRoute />} />
       <Route path="/tools/service-location" element={<ServiceLocaterRoute />} />
@@ -54,8 +62,8 @@ const Routed = () => (
 const ConfigureNotice = () => (
   <div className="boot-notice">
     <h2>Connect Supabase</h2>
-    <p>Set <code>REACT_APP_SUPABASE_URL</code> and <code>REACT_APP_SUPABASE_ANON_KEY</code> in a
-      <code>.env</code> file, then restart. See <code>supabase/README.md</code>.</p>
+    <p>Set <code>REACT_APP_SUPABASE_URL</code> and <code>REACT_APP_SUPABASE_PUBLISHABLE_KEY</code> in a
+      <code>.env</code> file, then restart. See <code>supabase/SETUP.md</code>.</p>
   </div>
 );
 
