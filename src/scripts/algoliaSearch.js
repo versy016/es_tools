@@ -47,6 +47,9 @@ const displayDropdown = (inputElement, results, displayAttribute, onSelect) => {
   });
 
   clearDropdown(inputElement);
+  // Anchor the absolutely-positioned dropdown to the input's wrapper so it sits directly
+  // under the input at the input's width, instead of overflowing across the form.
+  inputElement.parentNode.style.position = 'relative';
   inputElement.parentNode.appendChild(dropdown);
 };
 

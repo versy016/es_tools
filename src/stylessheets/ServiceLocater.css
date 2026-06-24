@@ -192,9 +192,13 @@ input {
     cursor: not-allowed;
 }
 
-/* Algolia / address dropdowns */
+/* Algolia / address dropdowns. Anchored to the input's wrapper (set position:relative
+   in JS) so it sits directly under the input at the input's width, not the form's. */
 .dropdown {
     position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
