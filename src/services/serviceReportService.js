@@ -69,8 +69,13 @@ const buildData = (form) => {
         dbydByClient: !!form.dbydByClient,
         sitename: form.sitename || '',
         addnotes: Array.isArray(form.addnotes) ? form.addnotes.join('\n') : (form.addnotes || ''),
-        // Image-module loop: each entry's `data` (a base64 photo) is resolved by getImage.
-        photos: (form.photos || []).map((p) => ({ data: p })),
+        // Image-module loop: each entry's `data` (base64 photo) is resolved by getImage;
+        // {name}/{description} render as captions under each photo. Accepts string or object.
+        photos: (form.photos || []).map((p) => (
+            typeof p === 'string'
+                ? { data: p, name: '', description: '' }
+                : { data: p.data, name: p.name || '', description: p.description || '' }
+        )),
     };
     // Blank every checklist tag, then fill the selected ones.
     Object.values(ASSET_PREFIX).forEach((prefix) => {
@@ -95,8 +100,8 @@ export const renderDocx = async (form) => {
         const zip = new PizZip(content);
         const imageModule = new ImageModule({
             getImage: (tagValue) => base64ToArrayBuffer(tagValue),
-            // ~280px wide lets two photos sit side by side on an A4 line (the loop is inline).
-            getSize: () => [280, 205],
+            // One photo per row (each in its own paragraph); ~430px wide centred on A4.
+            getSize: () => [430, 305],
         });
         const doc = new Docxtemplater(zip, { modules: [imageModule], paragraphLoop: true, linebreaks: true });
         doc.render(buildData(form));

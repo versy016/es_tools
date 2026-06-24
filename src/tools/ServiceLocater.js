@@ -274,7 +274,10 @@ const ServiceLocater = ({ goBack }) => {
                 dbydByClient,                 // when true the template skips ES DBYD details
                 sitename: address,            // site name mirrors the job location/address
                 addnotes: notes,
-                photos: imagePreviews,
+                // Each photo carries its name + description so the template can caption it.
+                photos: imagePreviews.map((src, i) => ({
+                    data: src, name: imageNames[i] || '', description: imageDescriptions[i] || '',
+                })),
             };
 
             // Free any previous object URLs before regenerating to avoid leaks.
