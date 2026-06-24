@@ -4,9 +4,10 @@ import '../stylessheets/PhotoReport.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faFilePdf, faPaperPlane, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { setupClientsSearch, setupProjectsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
-import { loadGoogleMapsScript } from '../scripts/googleMaps';
+import { loadGoogleMapsScript, attachAddressAutocomplete } from '../scripts/googleMaps';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { renderDocx, docxToPdf } from '../services/serviceReportService';
+import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 import FormSection from '../components/FormSection';
 
 const ServiceLocater = ({ goBack }) => {
@@ -24,7 +25,8 @@ const ServiceLocater = ({ goBack }) => {
         "Services marked with depths where possible."
     ]);
     const [imagePreviews, setImagePreviews] = useState([]);
-    const [imageFiles, setImageFiles] = useState([]);
+    const [, setImageFiles] = useState([]);
+    const [docBlob, setDocBlob] = useState(null);
     const [imageNames, setImageNames] = useState([]);
     const [imageDescriptions, setImageDescriptions] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
@@ -79,23 +81,10 @@ const ServiceLocater = ({ goBack }) => {
         });
     }, []);
 
-    const initAutocomplete = () => {
-        const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-            types: ['geocode', 'establishment'],
-            componentRestrictions: { country: 'Aus' },
-            bounds: new window.google.maps.LatLngBounds(
-                new window.google.maps.LatLng(37.7749, -122.4194),
-                new window.google.maps.LatLng(37.7749, -122.4194)
-            )
-        });
-        autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-            setAddress(place.formatted_address || place.name);
-        });
-    };
-
     useEffect(() => {
-        loadGoogleMapsScript(initAutocomplete);
+        loadGoogleMapsScript(() => {
+            attachAddressAutocomplete(addressInputRef.current, setAddress);
+        });
     }, []);
 
     const handleAddressChange = (e) => {
@@ -257,6 +246,7 @@ const ServiceLocater = ({ goBack }) => {
 
             // Render the .docx in the browser from the template.
             const docxBlob = await renderDocx(reportForm);
+            setDocBlob(docxBlob);
             setDocLink(URL.createObjectURL(docxBlob));
 
             // Optionally convert to PDF (needs the converter endpoint configured).
@@ -270,30 +260,39 @@ const ServiceLocater = ({ goBack }) => {
         }
     };
 
+    const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
+
     const handleSendEmail = async () => {
-            if (!docLink) {
-                alert('Please generate the document first.');
-                return;
-            }
-
-            setLoading(true);
-
-            const response = await fetch('https://your-backend-endpoint/send-email', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, docUrl: docLink }),
+        if (!docBlob) {
+            alert('Please generate the report first.');
+            return;
+        }
+        if (email && !isEmail(email)) {
+            alert('Please enter a valid email address, or leave it blank.');
+            return;
+        }
+        if (!isEmailConfigured()) {
+            alert('Email is not configured yet (REACT_APP_EMAIL_ENDPOINT is not set). Use Download for now.');
+            return;
+        }
+        setLoading(true);
+        try {
+            const contentBase64 = await blobToBase64(docBlob);
+            await sendReportEmail({
+                to: isEmail(email) ? [email.trim()] : [],
+                subject: `Service Location Field Report${address ? ' — ' + address : ''}`,
+                text: `Please find attached the Service Location Field Report${address ? ' for ' + address : ''}.\n\nGenerated via ES Tools.`,
+                filename: 'Service Location Field Report.docx',
+                contentBase64,
             });
-
-            if (response.ok) {
-                alert('Email sent successfully.');
-            } else {
-                alert('Error sending email.');
-            }
-
+            alert('Report emailed successfully.');
+        } catch (err) {
+            console.error('Error sending email', err);
+            alert('Could not send the email. The report was generated — use Download instead. See console for details.');
+        } finally {
             setLoading(false);
-        };
+        }
+    };
 
     return (
         <div className="photo-report">

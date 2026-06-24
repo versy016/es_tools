@@ -5,8 +5,10 @@ import { supabase, REPORTS_BUCKET } from '../lib/supabase';
 // Every call is guarded so the UI degrades to an empty state if Supabase is unavailable.
 
 const uid = async () => {
-    const { data } = await supabase.auth.getUser();
-    return data?.user?.id || null;
+    try {
+        const { data } = await supabase.auth.getUser();
+        return data?.user?.id || null;
+    } catch { return null; }
 };
 
 const rowToReport = (r) => ({
@@ -24,6 +26,7 @@ export const saveReport = async ({ id, blob, meta }) => {
     if (!supabase) return false;
     try {
         const userId = await uid();
+        if (!userId) return false;
         const path = `${userId}/${id}.pdf`;
         const up = await supabase.storage.from(REPORTS_BUCKET).upload(path, blob, { upsert: true, contentType: 'application/pdf' });
         if (up.error) throw up.error;
@@ -59,8 +62,10 @@ export const listReports = async () => {
 };
 
 const pathOf = async (id) => {
-    const { data } = await supabase.from('reports').select('storage_path').eq('id', id).single();
-    return data?.storage_path || null;
+    try {
+        const { data } = await supabase.from('reports').select('storage_path').eq('id', id).single();
+        return data?.storage_path || null;
+    } catch { return null; }
 };
 
 export const getReportUrl = async (id) => {

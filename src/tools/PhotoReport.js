@@ -9,7 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { setupClientsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
-import { loadGoogleMapsScript } from '../scripts/googleMaps';
+import { loadGoogleMapsScript, attachAddressAutocomplete } from '../scripts/googleMaps';
 import { UTILITIES, QUALITY_LEVELS } from '../report/legendColors';
 import AnnotatorSwitch from '../components/AnnotatorSwitch';
 import CameraCapture from '../components/CameraCapture';
@@ -19,25 +19,14 @@ import PhotoReportDoc from '../report/PhotoReportPdf';
 import { useToast } from '../components/Toast';
 import { saveReport } from '../services/reportsService';
 import { getSignoff } from '../services/profileService';
-
-// Internal copy of every generated report is emailed here.
-// TODO: change to bgosling@engsurveys.com.au after testing.
-const AUTO_REPORT_RECIPIENT = 'sverma@engsurveys.com.au';
-// Backend email endpoint (nodemailer/SMTP). Set REACT_APP_EMAIL_ENDPOINT in .env.
-const EMAIL_ENDPOINT = process.env.REACT_APP_EMAIL_ENDPOINT || '';
+import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
+import { REPORT_ARCHIVE_EMAIL } from '../config';
 
 const readFileAsDataURL = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => resolve(e.target.result);
     reader.onerror = reject;
     reader.readAsDataURL(file);
-});
-
-const blobToBase64 = (blob) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
 });
 
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
@@ -87,15 +76,7 @@ const PhotoReport = ({ goBack }) => {
 
     useEffect(() => {
         loadGoogleMapsScript(() => {
-            if (!addressRef.current || !window.google) return;
-            const autocomplete = new window.google.maps.places.Autocomplete(addressRef.current, {
-                types: ['geocode', 'establishment'],
-                componentRestrictions: { country: 'Aus' },
-            });
-            autocomplete.addListener('place_changed', () => {
-                const place = autocomplete.getPlace();
-                setField('siteAddress', place.formatted_address || place.name);
-            });
+            attachAddressAutocomplete(addressRef.current, (addr) => setField('siteAddress', addr));
         });
     }, []);
 
@@ -185,28 +166,18 @@ const PhotoReport = ({ goBack }) => {
         setLoading(true);
         try {
             const blob = await buildPdfBlob();
-            if (!EMAIL_ENDPOINT) {
+            if (!isEmailConfigured()) {
                 alert('Email is not configured yet (REACT_APP_EMAIL_ENDPOINT is not set). The PDF was generated — use Download for now.');
                 return;
             }
-            const pdfBase64 = await blobToBase64(blob);
-            const recipients = Array.from(new Set([
-                ...(isEmail(emailTo) ? [emailTo.trim()] : []),
-                AUTO_REPORT_RECIPIENT,
-            ]));
-            const filename = `Photo Report - ${form.siteAddress || 'report'}.pdf`;
-            const response = await fetch(EMAIL_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    to: recipients,
-                    subject: `Photo Report${form.siteAddress ? ' — ' + form.siteAddress : ''}`,
-                    text: `Please find attached the photo report${form.siteAddress ? ' for ' + form.siteAddress : ''}.\n\nGenerated via ES Tools.`,
-                    filename,
-                    pdfBase64,
-                }),
+            const contentBase64 = await blobToBase64(blob);
+            await sendReportEmail({
+                to: isEmail(emailTo) ? [emailTo.trim()] : [],
+                subject: `Photo Report${form.siteAddress ? ' — ' + form.siteAddress : ''}`,
+                text: `Please find attached the photo report${form.siteAddress ? ' for ' + form.siteAddress : ''}.\n\nGenerated via ES Tools.`,
+                filename: `Photo Report - ${form.siteAddress || 'report'}.pdf`,
+                contentBase64,
             });
-            if (!response.ok) throw new Error(`Email endpoint returned ${response.status}`);
             await persistReport(blob, 'Sent');
             showToast('Branded PDF generated & emailed to client');
         } catch (err) {
@@ -350,7 +321,7 @@ const PhotoReport = ({ goBack }) => {
                                 onChange={(e) => setEmailTo(e.target.value)} autoComplete="off" />
                         </label>
                     </div>
-                    <p className="muted-note">A copy is always sent to <strong>{AUTO_REPORT_RECIPIENT}</strong>.</p>
+                    <p className="muted-note">A copy is always sent to <strong>{REPORT_ARCHIVE_EMAIL}</strong>.</p>
                 </Section>
 
                 <div className="tool-actions tool-actions-bottom">

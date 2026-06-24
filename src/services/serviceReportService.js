@@ -83,17 +83,23 @@ const buildData = (form) => {
 
 export const renderDocx = async (form) => {
     const content = await loadTemplate();
-    const zip = new PizZip(content);
-    const imageModule = new ImageModule({
-        getImage: (tagValue) => base64ToArrayBuffer(tagValue),
-        getSize: () => [450, 320],
-    });
-    const doc = new Docxtemplater(zip, { modules: [imageModule], paragraphLoop: true, linebreaks: true });
-    doc.render(buildData(form));
-    return doc.getZip().generate({
-        type: 'blob',
-        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
+    try {
+        const zip = new PizZip(content);
+        const imageModule = new ImageModule({
+            getImage: (tagValue) => base64ToArrayBuffer(tagValue),
+            getSize: () => [450, 320],
+        });
+        const doc = new Docxtemplater(zip, { modules: [imageModule], paragraphLoop: true, linebreaks: true });
+        doc.render(buildData(form));
+        return doc.getZip().generate({
+            type: 'blob',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        });
+    } catch (err) {
+        // docxtemplater errors are cryptic; surface a clean message, keep the detail in the console.
+        console.error('renderDocx failed', err?.properties?.errors || err);
+        throw new Error('Could not generate the report from the template. The template may be invalid or out of date.');
+    }
 };
 
 // Convert a rendered .docx blob to PDF via the converter endpoint (Gotenberg /

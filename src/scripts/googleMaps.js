@@ -34,4 +34,20 @@ const loadGoogleMapsScript = async (callback) => {
   }
 };
 
-export { loadGoogleMapsScript };
+// Shared address-autocomplete setup for the report tools: restricts to Australia and
+// calls onSelect(formattedAddress) when the user picks a place. Returns the Autocomplete
+// instance (or null if Maps isn't loaded yet). Call inside loadGoogleMapsScript's callback.
+const attachAddressAutocomplete = (input, onSelect) => {
+  if (!input || !window.google?.maps?.places) return null;
+  const autocomplete = new window.google.maps.places.Autocomplete(input, {
+    types: ['geocode', 'establishment'],
+    componentRestrictions: { country: 'au' },
+  });
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    onSelect(place.formatted_address || place.name || '');
+  });
+  return autocomplete;
+};
+
+export { loadGoogleMapsScript, attachAddressAutocomplete };

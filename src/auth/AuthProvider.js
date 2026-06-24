@@ -4,6 +4,12 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
+// Returned by auth actions when Supabase isn't configured, so callers (e.g. the Login
+// screen) show a friendly message instead of crashing on a null-deref.
+const NOT_CONFIGURED = {
+    error: { message: 'Backend not configured — set REACT_APP_SUPABASE_URL and the publishable key.' },
+};
+
 export const AuthProvider = ({ children }) => {
     const [session, setSession] = useState(null);
     const [profile, setProfile] = useState(null);
@@ -38,11 +44,18 @@ export const AuthProvider = ({ children }) => {
         loading,
         userName: profile?.full_name || session?.user?.email || 'User',
         role: profile?.role || 'surveyor',
-        signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
+        signIn: (email, password) =>
+            supabase
+                ? supabase.auth.signInWithPassword({ email, password })
+                : Promise.resolve(NOT_CONFIGURED),
         signUp: (email, password, fullName) =>
-            supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } }),
+            supabase
+                ? supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } })
+                : Promise.resolve(NOT_CONFIGURED),
         signInWithMicrosoft: () =>
-            supabase.auth.signInWithOAuth({ provider: 'azure', options: { redirectTo: window.location.origin } }),
+            supabase
+                ? supabase.auth.signInWithOAuth({ provider: 'azure', options: { redirectTo: window.location.origin } })
+                : Promise.resolve(NOT_CONFIGURED),
         signOut: async () => { if (supabase) await supabase.auth.signOut(); },
         reloadProfile: () => loadProfile(session?.user?.id),
     };

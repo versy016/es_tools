@@ -8,6 +8,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 export const isConfigured = () => isSupabaseConfigured();
 
 const writeAudit = async (what) => {
+    if (!supabase) return;
     try {
         const { data } = await supabase.auth.getUser();
         const who = data?.user?.email || 'Someone';

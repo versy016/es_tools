@@ -2,20 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useToast } from '../components/Toast';
 import EmptyState from '../components/EmptyState';
 import { listReports, getReportUrl, getReportBlob } from '../services/reportsService';
+import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 
 const FILTERS = ['All', 'Drafts', 'Sent', 'Approved'];
 const statusClass = (s) => `pill pill-${String(s || 'draft').toLowerCase()}`;
 const monogram = (s) => (s || 'PR').replace(/[^A-Za-z]/g, ' ').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || 'PR';
-
-const AUTO_RECIPIENT = 'sverma@engsurveys.com.au';
-const EMAIL_ENDPOINT = process.env.REACT_APP_EMAIL_ENDPOINT || '';
-
-const blobToBase64 = (blob) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-});
 
 const Reports = () => {
     const showToast = useToast();
@@ -34,23 +25,18 @@ const Reports = () => {
     };
 
     const resend = async (r) => {
-        if (!EMAIL_ENDPOINT) { showToast('Email is not configured yet'); return; }
+        if (!isEmailConfigured()) { showToast('Email is not configured yet'); return; }
         const blob = await getReportBlob(r.id);
         if (!blob) { showToast('Could not load this report'); return; }
         try {
-            const pdfBase64 = await blobToBase64(blob);
-            const res = await fetch(EMAIL_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    to: [r.client, AUTO_RECIPIENT].filter(Boolean),
-                    subject: `Photo Report${r.siteAddress ? ' — ' + r.siteAddress : ''}`,
-                    text: 'Please find attached the photo report (re-sent).',
-                    filename: `${r.title || 'Photo Report'}.pdf`,
-                    pdfBase64,
-                }),
+            const contentBase64 = await blobToBase64(blob);
+            await sendReportEmail({
+                to: [r.client].filter(Boolean),
+                subject: `Photo Report${r.siteAddress ? ' — ' + r.siteAddress : ''}`,
+                text: 'Please find attached the photo report (re-sent).',
+                filename: `${r.title || 'Photo Report'}.pdf`,
+                contentBase64,
             });
-            if (!res.ok) throw new Error(res.status);
             showToast(`Report ${r.id} re-sent`);
         } catch (err) {
             console.error(err);
