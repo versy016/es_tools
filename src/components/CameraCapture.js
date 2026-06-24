@@ -6,11 +6,13 @@ import { faCamera, faXmark, faCameraRotate } from '@fortawesome/free-solid-svg-i
 // front/back flip and a file-input fallback if the camera can't be accessed.
 const CameraCapture = ({ onCapture, onClose }) => {
     const videoRef = useRef(null);
-    const streamRef = useRef(null);
+    const streamRef = useRef(null);      // the live MediaStream, kept in a ref so we can stop its tracks
     const [error, setError] = useState('');
-    const [facing, setFacing] = useState('environment');
-    const [count, setCount] = useState(0);
+    const [facing, setFacing] = useState('environment'); // 'environment' = rear cam, 'user' = front
+    const [count, setCount] = useState(0); // how many photos captured this session (UI feedback)
 
+    // Release the camera: stopping every track turns off the hardware/indicator.
+    // Called on flip, unmount, and close to avoid leaving the camera on.
     const stop = () => {
         if (streamRef.current) {
             streamRef.current.getTracks().forEach((t) => t.stop());
@@ -18,6 +20,9 @@ const CameraCapture = ({ onCapture, onClose }) => {
         }
     };
 
+    // Open a video stream for the requested facing mode and pipe it to the <video>.
+    // Stops any prior stream first. Falls back to an error + file picker if the API
+    // is unavailable or permission is denied.
     const start = async (mode) => {
         stop();
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -34,12 +39,16 @@ const CameraCapture = ({ onCapture, onClose }) => {
         }
     };
 
+    // (Re)start the stream whenever the facing mode changes; tear it down on unmount.
     useEffect(() => {
         start(facing);
         return stop;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [facing]);
 
+    // Grab the current video frame: draw it onto an offscreen canvas at the native
+    // video resolution, then hand a JPEG data URL to the parent. The stream stays
+    // live so the user can take several photos in a row.
     const capture = () => {
         const v = videoRef.current;
         if (!v || !v.videoWidth) return;
@@ -51,6 +60,7 @@ const CameraCapture = ({ onCapture, onClose }) => {
         setCount((c) => c + 1);
     };
 
+    // Fallback when the live camera isn't available: read a chosen file as a data URL.
     const handleFileFallback = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -59,6 +69,7 @@ const CameraCapture = ({ onCapture, onClose }) => {
         reader.readAsDataURL(file);
     };
 
+    // Always release the camera before closing.
     const handleClose = () => { stop(); onClose(); };
 
     return (

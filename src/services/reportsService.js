@@ -4,6 +4,7 @@ import { supabase, REPORTS_BUCKET } from '../lib/supabase';
 // "reports" table. RLS gives each user their own + lets managers/admins see all.
 // Every call is guarded so the UI degrades to an empty state if Supabase is unavailable.
 
+// Current auth user id, or null (used to namespace storage paths). Error-safe.
 const uid = async () => {
     try {
         const { data } = await supabase.auth.getUser();
@@ -11,6 +12,8 @@ const uid = async () => {
     } catch { return null; }
 };
 
+// Map a snake_case DB row to the camelCase shape the UI expects; created_at becomes an
+// epoch ms (0 when missing) for easy sorting/formatting.
 const rowToReport = (r) => ({
     id: r.id,
     title: r.title,
@@ -22,6 +25,9 @@ const rowToReport = (r) => ({
     createdAt: r.created_at ? new Date(r.created_at).getTime() : 0,
 });
 
+// Upsert a report: upload the PDF blob to reports/<uid>/<id>.pdf (overwriting any prior
+// version) then upsert the metadata row. RLS scopes both to the owner. Returns true on
+// success, false on any failure (incl. no auth user) — never throws to the caller.
 export const saveReport = async ({ id, blob, meta }) => {
     if (!supabase) return false;
     try {
@@ -49,6 +55,8 @@ export const saveReport = async ({ id, blob, meta }) => {
     }
 };
 
+// List reports visible to the caller (own rows, plus all rows for managers/admins via
+// RLS), newest first. Returns [] on failure.
 export const listReports = async () => {
     if (!supabase) return [];
     try {
@@ -61,6 +69,7 @@ export const listReports = async () => {
     }
 };
 
+// Look up a report's storage_path by id (RLS enforces visibility). Null if not found.
 const pathOf = async (id) => {
     try {
         const { data } = await supabase.from('reports').select('storage_path').eq('id', id).single();
@@ -68,6 +77,7 @@ const pathOf = async (id) => {
     } catch { return null; }
 };
 
+// Short-lived (5 min) signed URL for viewing/downloading the report file. Null on miss.
 export const getReportUrl = async (id) => {
     if (!supabase) return null;
     try {
@@ -82,6 +92,7 @@ export const getReportUrl = async (id) => {
     }
 };
 
+// Download the report file as a Blob (e.g. to re-attach to an email). Null on miss.
 export const getReportBlob = async (id) => {
     if (!supabase) return null;
     try {
@@ -96,6 +107,8 @@ export const getReportBlob = async (id) => {
     }
 };
 
+// Delete a report: remove the storage object (if any) then the metadata row. RLS limits
+// this to the owner. Returns true unless an error is thrown.
 export const removeReport = async (id) => {
     if (!supabase) return false;
     try {

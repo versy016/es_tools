@@ -1,8 +1,13 @@
+// UserManagement.js — admin-only screen (gated by RequireManager). Shows user
+// stat tiles, a roster with per-user role select and activate/deactivate, an
+// invite action, and an audit log. All mutations go through usersService and
+// re-fetch on success.
 import React, { useEffect, useState } from 'react';
 import { useToast } from '../components/Toast';
 import EmptyState from '../components/EmptyState';
 import { listUsers, setUserActive, setUserRole, inviteUser, isConfigured } from '../services/usersService';
 
+// Assignable roles for the per-user role <select>.
 const ROLES = ['Surveyor', 'Manager', 'Admin'];
 
 const roleClass = (r) => `pill pill-role-${String(r || 'surveyor').toLowerCase()}`;
@@ -10,24 +15,28 @@ const initials = (n) => (n || '?').split(' ').map((w) => w[0]).slice(0, 2).join(
 
 const UserManagement = () => {
     const showToast = useToast();
-    const [data, setData] = useState(null); // null = loading
-    const configured = isConfigured();
+    const [data, setData] = useState(null); // null = loading; { users, audit } once loaded
+    const configured = isConfigured(); // false => backend not wired; disables invite + shows hint
 
+    // Re-fetch users + audit after any mutation so the UI reflects server state.
     const refresh = () => listUsers().then(setData);
     useEffect(() => { refresh(); }, []);
 
     const users = (data && data.users) || [];
     const audit = (data && data.audit) || [];
+    // Stat tile counts: inactive users are treated as pending invites.
     const total = users.length;
     const active = users.filter((u) => u.active).length;
     const pending = users.filter((u) => !u.active).length;
 
+    // Activate/deactivate a user; toast and refresh on success.
     const toggle = async (u) => {
         const ok = await setUserActive(u.username || u.email, !u.active);
         if (ok) { showToast(`${u.name || u.email} ${u.active ? 'deactivated' : 'activated'}`); refresh(); }
         else showToast('Could not update user');
     };
 
+    // Prompt for an email and send an invite (defaults the new user to Surveyor).
     const invite = async () => {
         const email = window.prompt('Email address to invite:');
         if (!email) return;
@@ -36,6 +45,7 @@ const UserManagement = () => {
         else showToast('Could not send invite');
     };
 
+    // Change a user's role; no-op if unchanged.
     const changeRole = async (u, role) => {
         if (role === u.role) return;
         const ok = await setUserRole(u.username || u.email, role);
@@ -62,6 +72,8 @@ const UserManagement = () => {
                 <div className="stat-tile"><div className="stat-label">Pending invites</div><div className="stat-value">{pending}</div></div>
             </div>
 
+            {/* Loading -> spinner; no users -> empty state whose copy depends on
+                whether the backend is configured; else the roster. */}
             {data === null ? (
                 <div className="list-card"><div className="loading-row">Loading users…</div></div>
             ) : users.length === 0 ? (
@@ -98,6 +110,7 @@ const UserManagement = () => {
                 </div>
             )}
 
+            {/* Audit log of administrative actions (who / what / when). */}
             <div className="audit-card">
                 <h2>Audit log</h2>
                 {data === null ? (

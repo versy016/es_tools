@@ -10,6 +10,7 @@ language sql stable security definer set search_path = public as $$
   select coalesce((select role from public.profiles where id = auth.uid()), 'surveyor');
 $$;
 
+-- Convenience predicates used throughout the RLS policies below.
 create or replace function public.is_manager() returns boolean
 language sql stable as $$ select public.current_role() in ('admin','manager'); $$;
 
@@ -31,6 +32,9 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+-- Read: your own row, or any row if you're a manager/admin (powers the Users screen).
+-- Update: your own row; admins may update anyone (role/active changes). Insert: self only
+-- (the handle_new_user trigger runs as definer, so it's exempt from this check).
 drop policy if exists "profiles: read own or manager" on public.profiles;
 create policy "profiles: read own or manager" on public.profiles
   for select using (id = auth.uid() or public.is_manager());
@@ -75,6 +79,8 @@ create table if not exists public.reports (
 
 alter table public.reports enable row level security;
 
+-- Owner has full CRUD on their own rows (owner defaults to auth.uid() on insert);
+-- managers/admins get read-only visibility across everyone's reports.
 drop policy if exists "reports: owner all" on public.reports;
 create policy "reports: owner all" on public.reports
   for all using (owner = auth.uid()) with check (owner = auth.uid());
@@ -83,6 +89,8 @@ create policy "reports: manager read" on public.reports
   for select using (public.is_manager());
 
 -- ───────────────────────── Audit ─────────────────────────
+-- Append-only admin action log (who/what/ts). Managers/admins can read it; any signed-in
+-- user can insert (the admin-users edge function writes entries as the acting admin).
 create table if not exists public.audit (
   id    bigint generated always as identity primary key,
   who   text,

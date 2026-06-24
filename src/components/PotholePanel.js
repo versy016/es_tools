@@ -3,6 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { UTILITIES, QUALITY_LEVELS } from '../report/legendColors';
 
+// Read a File/Blob into a base64 data URL (so thumbnails can be stored/serialised
+// without a server round-trip).
 const readFileAsDataURL = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => resolve(e.target.result);
@@ -13,20 +15,28 @@ const readFileAsDataURL = (file) => new Promise((resolve, reject) => {
 // Manages the pothole photos attached to a single main photo.
 // Each pothole gets an auto label (PH01, PH02...) and utility / quality level /
 // depth / comment fields, which render below the main photo in the report.
+// Controlled component: `potholes` is the source of truth, every mutation flows
+// out through onChange. A pothole = { id, label PHxx, src dataURL, utility,
+// qualityLevel A-E, depth, comment }.
 const PotholePanel = ({ potholes, onChange }) => {
 
+    // Re-derive sequential PH01, PH02… labels from list position. Run after any
+    // add/remove so labels always match the displayed order with no gaps.
     const relabel = (list) => list.map((p, i) => ({
         ...p,
         label: `PH${String(i + 1).padStart(2, '0')}`,
     }));
 
+    // Upload one or more thumbnails: read each to a data URL, build new pothole
+    // records with sensible defaults, append, then relabel. Reset the input value
+    // so picking the same file again still fires onChange.
     const handleAdd = async (event) => {
         const files = Array.from(event.target.files);
         if (!files.length) return;
         const dataUrls = await Promise.all(files.map(readFileAsDataURL));
         const added = dataUrls.map((src, i) => ({
             id: `ph_${Date.now()}_${i}`,
-            label: '',
+            label: '',                 // filled in by relabel()
             src,
             utility: 'water',
             qualityLevel: 'A',
@@ -37,10 +47,12 @@ const PotholePanel = ({ potholes, onChange }) => {
         event.target.value = '';
     };
 
+    // Patch a single field on one pothole (label is unaffected, so no relabel needed).
     const update = (id, patch) => {
         onChange(potholes.map((p) => (p.id === id ? { ...p, ...patch } : p)));
     };
 
+    // Delete a pothole, then relabel so the remaining PHxx numbers stay contiguous.
     const remove = (id) => {
         onChange(relabel(potholes.filter((p) => p.id !== id)));
     };

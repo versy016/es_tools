@@ -1,3 +1,6 @@
+// Dashboard.js — landing screen. Time-of-day greeting, a resume/start card, the
+// tool grid/list (favouritable, search-filtered) and a recent-reports list.
+// Reports come from reportsService; favourites and grid/list view are local UI state.
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { TOOLS } from '../data/toolsRegistry';
@@ -6,6 +9,7 @@ import EmptyState from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { listReports, getReportUrl } from '../services/reportsService';
 
+// Favourites are persisted client-side only (localStorage), keyed by tool id.
 const FAVS_KEY = 'es_tools_favs';
 const loadFavs = () => {
     try { return JSON.parse(localStorage.getItem(FAVS_KEY) || '[]'); } catch { return []; }
@@ -25,15 +29,18 @@ const monogram = (s) => (s || 'PR').replace(/[^A-Za-z]/g, ' ').trim().split(/\s+
 const Dashboard = () => {
     const navigate = useNavigate();
     const showToast = useToast();
+    // search/userName come from AppShell via the router Outlet context.
     const { search = '', userName } = useOutletContext() || {};
     const [favs, setFavs] = useState(loadFavs);
     const [view, setView] = useState('grid');
-    const [reports, setReports] = useState(null); // null = loading
+    const [reports, setReports] = useState(null); // null = loading, [] = loaded-but-empty
 
+    // Fetch reports once on mount; drives the recent list and draft count.
     useEffect(() => { listReports().then(setReports); }, []);
 
     const firstName = (userName || 'there').split(' ')[0];
     const q = search.trim().toLowerCase();
+    // Filter tools by the nav search term (matches name + description).
     const tools = q ? TOOLS.filter((t) => (t.name + ' ' + t.desc).toLowerCase().includes(q)) : TOOLS;
     const recent = (reports || []).slice(0, 4);
     const draftCount = (reports || []).filter((r) => (r.status || '').toLowerCase() === 'draft').length;
@@ -46,11 +53,13 @@ const Dashboard = () => {
         });
     };
 
+    // Live tools route to their tool page; coming-soon tools just toast.
     const openTool = (tool) => {
         if (tool.live) navigate(tool.route);
         else showToast(`${tool.name} is coming soon`);
     };
 
+    // Open a stored report in a new tab via a freshly signed URL.
     const openReport = async (r) => {
         const url = await getReportUrl(r.id);
         if (url) window.open(url, '_blank', 'noreferrer');
@@ -117,6 +126,7 @@ const Dashboard = () => {
                 </div>
             )}
 
+            {/* Recent reports: loading spinner, empty state, or up to four rows. */}
             <div className="recent-card">
                 <h2>Recent reports</h2>
                 {reports === null ? (

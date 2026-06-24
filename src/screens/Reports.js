@@ -1,9 +1,13 @@
+// Reports.js — full report history. Lists stored reports with status filters,
+// downloads via a signed URL, and re-sends a report by email (fetch blob -> base64
+// -> emailService). Data comes from reportsService.
 import React, { useEffect, useState } from 'react';
 import { useToast } from '../components/Toast';
 import EmptyState from '../components/EmptyState';
 import { listReports, getReportUrl, getReportBlob } from '../services/reportsService';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 
+// Status filter tabs; trailing "s" is stripped when matching a report's status.
 const FILTERS = ['All', 'Drafts', 'Sent', 'Approved'];
 const statusClass = (s) => `pill pill-${String(s || 'draft').toLowerCase()}`;
 const monogram = (s) => (s || 'PR').replace(/[^A-Za-z]/g, ' ').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || 'PR';
@@ -11,19 +15,23 @@ const monogram = (s) => (s || 'PR').replace(/[^A-Za-z]/g, ' ').trim().split(/\s+
 const Reports = () => {
     const showToast = useToast();
     const [filter, setFilter] = useState('All');
-    const [reports, setReports] = useState(null); // null = loading
+    const [reports, setReports] = useState(null); // null = loading, [] = loaded-but-empty
 
     useEffect(() => { listReports().then(setReports); }, []);
 
+    // Apply the active status filter (singularised) to the loaded reports.
     const rows = (reports || []).filter((r) =>
         filter === 'All' ? true : (r.status || 'Draft') === filter.replace(/s$/, ''));
 
+    // Open the report in a new tab via a signed URL.
     const download = async (r) => {
         const url = await getReportUrl(r.id);
         if (url) window.open(url, '_blank', 'noreferrer');
         else showToast('Could not download this report');
     };
 
+    // Re-email a report: bail if email isn't configured, otherwise fetch the PDF
+    // blob, base64-encode it, and hand it to the email service as an attachment.
     const resend = async (r) => {
         if (!isEmailConfigured()) { showToast('Email is not configured yet'); return; }
         const blob = await getReportBlob(r.id);
@@ -57,6 +65,8 @@ const Reports = () => {
                 ))}
             </div>
 
+            {/* Loading -> spinner; no matches -> empty state (distinguishes
+                "no reports at all" from "none for this filter"); else the list. */}
             {reports === null ? (
                 <div className="list-card"><div className="loading-row">Loading reports…</div></div>
             ) : rows.length === 0 ? (

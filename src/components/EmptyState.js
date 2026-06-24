@@ -1,3 +1,5 @@
+// EmptyState.js — reusable empty-state placeholder (icon, title, optional
+// subtitle and action) used across list screens when there's nothing to show.
 import React from 'react';
 
 // Placeholder shown when a screen has no data yet.

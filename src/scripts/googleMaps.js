@@ -1,3 +1,8 @@
+// Google Maps loader + AU address autocomplete for the report forms. The Maps API key is
+// not bundled in the client; it's fetched at runtime from the same AWS API Gateway Lambda
+// proxy used for Algolia, then used to inject the Maps JS script.
+
+// Fetch the Maps API key from the Lambda proxy. Returns null (logged) on failure.
 const getGoogleMapsApiKey = async () => {
   try {
     const response = await fetch(`https://jflxgo3g5f.execute-api.ap-southeast-2.amazonaws.com/dev/?service=googleMaps`, {
@@ -19,6 +24,9 @@ const getGoogleMapsApiKey = async () => {
   }
 };
 
+// Fetch the key, then inject the Maps JS (with Places library) and run `callback` once
+// it loads. No-ops with a console error if the key is unavailable. Safe to call once on
+// the page that needs autocomplete (note: does not dedupe repeated script injection).
 const loadGoogleMapsScript = async (callback) => {
   const apiKey = await getGoogleMapsApiKey();
 

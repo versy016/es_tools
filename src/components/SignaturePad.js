@@ -4,10 +4,12 @@ import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react
 //   ref.current.clear() / isEmpty() / toDataURL() / fromDataURL(url)
 const SignaturePad = forwardRef(({ height = 180 }, ref) => {
     const canvasRef = useRef(null);
-    const drawing = useRef(false);
-    const dirty = useRef(false);
-    const last = useRef({ x: 0, y: 0 });
+    const drawing = useRef(false);          // is a stroke in progress (pointer down)?
+    const dirty = useRef(false);            // has anything been drawn? backs isEmpty()
+    const last = useRef({ x: 0, y: 0 });    // previous point, for drawing line segments
 
+    // Fresh 2D context with the pen style. Re-fetched per stroke so the style
+    // survives the DPR scale applied in resize().
     const ctxOf = () => {
         const c = canvasRef.current;
         const ctx = c.getContext('2d');
@@ -35,12 +37,16 @@ const SignaturePad = forwardRef(({ height = 180 }, ref) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Pointer position in CSS pixels relative to the canvas (unifies mouse + touch).
+    // The context is DPR-scaled, so these CSS-px coords map correctly to the backing store.
     const pos = (e) => {
         const rect = canvasRef.current.getBoundingClientRect();
         const p = e.touches ? e.touches[0] : e;
         return { x: p.clientX - rect.left, y: p.clientY - rect.top };
     };
 
+    // Draw by connecting successive pointer positions with short line segments.
+    // preventDefault stops touch scrolling while signing. dirty flips true on first move.
     const start = (e) => { e.preventDefault(); drawing.current = true; last.current = pos(e); };
     const move = (e) => {
         if (!drawing.current) return;
@@ -56,6 +62,9 @@ const SignaturePad = forwardRef(({ height = 180 }, ref) => {
     };
     const end = () => { drawing.current = false; };
 
+    // Imperative API exposed to the parent via ref: clear the pad, query emptiness,
+    // export the drawing as a PNG data URL, or load an existing signature image back
+    // in (used for upload-image fallback and re-editing a saved signature).
     useImperativeHandle(ref, () => ({
         clear: () => {
             const c = canvasRef.current;

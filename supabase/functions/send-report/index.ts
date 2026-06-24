@@ -41,6 +41,8 @@ Deno.serve(async (req) => {
         const recipients = (Array.isArray(body.to) ? body.to : [body.to]).filter(Boolean);
         if (recipients.length === 0) return json({ error: 'No recipients provided' }, 400);
 
+        // Attachment body: prefer contentBase64, fall back to the legacy pdfBase64 alias.
+        // Content type is derived from the filename (.docx vs. PDF).
         const content64 = body.contentBase64 || body.pdfBase64;
         const filename = body.filename || 'report.pdf';
 

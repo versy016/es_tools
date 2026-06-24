@@ -5,16 +5,20 @@ import '../stylessheets/engines.css';
 const KonvaEngine = lazy(() => import('./PhotoAnnotator'));
 const ExcalidrawEngine = lazy(() => import('./engines/ExcalidrawEditor'));
 
+// Engine registry. Each entry pairs a stable id (persisted) with a display name
+// and its lazy component. Add an engine here to expose it in the switch UI.
 const ENGINES = [
     { id: 'konva', name: 'Custom', Comp: KonvaEngine },
     { id: 'excalidraw', name: 'Excalidraw', Comp: ExcalidrawEngine },
 ];
 
+// localStorage key remembering the user's last-chosen engine across sessions.
 const STORE_KEY = 'es_tools_annot_engine';
 
 // Wraps every annotation engine and lets the user switch between them live on the
 // same photo. Each engine reports back via onSave({ flattenedDataUrl, ... }).
 const AnnotatorSwitch = ({ photo, onSave, onClose }) => {
+    // Initialise from localStorage, falling back to 'konva' if absent/unknown.
     const [engineId, setEngineId] = useState(() => {
         const saved = localStorage.getItem(STORE_KEY);
         return ENGINES.some((e) => e.id === saved) ? saved : 'konva';
@@ -22,6 +26,7 @@ const AnnotatorSwitch = ({ photo, onSave, onClose }) => {
     const eng = ENGINES.find((e) => e.id === engineId) || ENGINES[0];
     const Comp = eng.Comp;
 
+    // Persist + switch. The keyed <Comp> below remounts so the new engine starts fresh.
     const choose = (id) => { localStorage.setItem(STORE_KEY, id); setEngineId(id); };
 
     return (
@@ -31,6 +36,7 @@ const AnnotatorSwitch = ({ photo, onSave, onClose }) => {
                 <Comp key={engineId} photo={photo} onSave={onSave} onClose={onClose} onCancel={onClose} />
             </Suspense>
 
+            {/* Floating engine switch, rendered above the active editor. */}
             <div className="engine-switch" role="tablist" aria-label="Annotation engine">
                 <span className="engine-switch-label">Engine</span>
                 {ENGINES.map((e) => (

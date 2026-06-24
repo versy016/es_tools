@@ -8,6 +8,10 @@ import { faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
 const ExcalidrawEditor = ({ photo, onSave, onClose }) => {
     const [api, setApi] = useState(null);
 
+    // Once Excalidraw hands us its imperative API, load the photo as the bottom
+    // layer: register it as a scene "file", insert a single image element capped to
+    // 900px, and mark it locked so the user can't move/resize/delete the background
+    // while drawing on top. Then fit the viewport to it.
     const onApi = useCallback((a) => {
         setApi(a);
         const img = new window.Image();
@@ -27,6 +31,9 @@ const ExcalidrawEditor = ({ photo, onSave, onClose }) => {
         img.src = photo.src;
     }, [photo.src]);
 
+    // Save: flatten the whole scene (photo + annotations) to a PNG blob, then read it
+    // as a data URL and report it up via onSave — the shape the rest of the app
+    // expects. Any failure falls back to closing without saving.
     const done = async () => {
         if (!api) { onClose(); return; }
         try {

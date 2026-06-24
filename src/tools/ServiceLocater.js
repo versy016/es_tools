@@ -1,3 +1,10 @@
+// v1 "Service Location Field Report" tool. Builds a Word (.docx) report from a
+// fixed template using docxtemplater, then optionally converts it to PDF and emails it.
+// Flow: fill job details + utility checklist + DBYD + notes + photos → handleSubmit
+// gathers a flat reportForm and calls renderDocx (template fill) → docxToPdf
+// (converter endpoint, optional) → download links + Send via email.
+// Note: some fields read straight off the DOM via e.target.<name>/querySelector
+// (uncontrolled inputs) rather than React state — a legacy pattern in this tool.
 import React, { useState, useEffect, useRef } from 'react';
 import '../stylessheets/ServiceLocater.css';
 import '../stylessheets/PhotoReport.css';
@@ -11,25 +18,29 @@ import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/em
 import FormSection from '../components/FormSection';
 
 const ServiceLocater = ({ goBack }) => {
+    // project/client are mutually exclusive (selecting one disables the other).
+    // After an Algolia pick these may hold the selected object, not a plain string.
     const [project, setProject] = useState('');
     const [client, setClient] = useState('');
     const [address, setAddress] = useState('');
-    const [docLink, setDocLink] = useState('');
-    const [pdfLink, setPdfLink] = useState('');
-    const [dbydByClient, setDbydByClient] = useState(false);
+    const [docLink, setDocLink] = useState('');     // object URL for the generated .docx
+    const [pdfLink, setPdfLink] = useState('');     // object URL for the converted PDF (if any)
+    const [dbydByClient, setDbydByClient] = useState(false); // disables/greys the DBYD grid when on
     const [email, setEmail] = useState('');
-    const [note, setNote] = useState('');
+    const [note, setNote] = useState('');           // draft text in the add-note box
+    // Default site notes seeded for every report; user can append more.
     const [notes, setNotes] = useState([
         "Services located in the area required using Radio Detection & Ground Penetrating Radar (GPR)",
         "Passive sweep of area (Power and Radio mode with Wand and GPR)",
         "Services marked with depths where possible."
     ]);
-    const [imagePreviews, setImagePreviews] = useState([]);
-    const [, setImageFiles] = useState([]);
-    const [docBlob, setDocBlob] = useState(null);
+    const [imagePreviews, setImagePreviews] = useState([]);   // data URLs embedded into the docx
+    const [, setImageFiles] = useState([]);                   // raw Files (kept in sync for reorder/remove)
+    const [docBlob, setDocBlob] = useState(null);             // last generated .docx, needed to email
     const [imageNames, setImageNames] = useState([]);
     const [imageDescriptions, setImageDescriptions] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
+    // Standard utility checklist; each row: type, quality (CSV like "A, B"), comment, selected.
     const [checklist, setChecklist] = useState([
         { type: 'Gas', quality: '', comment: '', selected: false },
         { type: 'Sewer', quality: '', comment: '', selected: false },
@@ -46,12 +57,14 @@ const ServiceLocater = ({ goBack }) => {
     ]);
     const [loading, setLoading] = useState(false);
 
+    // Refs for the inputs that receive Algolia/Maps autocomplete imperatively.
     const projectInputRef = useRef(null);
     const clientInputRef = useRef(null);
     const addressInputRef = useRef(null);
     const contactInputRef = useRef(null);
     const locaterInputRef = useRef(null);
 
+    // Typing a project clears client (and vice versa) so only one is ever set.
     const handleProjectChange = (e) => {
         setProject(e.target.value);
         if (e.target.value) {
@@ -68,6 +81,9 @@ const ServiceLocater = ({ goBack }) => {
     const handleEmailChange = (e) => {
             setEmail(e.target.value);
         };
+    // Attach Algolia autocomplete to the four lookup inputs once mounted.
+    // Contact/Locater write the chosen name into the input and push the matching
+    // mobile straight into the sibling uncontrolled input via querySelector.
     useEffect(() => {
         setupProjectsSearch(projectInputRef.current, setProject);
         setupClientsSearch(clientInputRef.current, setClient);
@@ -81,6 +97,7 @@ const ServiceLocater = ({ goBack }) => {
         });
     }, []);
 
+    // Maps Places autocomplete on the job-location input.
     useEffect(() => {
         loadGoogleMapsScript(() => {
             attachAddressAutocomplete(addressInputRef.current, setAddress);
@@ -95,6 +112,7 @@ const ServiceLocater = ({ goBack }) => {
         setNote(e.target.value);
     };
 
+    // Push the draft note onto the list and clear the box (ignores blank input).
     const addNote = () => {
         if (note.trim() !== '') {
             setNotes([...notes, note]);
@@ -102,6 +120,8 @@ const ServiceLocater = ({ goBack }) => {
         }
     };
 
+    // Read each picked file to a data URL for preview/embedding. Files, names and
+    // (empty) descriptions are appended in lock-step so indices stay aligned.
     const handleFileUpload = (event) => {
         const files = Array.from(event.target.files);
         const fileNames = files.map(file => file.name);
@@ -126,12 +146,15 @@ const ServiceLocater = ({ goBack }) => {
         });
     };
 
+    // Toggle a boolean field (used for the row "selected" checkbox).
     const handleCheckboxChange = (index, field) => {
         const newChecklist = [...checklist];
         newChecklist[index][field] = !newChecklist[index][field];
         setChecklist(newChecklist);
     };
 
+    // Toggle a quality letter in the row's comma-separated quality string and mark
+    // the row selected. The replace() chain strips the letter and tidies stray commas.
     const handleQualityChange = (index, quality) => {
         const newChecklist = [...checklist];
         if (newChecklist[index].quality.includes(quality)) {
@@ -149,6 +172,7 @@ const ServiceLocater = ({ goBack }) => {
         setChecklist(newChecklist);
     };
 
+    // Master checkbox: select/deselect every checklist row at once.
     const handleSelectAll = () => {
         const newSelectAll = !selectAll;
         setSelectAll(newSelectAll);
@@ -156,6 +180,7 @@ const ServiceLocater = ({ goBack }) => {
         setChecklist(newChecklist);
     };
 
+    // Require at least one selected row, and every selected row to have a quality.
     const validateForm = () => {
         const atLeastOneSelected = checklist.some(item => item.selected);
         if (!atLeastOneSelected) {
@@ -177,6 +202,7 @@ const ServiceLocater = ({ goBack }) => {
         setImageDescriptions(prev => prev.filter((_, i) => i !== index));
     };
 
+    // Reorder all four parallel photo arrays together so they stay index-aligned.
     const onDragEnd = (result) => {
         if (!result.destination) return;
 
@@ -205,6 +231,9 @@ const ServiceLocater = ({ goBack }) => {
         setImageDescriptions(newDescriptions);
     };
 
+    // Generate report: validate, gather a flat reportForm, render the .docx from
+    // the template, then try to convert it to PDF. Many values are pulled directly
+    // off the form DOM (e.target.<name>) since those inputs are uncontrolled.
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
@@ -214,11 +243,13 @@ const ServiceLocater = ({ goBack }) => {
 
         setLoading(true);
         try {
+            // Keep only rows that were ticked or carry a quality; reshape for the template.
             const filteredChecklist = checklist.filter(item => item.selected || item.quality.length > 0).map(item => ({
                 assetType: item.type,
                 quality: item.quality,
                 comment: item.comment
             }));
+            // Flat data object matching the docx template placeholders.
             const reportForm = {
                 date: e.target.date.value,
                 clientOrProject: project.project || client.title || '',
@@ -234,12 +265,13 @@ const ServiceLocater = ({ goBack }) => {
                 dbydplans: e.target.dbydPlansCoverAreas.value,
                 SWMS: e.target.swmsCompleted.value,
                 plansupply: e.target.dbydPlansSupplied.value,
-                dbydByClient,
-                sitename: address,
+                dbydByClient,                 // when true the template skips ES DBYD details
+                sitename: address,            // site name mirrors the job location/address
                 addnotes: notes,
                 photos: imagePreviews,
             };
 
+            // Free any previous object URLs before regenerating to avoid leaks.
             if (docLink) URL.revokeObjectURL(docLink);
             if (pdfLink) URL.revokeObjectURL(pdfLink);
             setPdfLink('');
@@ -262,6 +294,8 @@ const ServiceLocater = ({ goBack }) => {
 
     const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
 
+    // Email the previously generated .docx (requires one to exist first). Client
+    // email is optional/validated; bails with a notice if email isn't configured.
     const handleSendEmail = async () => {
         if (!docBlob) {
             alert('Please generate the report first.');
@@ -311,7 +345,11 @@ const ServiceLocater = ({ goBack }) => {
                         </div>
                     </div>
                 </div>
+                {/* Submitting the form triggers handleSubmit → docx/PDF generation */}
                 <form onSubmit={handleSubmit}>
+                    {/* Step 1 — job details. Project/Client/Contact/Locater carry Algolia
+                        autocomplete; Job Location carries Maps. Project & Client are
+                        mutually disabled. ContactMob/LocaterMob are uncontrolled (filled imperatively). */}
                     <FormSection step="1" title="Job details">
                         <div className="job-details-grid">
                             <label>
@@ -352,6 +390,7 @@ const ServiceLocater = ({ goBack }) => {
                             </label>
                         </div>
                     </FormSection>
+                    {/* Step 2 — per-asset checklist: select the row, tick A/B/C/D quality, add a comment */}
                     <FormSection step="2" title="Checklist (standard)">
                         <div className="checklist">
                         <label className="select-all-label">
@@ -430,6 +469,8 @@ const ServiceLocater = ({ goBack }) => {
                         </div>
                     </FormSection>
 
+                    {/* Step 3 — DBYD details. The toggle below greys out and disables this
+                        whole grid (pointerEvents:none) when the client supplies DBYD. */}
                     <FormSection step="3" title="DBYD details">
                         <label className="dbyd-client-toggle">
                             <input type="checkbox" checked={dbydByClient} onChange={(e) => setDbydByClient(e.target.checked)} />
@@ -475,6 +516,7 @@ const ServiceLocater = ({ goBack }) => {
                         </div>
                     </FormSection>
 
+                    {/* Step 4 — site notes: type, Add Note appends to the list below */}
                     <FormSection step="4" title="Site notes">
                         <div className="note-input">
                             <textarea name="note" value={note} onChange={handleNoteChange} rows="4"></textarea>
@@ -487,6 +529,8 @@ const ServiceLocater = ({ goBack }) => {
                         </ul>
                     </FormSection>
 
+                    {/* Step 5 — photos: upload, then drag to reorder; each thumbnail has an
+                        editable name + description that flow into the docx. */}
                     <FormSection step="5" title="Photos">
                         <input type="file" accept="image/*" multiple onChange={handleFileUpload} />
                         <DragDropContext onDragEnd={onDragEnd}>
@@ -531,6 +575,8 @@ const ServiceLocater = ({ goBack }) => {
                         </DragDropContext>
                     </FormSection>
 
+                    {/* Bottom action bar — Word/PDF download links appear once generated;
+                        Send via email is disabled until a doc exists; submit generates. */}
                     <div className="tool-actions tool-actions-bottom">
                         {docLink && (
                             <>

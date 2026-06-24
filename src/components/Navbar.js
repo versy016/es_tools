@@ -1,3 +1,6 @@
+// Navbar.js — top navigation bar shown across authenticated screens. Holds the
+// brand/home link, primary nav (with a role-gated Users link), the shared search
+// box, a profile button, and the sign-out button.
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import '../stylessheets/Navbar.css';
@@ -11,11 +14,14 @@ const Logo = () => (
     </svg>
 );
 
+// Derive up-to-two-letter avatar initials from a display name.
 const initials = (name) => (name || 'User').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
+// Search/role/sign-out state is owned by AppShell and passed in as props.
 const NavBar = ({ userName, role = 'Surveyor', search, onSearch, onSignOut }) => {
     const navigate = useNavigate();
     const linkClass = ({ isActive }) => `nav-link ${isActive ? 'active' : ''}`;
+    // Mirror App's RBAC check so only managers/admins see the Users link.
     const canManageUsers = ['admin', 'manager'].includes(String(role).toLowerCase());
 
     return (
@@ -28,6 +34,7 @@ const NavBar = ({ userName, role = 'Surveyor', search, onSearch, onSignOut }) =>
             <div className="nav-links">
                 <NavLink to="/dashboard" className={linkClass}>Dashboard</NavLink>
                 <NavLink to="/reports" className={linkClass}>Reports</NavLink>
+                {/* Role-gated: hidden from surveyors. */}
                 {canManageUsers && <NavLink to="/users" className={linkClass}>Users</NavLink>}
             </div>
 
@@ -40,6 +47,7 @@ const NavBar = ({ userName, role = 'Surveyor', search, onSearch, onSignOut }) =>
                     placeholder="Search tools, jobs, reports…" aria-label="Search" />
             </div>
 
+            {/* Profile button: avatar + name/role, routes to the profile screen. */}
             <button type="button" className="nav-profile" onClick={() => navigate('/profile')}>
                 <span className="nav-avatar">{initials(userName)}</span>
                 <span className="nav-id">
@@ -48,6 +56,7 @@ const NavBar = ({ userName, role = 'Surveyor', search, onSearch, onSignOut }) =>
                 </span>
             </button>
 
+            {/* Sign-out: only rendered when a handler is supplied. */}
             {onSignOut && (
                 <button type="button" className="nav-signout" onClick={onSignOut} title="Sign out" aria-label="Sign out">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

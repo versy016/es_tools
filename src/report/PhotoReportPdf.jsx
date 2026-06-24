@@ -1,3 +1,10 @@
+// @react-pdf/renderer document for the v2 Photo Report.
+// PhotoReport.js renders <PhotoReportDoc job={job}/> through pdf(...).toBlob() to
+// produce the branded PDF entirely client-side. Structure: a letterhead Header/Footer
+// fixed on every page, a cover page (project/client/utilities/QL/comments/sign-off),
+// a legend page (utility colours + AS 5488.1 quality-level definitions), then one
+// page per annotated photo with its pothole cards. All colours/labels come from
+// legendColors.js so screen and PDF stay in sync.
 import React from 'react';
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import {
@@ -5,10 +12,13 @@ import {
     QUALITY_LEVEL_DEFINITIONS, ABBREVIATIONS, PHOTO_DISCLAIMER,
 } from './legendColors';
 
+// Brand palette — kept local since @react-pdf can't read CSS variables.
 const ES_YELLOW = '#F5A623';
 const ES_DARK = '#1a1a1a';
 const BORDER = '#cfcfcf';
 
+// react-pdf uses a flexbox subset (no grid, limited CSS); styles are plain objects
+// in points. Top padding is large to clear the fixed letterhead header.
 const styles = StyleSheet.create({
     page: {
         paddingTop: 96,
@@ -89,12 +99,14 @@ const styles = StyleSheet.create({
     abbrevItem: { width: '50%', fontSize: 7.5, color: '#444', marginBottom: 1 },
 });
 
+// Letterhead repeated on every page: `fixed` pins it outside the page flow.
+// Yellow top bar + logo/brand on the left, contact block on the right.
 const Header = () => (
     <View fixed>
         <View style={styles.topBar} />
         <View style={styles.header}>
             <View style={styles.headerLeft}>
-                {/* Served from public/ */}
+                {/* Served from public/ — absolute path resolves at render time */}
                 <Image style={styles.logo} src="/images/logo.png" />
                 <View style={styles.brand}>
                     <Text style={styles.brandName}>ENGINEERING</Text>
@@ -110,6 +122,8 @@ const Header = () => (
     </View>
 );
 
+// Fixed footer: ABN/ACN strap on every page; the pothole disclaimer is only
+// shown on photo pages (passed `disclaimer` prop) since those carry the markings.
 const Footer = ({ disclaimer }) => (
     <View style={styles.footer} fixed>
         {disclaimer ? <Text style={styles.footerDisclaimer}>{PHOTO_DISCLAIMER}</Text> : null}
@@ -120,6 +134,9 @@ const Footer = ({ disclaimer }) => (
     </View>
 );
 
+// One bordered key/value row in the cover's two-column detail tables.
+// `first` re-adds the top border (other rows share borders to avoid doubling).
+// Empty values render as '-' so cells never collapse.
 const DetailRow = ({ label, value, first }) => (
     <View style={[styles.detailRow, first ? styles.detailRowFirst : {}]}>
         <Text style={styles.detailKey}>{label}</Text>
@@ -127,7 +144,10 @@ const DetailRow = ({ label, value, first }) => (
     </View>
 );
 
+// Page 1: project + client detail tables, the located-utilities chips, the
+// quality-level boxes, free-text comments, and an optional sign-off block.
 const CoverPage = ({ job }) => {
+    // Keys of the utilities ticked on the form; drives the chips below.
     const utils = job.utilitiesLocated || [];
     return (
         <Page size="A4" style={styles.page}>
@@ -155,6 +175,7 @@ const CoverPage = ({ job }) => {
 
             <View style={styles.sectionBar}><Text style={styles.sectionBarText}>UTILITIES LOCATED</Text></View>
             <View style={styles.utilWrap}>
+                {/* Only render chips for the selected utilities, in canonical legend order */}
                 {(utils.length ? UTILITIES.filter((u) => utils.includes(u.key)) : []).map((u) => (
                     <View style={styles.utilChip} key={u.key}>
                         <View style={[styles.utilDash, { backgroundColor: u.color }]} />
@@ -166,6 +187,7 @@ const CoverPage = ({ job }) => {
 
             <View style={styles.sectionBar}><Text style={styles.sectionBarText}>LOCATED TO QUALITY LEVEL (AS 5488.1:2022)</Text></View>
             <View style={styles.qlWrap}>
+                {/* A–D boxes; selected ones are filled yellow (qlBoxOn) */}
                 {QUALITY_LEVELS.map((q) => {
                     const on = job.qualityLevels && job.qualityLevels[q];
                     return (
@@ -179,6 +201,8 @@ const CoverPage = ({ job }) => {
             <View style={styles.sectionBar}><Text style={styles.sectionBarText}>COMMENTS</Text></View>
             <Text style={styles.comments}>{job.comments || ' '}</Text>
 
+            {/* Sign-off comes from the user's saved profile (getSignoff). Rendered
+                only if there's a signature image or name; wrap={false} keeps it intact. */}
             {job.signoff && (job.signoff.signature || job.signoff.fullName) ? (
                 <View style={styles.signoff} wrap={false}>
                     <Text style={styles.signoffTitle}>Located &amp; reported by</Text>
@@ -195,6 +219,9 @@ const CoverPage = ({ job }) => {
     );
 };
 
+// Page 2: static reference page — full utility colour legend plus the verbatim
+// AS 5488.1:2022 quality-level definitions. Content is fixed (sourced from
+// legendColors.js), independent of the job, so every report carries the same key.
 const LegendPage = () => (
     <Page size="A4" style={styles.page}>
         <Header />
@@ -229,8 +256,11 @@ const LegendPage = () => (
     </Page>
 );
 
+// One page per photo: the flattened (annotated) image, an optional grid of
+// pothole cards, and the abbreviations legend box. `flattenedDataUrl` is the
+// annotated render baked by the editor; falls back to the raw `src` if unedited.
 const PhotoPage = ({ photo, index }) => {
-    const num = String(index + 1).padStart(2, '0');
+    const num = String(index + 1).padStart(2, '0'); // "01", "02"… matches on-screen numbering
     const potholes = photo.potholes || [];
     return (
         <Page size="A4" style={styles.page}>
@@ -243,6 +273,7 @@ const PhotoPage = ({ photo, index }) => {
                     <Text style={styles.potholeTitle}>Potholes</Text>
                     <View style={styles.potholeGrid}>
                         {potholes.map((p) => {
+                            // Resolve the utility for its short code; caption reads "Label — CODE QL<level>"
                             const u = getUtility(p.utility);
                             return (
                                 <View style={styles.potholeCard} key={p.id} wrap={false}>
@@ -271,7 +302,8 @@ const PhotoPage = ({ photo, index }) => {
     );
 };
 
-// Top-level document builder consumed via pdf(<PhotoReportDoc job={job}/>).toBlob()
+// Top-level document builder consumed via pdf(<PhotoReportDoc job={job}/>).toBlob().
+// Page order: cover, legend, then one PhotoPage per photo in array order.
 const PhotoReportDoc = ({ job }) => (
     <Document title={`Photo Report - ${job.siteAddress || ''}`} author="Engineering Surveys">
         <CoverPage job={job} />

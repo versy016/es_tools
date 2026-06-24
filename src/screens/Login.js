@@ -1,3 +1,6 @@
+// Login.js — branded split-screen sign-in / sign-up. Toggles between email+password
+// sign-in and sign-up, offers Microsoft OAuth, and surfaces auth errors and the
+// post-signup "confirm your email" notice. Rendered by the Gate when signed out.
 import React, { useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import '../stylessheets/Login.css';
@@ -13,14 +16,16 @@ const Logo = ({ light }) => (
 
 const Login = () => {
     const { signIn, signUp, signInWithMicrosoft } = useAuth();
-    const [mode, setMode] = useState('signin'); // signin | signup
+    const [mode, setMode] = useState('signin'); // signin | signup — drives form fields and copy
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
-    const [error, setError] = useState('');
-    const [info, setInfo] = useState('');
-    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');  // auth failure message
+    const [info, setInfo] = useState('');    // success notice (e.g. confirm-email prompt)
+    const [busy, setBusy] = useState(false); // disables submit while a request is in flight
 
+    // Submit handler routes to signIn or signUp by mode; on successful sign-up we
+    // can't log the user in yet (email confirmation required), so we show `info`.
     const submit = async (e) => {
         e.preventDefault();
         setError(''); setInfo(''); setBusy(true);
@@ -81,12 +86,14 @@ const Login = () => {
                         {busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
                     </button>
 
+                    {/* Microsoft OAuth — redirects out to the org identity provider. */}
                     <div className="login-or"><span>or</span></div>
                     <button type="button" className="login-ms" onClick={signInWithMicrosoft}>
                         <svg width="16" height="16" viewBox="0 0 23 23" aria-hidden="true"><rect width="10" height="10" x="1" y="1" fill="#F25022" /><rect width="10" height="10" x="12" y="1" fill="#7FBA00" /><rect width="10" height="10" x="1" y="12" fill="#00A4EF" /><rect width="10" height="10" x="12" y="12" fill="#FFB900" /></svg>
                         Continue with Microsoft
                     </button>
 
+                    {/* Toggle between sign-in and sign-up, clearing any stale error. */}
                     <div className="login-switch">
                         {mode === 'signin'
                             ? <>New here? <button type="button" onClick={() => { setMode('signup'); setError(''); }}>Create an account</button></>

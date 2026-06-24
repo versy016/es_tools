@@ -1,3 +1,6 @@
+// Profile.js — user details form plus a digital-signature pad. Loads/saves both
+// via profileService; the saved signature is what gets stamped onto generated
+// reports. Also exposes sign-out. Role is read-only (set by an admin elsewhere).
 import React, { useEffect, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import SignaturePad from '../components/SignaturePad';
@@ -20,6 +23,7 @@ const Profile = () => {
 
     const setField = (k, v) => setProfile((p) => ({ ...p, [k]: v }));
 
+    // On mount, hydrate the form and the signature pad from saved data.
     useEffect(() => {
         loadProfile().then((p) => { if (p) setProfile((prev) => ({ ...prev, ...p })); });
         loadSignature().then((saved) => {
@@ -35,6 +39,7 @@ const Profile = () => {
         showToast('Profile saved');
     };
 
+    // Persist the pad's current drawing as a data URL; refuse if empty.
     const onSaveSignature = async () => {
         if (!padRef.current || padRef.current.isEmpty()) { showToast('Draw or upload a signature first'); return; }
         const url = padRef.current.toDataURL();
@@ -45,6 +50,8 @@ const Profile = () => {
 
     const clear = () => { if (padRef.current) padRef.current.clear(); };
 
+    // Load an uploaded image file into the pad (read as data URL); reset input so
+    // re-selecting the same file fires onChange again.
     const upload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -96,6 +103,7 @@ const Profile = () => {
                         <button type="button" className="btn-yellow sm" onClick={onSaveSignature}>Save signature</button>
                     </div>
 
+                    {/* Live preview of how the signature block renders on a report. */}
                     <div className="sig-preview-label">How this appears on reports</div>
                     <div className="sig-preview">
                         {sig ? <img src={sig} alt="Signature" className="sig-img" /> : <div className="sig-empty">No signature saved yet</div>}

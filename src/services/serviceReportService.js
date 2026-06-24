@@ -26,6 +26,7 @@ const ASSET_PREFIX = {
     'Unknown Services': 'Unknown',
 };
 
+// Decode a base64 string (or full data URL) into an ArrayBuffer for the image module.
 const base64ToArrayBuffer = (src) => {
     const b64 = src.includes(',') ? src.split(',')[1] : src;
     const bin = atob(b64);
@@ -34,6 +35,9 @@ const base64ToArrayBuffer = (src) => {
     return bytes.buffer;
 };
 
+// Fetch the .docx template bytes: prefer the managed copy in the Supabase "templates"
+// bucket (so it can be updated without a redeploy), else fall back to the bundled file
+// in /public. Throws only if the bundled fallback is also missing.
 const loadTemplate = async () => {
     if (supabase) {
         try {
@@ -65,6 +69,7 @@ const buildData = (form) => {
         dbydByClient: !!form.dbydByClient,
         sitename: form.sitename || '',
         addnotes: Array.isArray(form.addnotes) ? form.addnotes.join('\n') : (form.addnotes || ''),
+        // Image-module loop: each entry's `data` (a base64 photo) is resolved by getImage.
         photos: (form.photos || []).map((p) => ({ data: p })),
     };
     // Blank every checklist tag, then fill the selected ones.
@@ -81,6 +86,9 @@ const buildData = (form) => {
     return data;
 };
 
+// Render the populated .docx Blob from the template + form data. The free image module
+// renders each photo tag at a fixed 450x320. Throws a user-friendly Error on template
+// failures (real docxtemplater detail is logged to the console).
 export const renderDocx = async (form) => {
     const content = await loadTemplate();
     try {

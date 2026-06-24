@@ -6,6 +6,8 @@ import { EMAIL_ENDPOINT, REPORT_ARCHIVE_EMAIL } from '../config';
 
 export const isEmailConfigured = () => Boolean(EMAIL_ENDPOINT);
 
+// Read a Blob (PDF/.docx) and resolve its raw base64 (strips the "data:...;base64," prefix
+// that readAsDataURL prepends) for use as an email attachment body.
 export const blobToBase64 = (blob) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result).split(',')[1]);
@@ -13,6 +15,9 @@ export const blobToBase64 = (blob) => new Promise((resolve, reject) => {
     reader.readAsDataURL(blob);
 });
 
+// Send one report email. `to` may be a single address or array; the internal archive
+// address is appended (unless archive=false) and the whole list is de-duped via a Set.
+// Throws if the endpoint isn't configured or the backend returns non-2xx.
 export const sendReportEmail = async ({ to, subject, text, filename, contentBase64, archive = true }) => {
     if (!EMAIL_ENDPOINT) throw new Error('Email is not configured (REACT_APP_EMAIL_ENDPOINT is not set).');
     const recipients = Array.from(new Set([

@@ -1,3 +1,5 @@
+// FormSection.js — shared numbered step card (step badge, title, optional
+// subtitle, body) used by the report-generator tools for a consistent layout.
 import React from 'react';
 
 // Numbered section card shared by the report-generator tools so they match.

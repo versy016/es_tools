@@ -26,6 +26,8 @@ export const UTILITY_BY_KEY = UTILITIES.reduce((acc, u) => {
   return acc;
 }, {});
 
+// Safe accessor: never returns undefined, so the PDF renderer can always read
+// .code/.color (falls back to the first utility for unknown/empty keys).
 export const getUtility = (key) => UTILITY_BY_KEY[key] || UTILITIES[0];
 
 // Quality levels for potholes / cover "Located to Quality Level".

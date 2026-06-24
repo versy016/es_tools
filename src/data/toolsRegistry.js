@@ -1,5 +1,17 @@
+// toolsRegistry.js — single source of truth for the dashboard tool grid.
 // Registry of tools shown on the Dashboard. Active tools navigate to their route;
 // "coming soon" tools are placeholders (show a toast, don't navigate).
+//
+// Per-tool fields:
+//   id       — stable key (also used for the favourites localStorage set)
+//   name     — display title
+//   desc     — one-line description
+//   mono     — two-letter monogram for the badge
+//   route    — destination path; required for live tools (omitted for soon tools)
+//   live     — true => clickable, navigates to `route`
+//   soon     — true => placeholder; openTool shows a "coming soon" toast instead
+//   tag      — label shown in the live status pill
+//   badgeBg/badgeFg — badge background/foreground colours (live = brand, soon = muted)
 export const TOOLS = [
     {
         id: 'photo-report',

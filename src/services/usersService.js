@@ -8,6 +8,10 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export const isConfigured = () => isSupabaseConfigured();
 
+// Read the user directory and recent audit trail for the admin screen. Both selects are
+// RLS-gated to managers/admins; non-privileged callers get empty arrays (not an error).
+// Profile rows are normalised: role is Title-cased and `active` defaults to true unless
+// explicitly false. Returns { users, audit } and never throws.
 export const listUsers = async () => {
     if (!supabase) return { users: [], audit: [] };
     try {
@@ -48,11 +52,14 @@ const adminAction = async (action, payload) => {
     }
 };
 
+// Invite a brand-new user by email with an initial role (sends the Supabase invite mail).
 export const inviteUser = (email, role = 'surveyor') =>
     adminAction('invite', { email: String(email).trim(), role: String(role).toLowerCase() });
 
+// Change an existing user's role (admin | manager | surveyor).
 export const setUserRole = (userId, role) =>
     adminAction('setRole', { userId, role: String(role).toLowerCase() });
 
+// Enable/disable a user — toggles profiles.active and bans/unbans the login server-side.
 export const setUserActive = (userId, active) =>
     adminAction('setActive', { userId, active: !!active });

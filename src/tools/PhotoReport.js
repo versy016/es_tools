@@ -1,3 +1,9 @@
+// es_tools v2.0 "Photo Report" tool — the container screen for building a
+// utility-locating photo report end-to-end in the browser.
+// Flow: capture/upload photos → annotate each (AnnotatorSwitch bakes a flattened
+// image) + record potholes → build the branded PDF with @react-pdf (buildPdfBlob)
+// → persist to the Reports store (persistReport) → optionally email it. No server
+// renders the PDF; everything happens client-side from in-memory state.
 import React, { useState, useEffect, useRef } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import '../stylessheets/ServiceLocater.css';
@@ -22,6 +28,8 @@ import { getSignoff } from '../services/profileService';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 import { REPORT_ARCHIVE_EMAIL } from '../config';
 
+// Read an uploaded File into a base64 data URL so it can live in state and be
+// embedded directly into the PDF (react-pdf accepts data URLs as image src).
 const readFileAsDataURL = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => resolve(e.target.result);
@@ -30,12 +38,12 @@ const readFileAsDataURL = (file) => new Promise((resolve, reject) => {
 });
 
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => new Date().toISOString().slice(0, 10); // YYYY-MM-DD for <input type=date>
 const newId = () => `photo_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-// es_tools v2.0 "Photo Report" tool.
 const PhotoReport = ({ goBack }) => {
     const showToast = useToast();
+    // Cover-page form fields (mirrors the PROJECT/CLIENT detail tables in the PDF).
     const [form, setForm] = useState({
         date: today(),
         locatorName: '',
@@ -49,15 +57,17 @@ const PhotoReport = ({ goBack }) => {
         refNo: '',
         comments: '',
     });
-    const [utilitiesLocated, setUtilitiesLocated] = useState([]);
-    const [qualityLevels, setQualityLevels] = useState({ A: true, B: true, C: false, D: false });
+    const [utilitiesLocated, setUtilitiesLocated] = useState([]);          // selected utility keys (legendColors)
+    const [qualityLevels, setQualityLevels] = useState({ A: true, B: true, C: false, D: false }); // QL checkboxes
+    // photos: [{ id, src (original), flattenedDataUrl (annotated render), designState (editor state), potholes:[] }]
     const [photos, setPhotos] = useState([]);
-    const [editingPhotoId, setEditingPhotoId] = useState(null);
+    const [editingPhotoId, setEditingPhotoId] = useState(null);            // which photo the annotator modal is editing
     const [showCamera, setShowCamera] = useState(false);
     const [emailTo, setEmailTo] = useState('');
-    const [pdfUrl, setPdfUrl] = useState('');
+    const [pdfUrl, setPdfUrl] = useState('');                              // object URL for Download/Open buttons
     const [loading, setLoading] = useState(false);
 
+    // Refs for the inputs that get Algolia/Maps autocomplete attached imperatively.
     const locatorRef = useRef(null);
     const clientRef = useRef(null);
     const contactRef = useRef(null);
@@ -65,6 +75,8 @@ const PhotoReport = ({ goBack }) => {
 
     const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
 
+    // Wire Algolia autocomplete onto the locator/client/contact inputs once mounted.
+    // Selecting a suggestion writes back into form state (contact also fills mobile).
     useEffect(() => {
         if (locatorRef.current) setupUsersSearch(locatorRef.current, (sel) => setField('locatorName', sel.name));
         if (clientRef.current) setupClientsSearch(clientRef.current, (sel) => setField('clientName', sel.title));
@@ -74,6 +86,7 @@ const PhotoReport = ({ goBack }) => {
         });
     }, []);
 
+    // Lazy-load the Maps script, then attach Places autocomplete to the address input.
     useEffect(() => {
         loadGoogleMapsScript(() => {
             attachAddressAutocomplete(addressRef.current, (addr) => setField('siteAddress', addr));
@@ -85,10 +98,14 @@ const PhotoReport = ({ goBack }) => {
 
     const toggleQuality = (q) => setQualityLevels((prev) => ({ ...prev, [q]: !prev[q] }));
 
+    // Append a new photo block. flattenedDataUrl starts equal to src so an unedited
+    // photo still renders in the PDF; the annotator overwrites it once edited.
     const addPhoto = (src) => setPhotos((prev) => [...prev, {
         id: newId(), src, flattenedDataUrl: src, designState: null, potholes: [],
     }]);
 
+    // File picker handler: keep only images, read each to a data URL, add all.
+    // Reset the input value so re-selecting the same file fires onChange again.
     const handleFileUpload = async (event) => {
         const files = Array.from(event.target.files).filter((f) => f.type.startsWith('image/'));
         const srcs = await Promise.all(files.map(readFileAsDataURL));
@@ -99,6 +116,7 @@ const PhotoReport = ({ goBack }) => {
     const updatePhoto = (id, patch) => setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
     const removePhoto = (id) => setPhotos((prev) => prev.filter((p) => p.id !== id));
 
+    // Reorder photos via drag-and-drop; page order in the PDF follows this array.
     const onDragEnd = (result) => {
         if (!result.destination) return;
         setPhotos((prev) => {
@@ -111,13 +129,18 @@ const PhotoReport = ({ goBack }) => {
 
     const editingPhoto = photos.find((p) => p.id === editingPhotoId);
 
+    // Annotator returns the flattened (baked) image + reopenable design state.
     const handleEditorSave = (result) => {
         updatePhoto(editingPhotoId, { flattenedDataUrl: result.flattenedDataUrl, designState: result.designState });
         setEditingPhotoId(null);
     };
 
+    // Stable report id for the whole session so re-generating overwrites the same
+    // saved record instead of creating duplicates (useRef keeps it across renders).
     const reportId = useRef(`rep_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
 
+    // Assemble the job payload and render it to a PDF blob in-browser.
+    // Also refreshes the object URL backing the Download/Open buttons (revoking the old one).
     const buildPdfBlob = async () => {
         const job = { ...form, utilitiesLocated, qualityLevels, photos, signoff: await getSignoff() };
         const blob = await pdf(<PhotoReportDoc job={job} />).toBlob();
@@ -126,6 +149,8 @@ const PhotoReport = ({ goBack }) => {
         return blob;
     };
 
+    // Save the generated PDF + display metadata to the Reports store. `status`
+    // distinguishes a local "Draft" (Generate) from a "Sent" report (email path).
     const persistReport = async (blob, status) => {
         const potholeCount = photos.reduce((n, p) => n + (p.potholes ? p.potholes.length : 0), 0);
         await saveReport({
@@ -145,6 +170,7 @@ const PhotoReport = ({ goBack }) => {
         });
     };
 
+    // "Generate PDF": build + persist as a Draft (no email). Sets pdfUrl for download.
     const handleGenerate = async () => {
         if (photos.length === 0) { alert('Add at least one photo before generating the report.'); return; }
         setLoading(true);
@@ -160,6 +186,9 @@ const PhotoReport = ({ goBack }) => {
         }
     };
 
+    // "Export & email PDF": build the PDF, email it (client optional; archive copy
+    // always added downstream), then persist as "Sent". If email isn't configured
+    // the PDF is still generated/downloadable — we just skip the send.
     const handleGenerateAndEmail = async () => {
         if (photos.length === 0) { alert('Add at least one photo before sending the report.'); return; }
         if (emailTo && !isEmail(emailTo)) { alert('Please enter a valid client email, or leave it blank.'); return; }
@@ -170,9 +199,9 @@ const PhotoReport = ({ goBack }) => {
                 alert('Email is not configured yet (REACT_APP_EMAIL_ENDPOINT is not set). The PDF was generated — use Download for now.');
                 return;
             }
-            const contentBase64 = await blobToBase64(blob);
+            const contentBase64 = await blobToBase64(blob); // attachment payload for the email endpoint
             await sendReportEmail({
-                to: isEmail(emailTo) ? [emailTo.trim()] : [],
+                to: isEmail(emailTo) ? [emailTo.trim()] : [], // empty = archive-only recipient
                 subject: `Photo Report${form.siteAddress ? ' — ' + form.siteAddress : ''}`,
                 text: `Please find attached the photo report${form.siteAddress ? ' for ' + form.siteAddress : ''}.\n\nGenerated via ES Tools.`,
                 filename: `Photo Report - ${form.siteAddress || 'report'}.pdf`,
@@ -191,6 +220,7 @@ const PhotoReport = ({ goBack }) => {
     return (
         <div className="photo-report">
             <div className="pr-content">
+                {/* Breadcrumb + title bar; goBack returns to the Dashboard */}
                 <div className="tool-topbar">
                     <div className="tool-topbar-left">
                         <nav className="breadcrumb">
@@ -207,6 +237,8 @@ const PhotoReport = ({ goBack }) => {
                     </div>
                 </div>
 
+                {/* Step 1 — cover-page fields. Locator/Client/Contact inputs carry
+                    Algolia autocomplete (refs above); Site address carries Maps autocomplete. */}
                 <Section step="1" title="Job details" subtitle="Appears on the report cover page">
                     <div className="field-grid">
                         <label>Date<input type="date" value={form.date} onChange={(e) => setField('date', e.target.value)} /></label>
@@ -227,6 +259,7 @@ const PhotoReport = ({ goBack }) => {
                     </div>
                 </Section>
 
+                {/* Step 2 — utility + quality-level selection, both driven by legendColors */}
                 <Section step="2" title="Utilities located" subtitle="Tick the services located on site">
                     <div className="utilities-grid">
                         {UTILITIES.map((u) => (
@@ -253,6 +286,9 @@ const PhotoReport = ({ goBack }) => {
                         onChange={(e) => setField('comments', e.target.value)} placeholder="Add any comments…" />
                 </Section>
 
+                {/* Step 4 — photo intake + per-photo cards. Each card: drag handle to
+                    reorder, pothole badge, Annotate (opens editor), remove, and a
+                    PotholePanel. Clicking the preview also opens the annotator. */}
                 <Section step="4" title="Photos" subtitle="Take a photo on the spot or pick from files — each becomes a report page">
                     <div className="upload-actions">
                         <label className="dropzone">
@@ -314,6 +350,7 @@ const PhotoReport = ({ goBack }) => {
                     )}
                 </Section>
 
+                {/* Step 5 — optional client recipient; archive copy is always CC'd (see config) */}
                 <Section step="5" title="Send report" subtitle="Email the PDF when you generate it">
                     <div className="field-grid">
                         <label>Client email (optional)
@@ -324,6 +361,7 @@ const PhotoReport = ({ goBack }) => {
                     <p className="muted-note">A copy is always sent to <strong>{REPORT_ARCHIVE_EMAIL}</strong>.</p>
                 </Section>
 
+                {/* Bottom action bar — Download/Open appear once a PDF exists (pdfUrl) */}
                 <div className="tool-actions tool-actions-bottom">
                     {pdfUrl && (
                         <>
@@ -343,10 +381,12 @@ const PhotoReport = ({ goBack }) => {
 
             </div>
 
+            {/* Annotation modal — mounted only while a photo is being edited */}
             {editingPhoto && (
                 <AnnotatorSwitch photo={editingPhoto} onSave={handleEditorSave} onClose={() => setEditingPhotoId(null)} />
             )}
 
+            {/* Device-camera capture modal; onCapture adds a photo just like an upload */}
             {showCamera && (
                 <CameraCapture onCapture={addPhoto} onClose={() => setShowCamera(false)} />
             )}

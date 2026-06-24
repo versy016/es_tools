@@ -1,3 +1,6 @@
+// App.js — application router shell. Composes the auth + toast providers, the
+// boot Gate (configure / loading / login / routed), the authenticated AppShell
+// (nav + Outlet), the route table, and the manager-only RBAC guard.
 import './App.css';
 import './stylessheets/screens.css';
 import React, { useState } from 'react';
@@ -13,8 +16,11 @@ import Profile from './screens/Profile';
 import ServiceLocater from './tools/ServiceLocater';
 import PhotoReport from './tools/PhotoReport';
 
+// Normalise a raw role string to a display label, defaulting to Surveyor.
 const roleLabel = (r) => (r || 'surveyor').replace(/^./, (c) => c.toUpperCase());
 
+// Authenticated chrome: top nav plus the routed page rendered via <Outlet>.
+// Owns the shared search box state and passes auth context down to every screen.
 const AppShell = () => {
   const { userName, role, signOut } = useAuth();
   const [search, setSearch] = useState('');
@@ -22,6 +28,7 @@ const AppShell = () => {
     <div className="App">
       <NavBar userName={userName} role={roleLabel(role)} search={search} onSearch={setSearch} onSignOut={signOut} />
       <main className="app-main">
+        {/* Outlet context is consumed by screens via useOutletContext(). */}
         <Outlet context={{ search, userName, signOut, role }} />
       </main>
     </div>
@@ -44,12 +51,15 @@ const RequireManager = ({ children }) => {
     : <Navigate to="/dashboard" replace />;
 };
 
+// Route table for an authenticated session. All routes nest under AppShell so
+// they share the nav + Outlet; unknown paths and the index redirect to /dashboard.
 const Routed = () => (
   <Routes>
     <Route element={<AppShell />}>
       <Route index element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/reports" element={<Reports />} />
+      {/* Users screen is gated behind the manager/admin RBAC guard. */}
       <Route path="/users" element={<RequireManager><UserManagement /></RequireManager>} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/tools/photo-report" element={<PhotoReportRoute />} />
@@ -59,6 +69,7 @@ const Routed = () => (
   </Routes>
 );
 
+// Shown when Supabase env vars are missing so the app can't talk to a backend.
 const ConfigureNotice = () => (
   <div className="boot-notice">
     <h2>Connect Supabase</h2>
@@ -67,6 +78,9 @@ const ConfigureNotice = () => (
   </div>
 );
 
+// Boot gate deciding what to render based on auth state, in priority order:
+// no env config -> setup notice; restoring session -> spinner; signed out -> Login;
+// authenticated -> the full routed app.
 const Gate = () => {
   const { configured, loading, session } = useAuth();
   if (!configured) return <ConfigureNotice />;
@@ -75,6 +89,8 @@ const Gate = () => {
   return <Routed />;
 };
 
+// Provider composition: router > auth > toast > gate. Auth must wrap Toast/Gate
+// because both consume useAuth; the router wraps everything for navigation.
 const AppRoot = () => (
   <BrowserRouter>
     <AuthProvider>
