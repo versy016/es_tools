@@ -7,7 +7,7 @@
 // Deploy:  supabase functions deploy send-report --no-verify-jwt
 // Secrets: supabase secrets set SMTP_HOST=... SMTP_PORT=587 SMTP_USER=... SMTP_PASS=... SMTP_FROM=...
 //          (SMTP_SECURE=true for implicit TLS on port 465)
-// Frontend: REACT_APP_EMAIL_ENDPOINT=https://<project>.functions.supabase.co/send-report
+// Frontend: REACT_APP_EMAIL_ENDPOINT=https://<project>.supabase.co/functions/v1/send-report
 
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
 

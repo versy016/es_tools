@@ -11,7 +11,7 @@
 // Deploy:  supabase functions deploy docx-to-pdf --no-verify-jwt
 // Secrets (see supabase/SETUP.md §5a):
 //   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
-// Frontend: REACT_APP_DOCX_PDF_ENDPOINT=https://<project>.functions.supabase.co/docx-to-pdf
+// Frontend: REACT_APP_DOCX_PDF_ENDPOINT=https://<project>.supabase.co/functions/v1/docx-to-pdf
 
 const CORS = {
     'Access-Control-Allow-Origin': '*',

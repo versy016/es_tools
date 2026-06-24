@@ -59,8 +59,8 @@ supabase functions deploy docx-to-pdf --no-verify-jwt # optional (Service Locati
 ```
 REACT_APP_SUPABASE_URL=https://rqjywiqdeqzdzlyfmden.supabase.co
 REACT_APP_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxx
-REACT_APP_EMAIL_ENDPOINT=https://rqjywiqdeqzdzlyfmden.functions.supabase.co/send-report
-REACT_APP_DOCX_PDF_ENDPOINT=https://rqjywiqdeqzdzlyfmden.functions.supabase.co/docx-to-pdf
+REACT_APP_EMAIL_ENDPOINT=https://rqjywiqdeqzdzlyfmden.supabase.co/functions/v1/send-report
+REACT_APP_DOCX_PDF_ENDPOINT=https://rqjywiqdeqzdzlyfmden.supabase.co/functions/v1/docx-to-pdf
 REACT_APP_REPORT_ARCHIVE_EMAIL=sverma@engsurveys.com.au
 ```
 

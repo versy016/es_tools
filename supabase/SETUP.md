@@ -121,7 +121,7 @@ supabase secrets set --env-file supabase/functions/.env
 Then test:
 
 ```bash
-curl -X POST https://rqjywiqdeqzdzlyfmden.functions.supabase.co/docx-to-pdf \
+curl -X POST https://rqjywiqdeqzdzlyfmden.supabase.co/functions/v1/docx-to-pdf \
   -F "file=@public/templates/service-location.docx" -o out.pdf
 ```
 
@@ -138,8 +138,8 @@ REACT_APP_SUPABASE_URL=https://rqjywiqdeqzdzlyfmden.supabase.co
 REACT_APP_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxxxxxx
 
 # Email + PDF (the function URLs from step 5)
-REACT_APP_EMAIL_ENDPOINT=https://rqjywiqdeqzdzlyfmden.functions.supabase.co/send-report
-REACT_APP_DOCX_PDF_ENDPOINT=https://rqjywiqdeqzdzlyfmden.functions.supabase.co/docx-to-pdf
+REACT_APP_EMAIL_ENDPOINT=https://rqjywiqdeqzdzlyfmden.supabase.co/functions/v1/send-report
+REACT_APP_DOCX_PDF_ENDPOINT=https://rqjywiqdeqzdzlyfmden.supabase.co/functions/v1/docx-to-pdf
 
 # Internal archive copy of every report (flip to bgosling@ after testing)
 REACT_APP_REPORT_ARCHIVE_EMAIL=sverma@engsurveys.com.au

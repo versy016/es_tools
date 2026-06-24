@@ -54,7 +54,7 @@ console); full steps in **`SETUP.md` §5a**:
 supabase functions deploy docx-to-pdf --no-verify-jwt
 supabase secrets set --env-file supabase/functions/.env   # GOOGLE_CLIENT_ID/SECRET + REFRESH_TOKEN
 ```
-Then set `REACT_APP_DOCX_PDF_ENDPOINT=https://<project>.functions.supabase.co/docx-to-pdf`.
+Then set `REACT_APP_DOCX_PDF_ENDPOINT=https://<project>.supabase.co/functions/v1/docx-to-pdf`.
 Until configured, the tool produces the `.docx` and shows a "PDF available once the
 converter is configured" note.
 
