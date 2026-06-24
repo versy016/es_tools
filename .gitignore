@@ -47,3 +47,6 @@ amplifytools.xcconfig
 
 # Supabase CLI local state
 supabase/.temp/
+
+# Local template backups
+*.backup.docx
