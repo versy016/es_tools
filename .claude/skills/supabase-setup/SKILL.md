@@ -47,12 +47,9 @@ supabase functions deploy send-report --no-verify-jwt
 supabase secrets set SMTP_HOST=... SMTP_PORT=587 SMTP_USER=... SMTP_PASS=... \
   SMTP_FROM="Engineering Surveys <office@engsurveys.com.au>"
 supabase functions deploy docx-to-pdf --no-verify-jwt # optional (Service Location PDF)
-# docx-to-pdf converts via the Google Drive API (Workspace). Two auth options — set ONE:
-#   A) OAuth refresh token (no Admin console): GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET /
-#      GOOGLE_REFRESH_TOKEN  (refresh token wins if both are set)
-#   B) Service account + domain-wide delegation: GOOGLE_SA_EMAIL / GOOGLE_SA_PRIVATE_KEY /
-#      GOOGLE_IMPERSONATE_SUBJECT
-# Full steps in supabase/SETUP.md §5a.
+# docx-to-pdf converts via the Google Drive API (Workspace), set up entirely in the
+# Google Cloud Console (no Admin console). Secrets: GOOGLE_CLIENT_ID /
+# GOOGLE_CLIENT_SECRET / GOOGLE_REFRESH_TOKEN. Full steps in supabase/SETUP.md §5a.
 ```
 
 `admin-users` needs no secrets — `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` are injected.

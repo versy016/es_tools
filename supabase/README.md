@@ -47,11 +47,12 @@ letterhead without a redeploy, upload the template to the `templates` bucket:
 
 **PDF export** converts that rendered `.docx` to PDF via the `docx-to-pdf` Edge Function
 (`supabase/functions/docx-to-pdf`), which uses the **Google Drive API** (uploads the doc,
-exports it as PDF, deletes it) so the data stays inside your Workspace tenant. Setup
-(service account + domain-wide delegation + secrets) is in **`SETUP.md` §5a**:
+exports it as PDF, deletes it) so the data stays inside your Workspace tenant. Auth is an
+OAuth client + refresh token set up entirely in the **Google Cloud Console** (no Admin
+console); full steps in **`SETUP.md` §5a**:
 ```
 supabase functions deploy docx-to-pdf --no-verify-jwt
-supabase secrets set --env-file supabase/functions/.env   # GOOGLE_SA_* + impersonate subject
+supabase secrets set --env-file supabase/functions/.env   # GOOGLE_CLIENT_ID/SECRET + REFRESH_TOKEN
 ```
 Then set `REACT_APP_DOCX_PDF_ENDPOINT=https://<project>.functions.supabase.co/docx-to-pdf`.
 Until configured, the tool produces the `.docx` and shows a "PDF available once the

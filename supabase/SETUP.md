@@ -83,23 +83,20 @@ injected into the function runtime automatically.
 
 `docx-to-pdf` converts the Service Location `.docx` to PDF by uploading it to Google
 Drive as a Google Doc, exporting that as PDF, and deleting the temp file — so the data
-stays inside your Workspace tenant. Pick **ONE** auth method and set its secrets.
+stays inside your Workspace tenant. Set up entirely in the **Google Cloud Console** (no
+Workspace Admin console needed):
 
-Both start the same way: **Google Cloud Console** → create/pick a project →
-**APIs & Services → Enable APIs → Google Drive API**.
-
-#### Option A — OAuth refresh token (no Admin console; all in the dev console)
-
-1. **OAuth consent screen** → User Type **Internal** (engsurveys.com.au only — no
-   Google verification, long-lived tokens) → add the scope
-   `https://www.googleapis.com/auth/drive`.
-2. **Credentials → Create credentials → OAuth client ID → Desktop app**. Note the
+1. **Google Cloud Console** → create/pick a project → **APIs & Services → Enable APIs →
+   Google Drive API**.
+2. **OAuth consent screen** → User Type **Internal** (engsurveys.com.au only — no Google
+   verification, long-lived tokens) → add the scope `https://www.googleapis.com/auth/drive`.
+3. **Credentials → Create credentials → OAuth client ID → Desktop app**. Note the
    **Client ID** and **Client secret**.
-3. Get a refresh token once (easiest: [OAuth Playground](https://developers.google.com/oauthplayground)
-   → gear icon → "Use your own OAuth credentials" → paste client ID/secret → authorize
+4. Get a refresh token once (easiest: [OAuth Playground](https://developers.google.com/oauthplayground)
+   → gear icon → "Use your own OAuth credentials" → paste the client ID/secret → authorize
    the Drive scope as a Workspace user → "Exchange authorization code for tokens" → copy
    the **refresh_token**).
-4. Secrets:
+5. Secrets:
    ```bash
    # supabase/functions/.env  (git-ignored)
    GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com
@@ -107,28 +104,11 @@ Both start the same way: **Google Cloud Console** → create/pick a project →
    GOOGLE_REFRESH_TOKEN=1//xxxx
    ```
 
-> Must be a **Desktop-app** client for the Playground flow, and the consent screen must
-> be **Internal** (or Published) — an **External + Testing** screen expires the refresh
-> token after 7 days.
+> Use a **Desktop-app** client (so the Playground flow works) and keep the consent screen
+> **Internal** (or Published). An **External + Testing** screen expires the refresh token
+> after 7 days, which would silently break conversions.
 
-#### Option B — Service account + domain-wide delegation (needs the Admin console once)
-
-1. **Credentials → Create credentials → Service account**, then **Keys → Add key → JSON**
-   (gives `client_email` + `private_key`).
-2. **Workspace Admin console** → **Security → API controls → Domain-wide delegation →
-   Add new**: paste the service account's **Client ID** and scope
-   `https://www.googleapis.com/auth/drive` → Authorise.
-3. Secrets:
-   ```bash
-   # supabase/functions/.env  (git-ignored)
-   GOOGLE_SA_EMAIL=es-tools@your-project.iam.gserviceaccount.com
-   GOOGLE_SA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-   GOOGLE_IMPERSONATE_SUBJECT=office@engsurveys.com.au   # a real Workspace user to act as
-   ```
-
-#### Apply + test (either option)
-
-The function uses the refresh-token secrets if present, else the service-account ones.
+#### Apply + test
 
 ```bash
 supabase secrets set --env-file supabase/functions/.env
