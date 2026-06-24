@@ -4,15 +4,17 @@
 // Contract (unchanged from the previous converter, so the frontend needs no change):
 //   POST multipart/form-data with a "file" field (the rendered .docx) -> streams back a PDF.
 //
-// How it works: a service account (with domain-wide delegation) impersonates a real
-// Workspace user, uploads the .docx as a Google Doc (which converts it), exports that Doc
-// as PDF, then deletes the temp Doc.
+// How it works: get a Google access token, upload the .docx as a Google Doc (which
+// converts it), export that Doc as PDF, then delete the temp Doc.
+//
+// Two auth options — set EITHER set of secrets (see supabase/SETUP.md):
+//   A) OAuth refresh token — all in the Google Cloud/Developer Console, NO admin console:
+//        GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
+//   B) Service account + domain-wide delegation (needs the Workspace Admin console once):
+//        GOOGLE_SA_EMAIL, GOOGLE_SA_PRIVATE_KEY (PEM; \n handled), GOOGLE_IMPERSONATE_SUBJECT
+// If the refresh-token secrets are present they win; otherwise it falls back to the SA.
 //
 // Deploy:  supabase functions deploy docx-to-pdf --no-verify-jwt
-// Secrets (see supabase/SETUP.md):
-//   GOOGLE_SA_EMAIL            – service-account client_email
-//   GOOGLE_SA_PRIVATE_KEY      – service-account private_key (PEM; \n escapes are handled)
-//   GOOGLE_IMPERSONATE_SUBJECT – a real Workspace user to act as, e.g. office@engsurveys.com.au
 // Frontend: REACT_APP_DOCX_PDF_ENDPOINT=https://<project>.functions.supabase.co/docx-to-pdf
 
 import { create } from 'https://deno.land/x/djwt@v3.0.2/mod.ts';
@@ -40,31 +42,54 @@ const importPrivateKey = async (pem: string) => {
     return crypto.subtle.importKey('pkcs8', der.buffer, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
 };
 
-// Service-account JWT-bearer flow → short-lived OAuth access token, impersonating `subject`.
-const getAccessToken = async (email: string, pem: string, subject: string) => {
-    const key = await importPrivateKey(pem);
-    const now = Math.floor(Date.now() / 1000);
-    const jwt = await create(
-        { alg: 'RS256', typ: 'JWT' },
-        { iss: email, sub: subject, scope: SCOPE, aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600 },
-        key,
-    );
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: jwt }),
-    });
+const TOKEN_URL = 'https://oauth2.googleapis.com/token';
+
+const tokenFromResponse = async (res: Response) => {
     if (!res.ok) throw new Error(`Google token exchange failed (${res.status}): ${await res.text()}`);
     return (await res.json()).access_token as string;
 };
 
-Deno.serve(async (req) => {
-    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+// A) OAuth refresh-token flow — no admin console; acts as the user who consented.
+const getTokenViaRefresh = (clientId: string, clientSecret: string, refreshToken: string) =>
+    fetch(TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ grant_type: 'refresh_token', client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken }),
+    }).then(tokenFromResponse);
+
+// B) Service-account JWT-bearer flow — impersonates `subject` via domain-wide delegation.
+const getTokenViaServiceAccount = async (email: string, pem: string, subject: string) => {
+    const key = await importPrivateKey(pem);
+    const now = Math.floor(Date.now() / 1000);
+    const jwt = await create(
+        { alg: 'RS256', typ: 'JWT' },
+        { iss: email, sub: subject, scope: SCOPE, aud: TOKEN_URL, iat: now, exp: now + 3600 },
+        key,
+    );
+    return fetch(TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: jwt }),
+    }).then(tokenFromResponse);
+};
+
+// Pick whichever credentials are configured (refresh token wins).
+const getAccessToken = () => {
+    const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
+    const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
+    const refreshToken = Deno.env.get('GOOGLE_REFRESH_TOKEN');
+    if (clientId && clientSecret && refreshToken) return getTokenViaRefresh(clientId, clientSecret, refreshToken);
 
     const email = Deno.env.get('GOOGLE_SA_EMAIL');
     const pem = Deno.env.get('GOOGLE_SA_PRIVATE_KEY');
     const subject = Deno.env.get('GOOGLE_IMPERSONATE_SUBJECT');
-    if (!email || !pem || !subject) return err('Google Drive converter is not configured');
+    if (email && pem && subject) return getTokenViaServiceAccount(email, pem, subject);
+
+    return null; // nothing configured
+};
+
+Deno.serve(async (req) => {
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
     try {
         const inForm = await req.formData();
@@ -72,7 +97,9 @@ Deno.serve(async (req) => {
         if (!(file instanceof File)) return err('No file', 400);
         const fileBytes = new Uint8Array(await file.arrayBuffer());
 
-        const token = await getAccessToken(email, pem, subject);
+        const tokenPromise = getAccessToken();
+        if (!tokenPromise) return err('Google Drive converter is not configured');
+        const token = await tokenPromise;
         const auth = { Authorization: `Bearer ${token}` };
 
         // 1) Upload the .docx as a Google Doc (uploadType=multipart converts it on ingest).
