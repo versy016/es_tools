@@ -13,10 +13,7 @@ import { faTimes, faFilePdf, faPaperPlane, faDownload, faCheck } from '@fortawes
 import { setupClientsSearch, setupProjectsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
 import { loadGoogleMapsScript, attachAddressAutocomplete } from '../scripts/googleMaps';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { pdf } from '@react-pdf/renderer';
-import { renderDocx } from '../services/serviceReportService';
-import { getSignoff } from '../services/profileService';
-import ServiceLocationDoc from '../report/ServiceLocationPdf';
+import { renderDocx, docxToPdf, isPdfConfigured } from '../services/serviceReportService';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 import FormSection from '../components/FormSection';
 
@@ -285,25 +282,14 @@ const ServiceLocater = ({ goBack }) => {
             if (pdfLink) URL.revokeObjectURL(pdfLink);
             setPdfLink('');
 
-            // Render the .docx in the browser from the template (the editable Word copy).
+            // Render the .docx in the browser from the template.
             const docxBlob = await renderDocx(reportForm);
             setDocBlob(docxBlob);
             setDocLink(URL.createObjectURL(docxBlob));
 
-            // Build the canonical PDF natively (pixel-perfect; no external conversion).
-            try {
-                const pdfData = {
-                    ...reportForm,
-                    photos: imagePreviews.map((src, i) => ({
-                        src, name: imageNames[i] || '', description: imageDescriptions[i] || '',
-                    })),
-                    signoff: await getSignoff(),
-                };
-                const pdfBlob = await pdf(<ServiceLocationDoc data={pdfData} />).toBlob();
-                setPdfLink(URL.createObjectURL(pdfBlob));
-            } catch (pdfErr) {
-                console.error('PDF generation failed', pdfErr); // the Word copy is still available
-            }
+            // Optionally convert to PDF (needs the converter endpoint configured).
+            const pdfBlob = await docxToPdf(docxBlob, 'Service Location Field Report.docx');
+            if (pdfBlob) setPdfLink(URL.createObjectURL(pdfBlob));
 
             setShowSuccess(true); // centred confirmation with the download options
         } catch (err) {
@@ -659,7 +645,11 @@ const ServiceLocater = ({ goBack }) => {
                                 )}
                             </div>
                             {!pdfLink && (
-                                <p className="success-note">PDF generation failed — the Word file is ready to download.</p>
+                                <p className="success-note">
+                                    {isPdfConfigured()
+                                        ? 'PDF conversion failed — the Word file is ready to download.'
+                                        : 'Set REACT_APP_DOCX_PDF_ENDPOINT in your .env to enable PDF export.'}
+                                </p>
                             )}
                             <button type="button" className="success-close" onClick={() => setShowSuccess(false)}>Close</button>
                         </div>
