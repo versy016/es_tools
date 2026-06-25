@@ -12,7 +12,7 @@ or email them. Built as a React single-page app with a Supabase backend.
 | Tool | What it does |
 |------|--------------|
 | **Service Location Field Report** | Job details, a utility-services checklist (colour-coded per utility), DBYD details, site notes and photos → a Word report on the ES letterhead, converted to PDF. |
-| **Photo & Pothole Report** | Cover (project/client details, utilities located, quality level), a DIT utility legend + AS 5488.1 quality-level page, and one page per annotated photo with its pothole thumbnails → Word + PDF. |
+| **Pothole Report Generator** | Cover (project/client details, utilities located, quality level), a DIT utility legend + AS 5488.1 quality-level page, and one page per annotated photo with its pothole thumbnails → Word + PDF. |
 
 Both reports render from `.docx` templates built into the real letterhead
 (`public/templates/`), so the header/footer are genuinely ES.

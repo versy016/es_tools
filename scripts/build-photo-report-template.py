@@ -79,7 +79,7 @@ signoff = ('<w:p><w:pPr><w:spacing w:before="160"/></w:pPr><w:r><w:t>{#hasSignof
            + ctext('{signName}', bold=True, sz=22) + ctext('{signMeta}', sz=18, color='444444')
            + '<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>{/hasSignoff}</w:t></w:r></w:p>')
 
-cover = (title_band('PHOTO REPORT')
+cover = (title_band('POTHOLE REPORT')
          + section('Project details') + proj
          + section('Client details') + client
          + section('Utilities located') + utils_line

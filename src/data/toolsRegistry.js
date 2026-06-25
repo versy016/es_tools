@@ -15,7 +15,7 @@
 export const TOOLS = [
     {
         id: 'photo-report',
-        name: 'Photo & pothole report',
+        name: 'Pothole Report Generator',
         desc: 'Annotate site photos, log potholes, and export & email a branded PDF.',
         mono: 'PR',
         route: '/tools/photo-report',

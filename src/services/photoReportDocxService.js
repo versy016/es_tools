@@ -112,7 +112,7 @@ export const renderDocx = async (job, signoff) => {
 };
 
 // Convert the rendered .docx to PDF via the docx-to-pdf edge function. Null if unconfigured.
-export const docxToPdf = async (docxBlob, filename = 'Photo Report.docx') => {
+export const docxToPdf = async (docxBlob, filename = 'Pothole Report.docx') => {
     if (!PDF_ENDPOINT) return null;
     try {
         const fd = new FormData();

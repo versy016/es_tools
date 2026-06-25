@@ -1,4 +1,4 @@
-// es_tools v2.0 "Photo Report" tool — the container screen for building a
+// es_tools v2.0 "Pothole Report" tool — the container screen for building a
 // utility-locating photo report end-to-end in the browser.
 // Flow: capture/upload photos → annotate each (AnnotatorSwitch bakes a flattened
 // image) + record potholes → build the branded PDF with @react-pdf (buildPdfBlob)
@@ -148,7 +148,7 @@ const PhotoReport = ({ goBack }) => {
         const docxBlob = await renderPhotoDocx(job, signoff);
         if (docUrl) URL.revokeObjectURL(docUrl);
         setDocUrl(URL.createObjectURL(docxBlob));
-        const pdfBlob = await photoDocxToPdf(docxBlob, `Photo Report - ${form.siteAddress || 'report'}.docx`);
+        const pdfBlob = await photoDocxToPdf(docxBlob, `Pothole Report - ${form.siteAddress || 'report'}.docx`);
         if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         setPdfUrl(pdfBlob ? URL.createObjectURL(pdfBlob) : '');
         return { docxBlob, pdfBlob };
@@ -208,9 +208,9 @@ const PhotoReport = ({ goBack }) => {
             const contentBase64 = await blobToBase64(sendBlob);
             await sendReportEmail({
                 to: isEmail(emailTo) ? [emailTo.trim()] : [], // empty = archive-only recipient
-                subject: `Photo Report${form.siteAddress ? ' — ' + form.siteAddress : ''}`,
+                subject: `Pothole Report${form.siteAddress ? ' — ' + form.siteAddress : ''}`,
                 text: `Please find attached the photo report${form.siteAddress ? ' for ' + form.siteAddress : ''}.\n\nGenerated via ES Tools.`,
-                filename: `Photo Report - ${form.siteAddress || 'report'}.${pdfBlob ? 'pdf' : 'docx'}`,
+                filename: `Pothole Report - ${form.siteAddress || 'report'}.${pdfBlob ? 'pdf' : 'docx'}`,
                 contentBase64,
             });
             await persistReport(sendBlob, 'Sent');
@@ -234,10 +234,10 @@ const PhotoReport = ({ goBack }) => {
                             <span className="crumb-sep">/</span>
                             <span>Tools</span>
                             <span className="crumb-sep">/</span>
-                            <span className="crumb-current">Photo &amp; pothole report</span>
+                            <span className="crumb-current">Pothole Report Generator</span>
                         </nav>
                         <div className="tool-title-row">
-                            <h1>Photo &amp; pothole report</h1>
+                            <h1>Pothole Report Generator</h1>
                             <span className="pill pill-draft">Draft · autosaved</span>
                         </div>
                     </div>
@@ -370,13 +370,13 @@ const PhotoReport = ({ goBack }) => {
                 {/* Bottom action bar — Word/PDF downloads appear once a report is generated */}
                 <div className="tool-actions tool-actions-bottom">
                     {docUrl && (
-                        <a className="btn-outline sm" href={docUrl} download={`Photo Report - ${form.siteAddress || 'report'}.docx`}>
+                        <a className="btn-outline sm" href={docUrl} download={`Pothole Report - ${form.siteAddress || 'report'}.docx`}>
                             <FontAwesomeIcon icon={faDownload} /> Word
                         </a>
                     )}
                     {pdfUrl && (
                         <>
-                            <a className="btn-outline sm" href={pdfUrl} download={`Photo Report - ${form.siteAddress || 'report'}.pdf`}>
+                            <a className="btn-outline sm" href={pdfUrl} download={`Pothole Report - ${form.siteAddress || 'report'}.pdf`}>
                                 <FontAwesomeIcon icon={faDownload} /> PDF
                             </a>
                             <a className="btn-outline sm" href={pdfUrl} target="_blank" rel="noreferrer">

@@ -84,7 +84,7 @@ const Dashboard = () => {
                 </div>
                 <div className="resume-body">
                     <div className="resume-eyebrow">{recent.length ? 'CONTINUE WHERE YOU LEFT OFF' : 'START HERE'}</div>
-                    <div className="resume-title">{recent.length ? recent[0].title : 'New photo & pothole report'}</div>
+                    <div className="resume-title">{recent.length ? recent[0].title : 'New pothole report'}</div>
                     <div className="resume-meta">{recent.length ? recent[0].meta : 'Capture photos, annotate, attach potholes and export a branded PDF.'}</div>
                 </div>
                 <div className="resume-cta">{recent.length ? 'Resume' : 'Start'}

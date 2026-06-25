@@ -40,9 +40,9 @@ const Reports = () => {
             const contentBase64 = await blobToBase64(blob);
             await sendReportEmail({
                 to: [r.client].filter(Boolean),
-                subject: `Photo Report${r.siteAddress ? ' — ' + r.siteAddress : ''}`,
-                text: 'Please find attached the photo report (re-sent).',
-                filename: `${r.title || 'Photo Report'}.pdf`,
+                subject: `Pothole Report${r.siteAddress ? ' — ' + r.siteAddress : ''}`,
+                text: 'Please find attached the pothole report (re-sent).',
+                filename: `${r.title || 'Pothole Report'}.pdf`,
                 contentBase64,
             });
             showToast(`Report ${r.id} re-sent`);

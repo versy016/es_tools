@@ -153,7 +153,7 @@ Restart `npm start` after editing env files.
 
 1. Sign in — no `profiles 404`; your name/role show in the navbar.
 2. **Profile**: edit details + draw a signature → reload → both persist.
-3. **Photo Report**: create → **Generate** saves a row in `reports` + a PDF in the
+3. **Pothole Report Generator**: create → **Generate** saves a row in `reports` + a PDF in the
    `reports` bucket → it appears on **Dashboard** and **Reports** → download works →
    **Export & email** sends via `send-report`.
 4. **Service Location**: generate the `.docx` (and PDF if docx-to-pdf is deployed) →
