@@ -5,7 +5,7 @@
 // → persist to the Reports store (persistReport) → optionally email it. No server
 // renders the PDF; everything happens client-side from in-memory state.
 import React, { useState, useEffect, useRef } from 'react';
-import { pdf } from '@react-pdf/renderer';
+import { renderDocx as renderPhotoDocx, docxToPdf as photoDocxToPdf } from '../services/photoReportDocxService';
 import '../stylessheets/ServiceLocater.css';
 import '../stylessheets/PhotoReport.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -21,7 +21,6 @@ import AnnotatorSwitch from '../components/AnnotatorSwitch';
 import CameraCapture from '../components/CameraCapture';
 import PotholePanel from '../components/PotholePanel';
 import Section from '../components/FormSection';
-import PhotoReportDoc from '../report/PhotoReportPdf';
 import { useToast } from '../components/Toast';
 import { saveReport } from '../services/reportsService';
 import { getSignoff } from '../services/profileService';
@@ -64,7 +63,8 @@ const PhotoReport = ({ goBack }) => {
     const [editingPhotoId, setEditingPhotoId] = useState(null);            // which photo the annotator modal is editing
     const [showCamera, setShowCamera] = useState(false);
     const [emailTo, setEmailTo] = useState('');
-    const [pdfUrl, setPdfUrl] = useState('');                              // object URL for Download/Open buttons
+    const [pdfUrl, setPdfUrl] = useState('');                              // object URL for the PDF Download/Open buttons
+    const [docUrl, setDocUrl] = useState('');                              // object URL for the Word (.docx) download
     const [loading, setLoading] = useState(false);
 
     // Refs for the inputs that get Algolia/Maps autocomplete attached imperatively.
@@ -139,14 +139,19 @@ const PhotoReport = ({ goBack }) => {
     // saved record instead of creating duplicates (useRef keeps it across renders).
     const reportId = useRef(`rep_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
 
-    // Assemble the job payload and render it to a PDF blob in-browser.
-    // Also refreshes the object URL backing the Download/Open buttons (revoking the old one).
-    const buildPdfBlob = async () => {
-        const job = { ...form, utilitiesLocated, qualityLevels, photos, signoff: await getSignoff() };
-        const blob = await pdf(<PhotoReportDoc job={job} />).toBlob();
+    // Render the report from the letterhead .docx template, then convert it to PDF via
+    // the docx-to-pdf service. Returns both blobs (pdfBlob is null if the converter isn't
+    // configured) and refreshes the Word + PDF download URLs.
+    const buildReport = async () => {
+        const job = { ...form, utilitiesLocated, qualityLevels, photos };
+        const signoff = await getSignoff();
+        const docxBlob = await renderPhotoDocx(job, signoff);
+        if (docUrl) URL.revokeObjectURL(docUrl);
+        setDocUrl(URL.createObjectURL(docxBlob));
+        const pdfBlob = await photoDocxToPdf(docxBlob, `Photo Report - ${form.siteAddress || 'report'}.docx`);
         if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-        setPdfUrl(URL.createObjectURL(blob));
-        return blob;
+        setPdfUrl(pdfBlob ? URL.createObjectURL(pdfBlob) : '');
+        return { docxBlob, pdfBlob };
     };
 
     // Save the generated PDF + display metadata to the Reports store. `status`
@@ -175,9 +180,9 @@ const PhotoReport = ({ goBack }) => {
         if (photos.length === 0) { alert('Add at least one photo before generating the report.'); return; }
         setLoading(true);
         try {
-            const blob = await buildPdfBlob();
-            await persistReport(blob, 'Draft');
-            showToast('PDF generated & saved');
+            const { docxBlob, pdfBlob } = await buildReport();
+            await persistReport(pdfBlob || docxBlob, 'Draft');
+            showToast(pdfBlob ? 'Report generated & saved' : 'Word report generated (configure the PDF converter for a PDF)');
         } catch (err) {
             console.error('Error generating PDF', err);
             alert('Something went wrong generating the PDF. See console for details.');
@@ -194,20 +199,21 @@ const PhotoReport = ({ goBack }) => {
         if (emailTo && !isEmail(emailTo)) { alert('Please enter a valid client email, or leave it blank.'); return; }
         setLoading(true);
         try {
-            const blob = await buildPdfBlob();
+            const { docxBlob, pdfBlob } = await buildReport();
             if (!isEmailConfigured()) {
-                alert('Email is not configured yet (REACT_APP_EMAIL_ENDPOINT is not set). The PDF was generated — use Download for now.');
+                alert('Email is not configured yet (REACT_APP_EMAIL_ENDPOINT is not set). The report was generated — use Download for now.');
                 return;
             }
-            const contentBase64 = await blobToBase64(blob); // attachment payload for the email endpoint
+            const sendBlob = pdfBlob || docxBlob; // prefer the PDF; fall back to the Word file
+            const contentBase64 = await blobToBase64(sendBlob);
             await sendReportEmail({
                 to: isEmail(emailTo) ? [emailTo.trim()] : [], // empty = archive-only recipient
                 subject: `Photo Report${form.siteAddress ? ' — ' + form.siteAddress : ''}`,
                 text: `Please find attached the photo report${form.siteAddress ? ' for ' + form.siteAddress : ''}.\n\nGenerated via ES Tools.`,
-                filename: `Photo Report - ${form.siteAddress || 'report'}.pdf`,
+                filename: `Photo Report - ${form.siteAddress || 'report'}.${pdfBlob ? 'pdf' : 'docx'}`,
                 contentBase64,
             });
-            await persistReport(blob, 'Sent');
+            await persistReport(sendBlob, 'Sent');
             showToast('Branded PDF generated & emailed to client');
         } catch (err) {
             console.error('Error sending email', err);
@@ -361,21 +367,26 @@ const PhotoReport = ({ goBack }) => {
                     <p className="muted-note">A copy is always sent to <strong>{REPORT_ARCHIVE_EMAIL}</strong>.</p>
                 </Section>
 
-                {/* Bottom action bar — Download/Open appear once a PDF exists (pdfUrl) */}
+                {/* Bottom action bar — Word/PDF downloads appear once a report is generated */}
                 <div className="tool-actions tool-actions-bottom">
+                    {docUrl && (
+                        <a className="btn-outline sm" href={docUrl} download={`Photo Report - ${form.siteAddress || 'report'}.docx`}>
+                            <FontAwesomeIcon icon={faDownload} /> Word
+                        </a>
+                    )}
                     {pdfUrl && (
                         <>
                             <a className="btn-outline sm" href={pdfUrl} download={`Photo Report - ${form.siteAddress || 'report'}.pdf`}>
-                                <FontAwesomeIcon icon={faDownload} /> Download
+                                <FontAwesomeIcon icon={faDownload} /> PDF
                             </a>
                             <a className="btn-outline sm" href={pdfUrl} target="_blank" rel="noreferrer">
                                 <FontAwesomeIcon icon={faUpRightFromSquare} /> Open
                             </a>
                         </>
                     )}
-                    <button type="button" className="btn-outline" onClick={handleGenerate} disabled={loading}>Generate PDF</button>
+                    <button type="button" className="btn-outline" onClick={handleGenerate} disabled={loading}>Generate report</button>
                     <button type="button" className="btn-yellow" onClick={handleGenerateAndEmail} disabled={loading}>
-                        <FontAwesomeIcon icon={faPaperPlane} /> {loading ? 'Working…' : 'Export & email PDF'}
+                        <FontAwesomeIcon icon={faPaperPlane} /> {loading ? 'Working…' : 'Export & email'}
                     </button>
                 </div>
 
