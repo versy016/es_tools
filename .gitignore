@@ -58,3 +58,6 @@ public/templates/_*
 .agents/skills/supabase/
 .agents/skills/supabase-postgres-best-practices/
 skills-lock.json
+
+# Local Claude project skills
+.claude/skills/
