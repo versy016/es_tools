@@ -207,7 +207,7 @@ const PhotoReport = ({ goBack }) => {
     // distinguishes a local "Draft" (Generate) from a "Sent" report (email path).
     const persistReport = async (blob, status) => {
         const potholeCount = photos.reduce((n, p) => n + (p.potholes ? p.potholes.length : 0), 0);
-        await saveReport({
+        return await saveReport({
             id: reportId.current,
             blob,
             meta: {
@@ -230,8 +230,10 @@ const PhotoReport = ({ goBack }) => {
         setLoading(true);
         try {
             const { docxBlob, pdfBlob } = await buildReport();
-            await persistReport(pdfBlob || docxBlob, 'Draft');
-            showToast(pdfBlob ? 'Report generated & saved' : 'Word report generated (configure the PDF converter for a PDF)');
+            const saved = await persistReport(pdfBlob || docxBlob, 'Draft');
+            showToast(saved
+                ? (pdfBlob ? 'Report generated & saved' : 'Word report generated & saved (configure the PDF converter for a PDF)')
+                : 'Report generated, but saving to your reports failed — check you are signed in (see console)');
         } catch (err) {
             console.error('Error generating PDF', err);
             alert('Something went wrong generating the PDF. See console for details.');
@@ -262,8 +264,10 @@ const PhotoReport = ({ goBack }) => {
                 filename: `Pothole Report - ${form.siteAddress || 'report'}.${pdfBlob ? 'pdf' : 'docx'}`,
                 contentBase64,
             });
-            await persistReport(sendBlob, 'Sent');
-            showToast('Branded PDF generated & emailed to client');
+            const saved = await persistReport(sendBlob, 'Sent');
+            showToast(saved
+                ? 'Branded PDF generated, emailed & saved'
+                : 'Report emailed, but saving to your reports failed — check you are signed in (see console)');
         } catch (err) {
             console.error('Error sending email', err);
             alert('Could not send the email. The PDF was generated — see console for details.');
@@ -469,6 +473,13 @@ const PhotoReport = ({ goBack }) => {
                         <FontAwesomeIcon icon={faPaperPlane} /> {loading ? 'Working…' : 'Export & email'}
                     </button>
                 </div>
+
+                {/* Full-screen working overlay while the Word/PDF are generated (matches the Service report) */}
+                {loading && (
+                    <div className="loading-overlay">
+                        <p><span className="spinner spinner-light" /> Generating report, please wait…</p>
+                    </div>
+                )}
 
             </div>
 

@@ -15,6 +15,7 @@ import { loadGoogleMapsScript, attachAddressAutocomplete } from '../scripts/goog
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { renderDocx, docxToPdf, isPdfConfigured } from '../services/serviceReportService';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
+import { saveReport } from '../services/reportsService';
 import FormSection from '../components/FormSection';
 import SignOffSection from '../components/SignOffSection';
 
@@ -74,6 +75,9 @@ const ServiceLocater = ({ goBack }) => {
     const [loading, setLoading] = useState(false);
     const [uploadingPhotos, setUploadingPhotos] = useState(false); // spinner while previews decode
     const [showSuccess, setShowSuccess] = useState(false);         // centred "report generated" modal
+    const [savedToReports, setSavedToReports] = useState(false);   // did the last report persist to Supabase?
+    // Stable id for the session so re-generating overwrites the same saved record.
+    const reportId = useRef(`rep_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
 
     // Refs for the inputs that receive Algolia/Maps autocomplete imperatively.
     const projectInputRef = useRef(null);
@@ -344,6 +348,23 @@ const ServiceLocater = ({ goBack }) => {
             // Optionally convert to PDF (needs the converter endpoint configured).
             const pdfBlob = await docxToPdf(docxBlob, 'Service Location Field Report.docx');
             if (pdfBlob) setPdfLink(URL.createObjectURL(pdfBlob));
+
+            // Persist the report (PDF if available, else the Word file) to Supabase.
+            const siteLabel = address || project.project || client.title || 'Untitled site';
+            const saved = await saveReport({
+                id: reportId.current,
+                blob: pdfBlob || docxBlob,
+                meta: {
+                    title: `Service Location report — ${siteLabel}`,
+                    siteAddress: address,
+                    client: email || client.title || '',
+                    status: 'Draft',
+                    photoCount: imagePreviews.length,
+                    potholeCount: 0,
+                    meta: `${imagePreviews.length} photo${imagePreviews.length === 1 ? '' : 's'} · ${new Date().toLocaleDateString('en-AU')}`,
+                },
+            });
+            setSavedToReports(saved);
 
             setShowSuccess(true); // centred confirmation with the download options
         } catch (err) {
@@ -696,6 +717,11 @@ const ServiceLocater = ({ goBack }) => {
                             <div className="success-check"><FontAwesomeIcon icon={faCheck} /></div>
                             <h3>Report generated</h3>
                             <p>Your Service Location Field Report is ready to download.</p>
+                            <p className="success-note">
+                                {savedToReports
+                                    ? '✓ Saved to your reports.'
+                                    : 'Not saved to your reports — check that you are signed in and the backend is configured (see console).'}
+                            </p>
                             <div className="success-actions">
                                 <a className="btn-yellow" href={docLink} download="Service Location Field Report.docx" onClick={() => setShowSuccess(false)}>
                                     <FontAwesomeIcon icon={faDownload} /> Download Word

@@ -28,13 +28,21 @@ const rowToReport = (r) => ({
 // Upsert a report: upload the PDF blob to reports/<uid>/<id>.pdf (overwriting any prior
 // version) then upsert the metadata row. RLS scopes both to the owner. Returns true on
 // success, false on any failure (incl. no auth user) — never throws to the caller.
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
 export const saveReport = async ({ id, blob, meta }) => {
     if (!supabase) return false;
     try {
         const userId = await uid();
-        if (!userId) return false;
-        const path = `${userId}/${id}.pdf`;
-        const up = await supabase.storage.from(REPORTS_BUCKET).upload(path, blob, { upsert: true, contentType: 'application/pdf' });
+        if (!userId) { console.warn('saveReport: no signed-in user — not saved'); return false; }
+        // Store with the right extension/type: a PDF when the converter ran, else the .docx.
+        const isPdf = ((blob && blob.type) || '').includes('pdf');
+        const ext = isPdf ? 'pdf' : 'docx';
+        const path = `${userId}/${id}.${ext}`;
+        const up = await supabase.storage.from(REPORTS_BUCKET).upload(path, blob, {
+            upsert: true,
+            contentType: (blob && blob.type) || (isPdf ? 'application/pdf' : DOCX_MIME),
+        });
         if (up.error) throw up.error;
         const { error } = await supabase.from('reports').upsert({
             id,
@@ -50,7 +58,7 @@ export const saveReport = async ({ id, blob, meta }) => {
         if (error) throw error;
         return true;
     } catch (err) {
-        console.warn('saveReport failed', err);
+        console.warn('saveReport failed', err?.message || err);
         return false;
     }
 };
