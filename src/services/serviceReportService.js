@@ -41,20 +41,26 @@ const base64ToArrayBuffer = (src) => {
 const loadTemplate = async () => {
     if (supabase) {
         try {
-            const { data, error } = await supabase.storage.from('templates').download(TEMPLATE_NAME);
+            // Use a fresh signed URL (unique token each call) + cache:'no-store' so an updated
+            // template in the bucket is picked up immediately — never a stale browser/CDN copy.
+            // (supabase .download() goes through the browser's default cache, which Ctrl+Shift+R
+            // doesn't bypass for runtime fetches, so an edited template kept loading the old one.)
+            const { data: signed, error } = await supabase.storage.from('templates').createSignedUrl(TEMPLATE_NAME, 60);
             if (error) {
-                // Surface WHY the managed copy didn't load (missing file, RLS denied, etc.)
-                // instead of silently using the bundled one.
                 console.warn(`[serviceReport] templates/${TEMPLATE_NAME} not loaded from bucket: ${error.message}. Using the bundled template.`);
-            } else if (data) {
-                console.info(`[serviceReport] using managed template from the "templates" bucket.`);
-                return await data.arrayBuffer();
+            } else if (signed?.signedUrl) {
+                const res = await fetch(signed.signedUrl, { cache: 'no-store' });
+                if (res.ok) {
+                    console.info('[serviceReport] using managed template from the "templates" bucket.');
+                    return await res.arrayBuffer();
+                }
+                console.warn(`[serviceReport] templates fetch returned ${res.status}. Using the bundled template.`);
             }
         } catch (e) {
-            console.warn(`[serviceReport] templates bucket download failed: ${e?.message || e}. Using the bundled template.`);
+            console.warn(`[serviceReport] templates bucket load failed: ${e?.message || e}. Using the bundled template.`);
         }
     }
-    const res = await fetch(`${process.env.PUBLIC_URL || ''}/templates/${TEMPLATE_NAME}`);
+    const res = await fetch(`${process.env.PUBLIC_URL || ''}/templates/${TEMPLATE_NAME}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Template not found');
     return res.arrayBuffer();
 };

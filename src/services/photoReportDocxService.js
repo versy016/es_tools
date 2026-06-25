@@ -25,18 +25,24 @@ const base64ToArrayBuffer = (src) => {
 const loadTemplate = async () => {
     if (supabase) {
         try {
-            const { data, error } = await supabase.storage.from('templates').download(TEMPLATE_NAME);
+            // Fresh signed URL + cache:'no-store' so a bucket update is picked up immediately
+            // (supabase .download() uses the browser cache, which Ctrl+Shift+R won't bypass).
+            const { data: signed, error } = await supabase.storage.from('templates').createSignedUrl(TEMPLATE_NAME, 60);
             if (error) {
                 console.warn(`[photoReport] templates/${TEMPLATE_NAME} not loaded from bucket: ${error.message}. Using the bundled template.`);
-            } else if (data) {
-                console.info(`[photoReport] using managed template from the "templates" bucket.`);
-                return await data.arrayBuffer();
+            } else if (signed?.signedUrl) {
+                const res = await fetch(signed.signedUrl, { cache: 'no-store' });
+                if (res.ok) {
+                    console.info('[photoReport] using managed template from the "templates" bucket.');
+                    return await res.arrayBuffer();
+                }
+                console.warn(`[photoReport] templates fetch returned ${res.status}. Using the bundled template.`);
             }
         } catch (e) {
-            console.warn(`[photoReport] templates bucket download failed: ${e?.message || e}. Using the bundled template.`);
+            console.warn(`[photoReport] templates bucket load failed: ${e?.message || e}. Using the bundled template.`);
         }
     }
-    const res = await fetch(`${process.env.PUBLIC_URL || ''}/templates/${TEMPLATE_NAME}`);
+    const res = await fetch(`${process.env.PUBLIC_URL || ''}/templates/${TEMPLATE_NAME}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Photo report template not found');
     return res.arrayBuffer();
 };
