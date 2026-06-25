@@ -53,3 +53,8 @@ supabase/.temp/
 
 # Service-template build working files
 public/templates/_*
+
+# Installed Supabase agent skills (via skills CLI)
+.agents/skills/supabase/
+.agents/skills/supabase-postgres-best-practices/
+skills-lock.json
