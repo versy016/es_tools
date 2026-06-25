@@ -6,9 +6,9 @@ DOC = r'C:\Users\sverma\Desktop\es_tools\public\templates\_unpacked\word\documen
 YELLOW = 'FFC20E'; CHAR = '130C0E'; TINT = 'FBF6E9'; LINE = 'E6E3DD'
 
 UTILS = [  # label, code, fill, textcolor — ES utility colour-coding scheme
-    ('Gas','G','F6E84F','000000'), ('Telstra','T','FFFFFF','000000'),
-    ('Electricity (LV and HV)','E','F4B183','000000'), ('Communications / Fibre Optic','COMMS','FFFFFF','000000'),
-    ('Water','W','8EAADB','000000'), ('Sewer','SWR','FBE4D5','000000'),
+    ('Gas','G, GM, GS','F6E84F','000000'), ('Telstra','T','FFFFFF','000000'),
+    ('Electricity (LV and HV)','HV, LV, E','F4B183','000000'), ('Communications / Fibre Optic','COMMS, OF','FFFFFF','000000'),
+    ('Water','WS, WM, W','8EAADB','000000'), ('Sewer','SWR','FBE4D5','000000'),
     ('Stormwater','STW','92D050','000000'), ('Recycled Water','RW','D777C5','000000'),
     ('Unknown Service','UK','FF3399','000000'), ('Earth Grid (Substation)','EG','FFFF00','000000'),
 ]
@@ -88,7 +88,7 @@ cover = (title_band('POTHOLE REPORT')
          + signoff)
 
 # ---- Legend page ----
-LW = [1400, 8686]
+LW = [1900, 8186]   # wider code column for multi-code labels (G, GM, GS)
 legrows = [[cell(code, LW[0], fill, True, tc, jc='center'), cell(label, LW[1])] for (label, code, fill, tc) in UTILS]
 legend = section('Utility legend — DIT specification', pbb=True) + table(legrows, LW)
 legend += section('Quality levels explained (AS 5488.1:2022)')

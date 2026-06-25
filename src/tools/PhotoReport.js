@@ -340,7 +340,7 @@ const PhotoReport = ({ goBack }) => {
                                                 {QUALITY_LEVELS.map((q) => (
                                                     <label key={q}>
                                                         <input type="checkbox" checked={r.quality[q]} onChange={() => toggleUtilQuality(r.key, q)} />
-                                                        QL-{q}
+                                                        {q}
                                                     </label>
                                                 ))}
                                             </div>

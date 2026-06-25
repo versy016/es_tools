@@ -92,7 +92,7 @@ const PotholePanel = ({ potholes, onChange }) => {
                                     Quality Level
                                     <select value={p.qualityLevel} onChange={(e) => update(p.id, { qualityLevel: e.target.value })}>
                                         {QUALITY_LEVELS.map((q) => (
-                                            <option key={q} value={q}>QL-{q}</option>
+                                            <option key={q} value={q}>{q}</option>
                                         ))}
                                     </select>
                                 </label>
