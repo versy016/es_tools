@@ -75,6 +75,27 @@ const PhotoReport = ({ goBack }) => {
 
     const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
 
+    // TEMP (testing): fill every cover field + utilities + quality levels with sample
+    // data so a report can be generated quickly — upload/annotate photos manually.
+    // Remove this fn + its button before release.
+    const quickFill = () => {
+        setForm({
+            date: today(),
+            locatorName: 'Sam Locator',
+            dbydNo: 'DBYD-12345',
+            siteAddress: '123 Test Street, Adelaide SA 5000',
+            scopeOfWorks: 'Utility locating',
+            clientName: 'Westside Plumbing Pty Ltd',
+            clientContact: 'John Tester',
+            clientMobile: '0400 000 000',
+            dbydEmail: 'test@engsurveys.com.au',
+            refNo: 'REF-001',
+            comments: 'Sample report generated for testing.',
+        });
+        setUtilitiesLocated(['gas', 'water', 'sewer', 'comms']);
+        setQualityLevels({ A: true, B: true, C: false, D: false });
+    };
+
     // Wire Algolia autocomplete onto the locator/client/contact inputs once mounted.
     // Selecting a suggestion writes back into form state (contact also fills mobile).
     useEffect(() => {
@@ -239,6 +260,12 @@ const PhotoReport = ({ goBack }) => {
                         <div className="tool-title-row">
                             <h1>Pothole Report Generator</h1>
                             <span className="pill pill-draft">Draft · autosaved</span>
+                            {/* TEMP testing helper — remove before release */}
+                            <button type="button" onClick={quickFill} style={{
+                                marginLeft: 'auto', padding: '6px 12px', fontSize: '.8rem', fontWeight: 600,
+                                border: '1.5px dashed var(--es-yellow)', background: 'var(--es-yellow-soft)',
+                                color: 'var(--es-yellow-dark)', borderRadius: '8px', cursor: 'pointer',
+                            }}>⚡ Quick fill (test)</button>
                         </div>
                     </div>
                 </div>
