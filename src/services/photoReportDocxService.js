@@ -55,7 +55,7 @@ const loadTemplate = async () => {
 
 // Map the Photo Report tool's form/state to the template tags.
 const buildData = (job, signoff) => {
-    const hasSig = !!(signoff && signoff.signature);
+    const sign = signoff || {};
     const data = {
         date: job.date || '',
         locatorName: job.locatorName || '',
@@ -68,10 +68,11 @@ const buildData = (job, signoff) => {
         clientMobile: job.clientMobile || '',
         dbydEmail: job.dbydEmail || '',
         comments: job.comments || '',
-        hasSignoff: hasSig,
-        signName: (hasSig && (signoff.fullName || job.locatorName)) || '',
-        signMeta: hasSig ? [signoff.role, signoff.accreditation, signoff.mobile, signoff.email].filter(Boolean).join('  ·  ') : '',
-        signature: hasSig ? signoff.signature : '',
+        // End-of-report sign-off block.
+        signLocator: sign.locatorName || '',
+        hasSign: !!sign.signature,
+        signImage: sign.signature || '',
+        signDate: sign.date || '',
         // One block per photo; each carries its main image + its potholes laid out
         // as a 5-per-row thumbnail grid (image + PH label only — no utility/quality
         // details). Potholes are chunked into fixed 5-cell rows, blank cells padded.
@@ -107,8 +108,8 @@ export const renderDocx = async (job, signoff) => {
             getImage: (tagValue) => base64ToArrayBuffer(tagValue),
             // Size per image tag: the main photo large, signature medium, pothole thumb small.
             getSize: (img, tagValue, tagName) => {
-                if (tagName === 'photo') return [440, 300];
-                if (tagName === 'signature') return [150, 46];
+                if (tagName === 'photo') return [600, 400];      // main photo: wide + taller
+                if (tagName === 'signImage') return [170, 60];   // sign-off signature
                 if (/^c\dimg$/.test(tagName)) return [118, 90];  // pothole grid thumbnail
                 return [92, 70];
             },

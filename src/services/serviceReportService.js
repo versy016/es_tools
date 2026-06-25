@@ -26,10 +26,13 @@ const ASSET_PREFIX = {
     'Unknown Services': 'Unknown',
 };
 
+// 1x1 transparent PNG, used when an image tag has no data so the module never throws.
+const BLANK_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
 // Decode a base64 string (or full data URL) into an ArrayBuffer for the image module.
 const base64ToArrayBuffer = (src) => {
-    const b64 = src.includes(',') ? src.split(',')[1] : src;
-    const bin = atob(b64);
+    const b64 = (src && src.includes(',')) ? src.split(',')[1] : (src || BLANK_PNG);
+    const bin = atob(b64 || BLANK_PNG);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return bytes.buffer;
@@ -84,6 +87,11 @@ const buildData = (form) => {
         dbydByClient: !!form.dbydByClient,
         sitename: form.sitename || '',
         addnotes: Array.isArray(form.addnotes) ? form.addnotes.join('\n') : (form.addnotes || ''),
+        // End-of-report sign-off block.
+        signLocator: form.signLocator || '',
+        hasSign: !!form.signImage,
+        signImage: form.signImage || '',
+        signDate: form.signDate || '',
         // Image-module loop: each entry's `data` (base64 photo) is resolved by getImage;
         // {name}/{description} render as captions under each photo. Accepts string or object.
         photos: (form.photos || []).map((p) => (
@@ -115,8 +123,8 @@ export const renderDocx = async (form) => {
         const zip = new PizZip(content);
         const imageModule = new ImageModule({
             getImage: (tagValue) => base64ToArrayBuffer(tagValue),
-            // One photo per row (each in its own paragraph); ~430px wide centred on A4.
-            getSize: () => [430, 305],
+            // One photo per row (~430px wide); the sign-off signature renders smaller.
+            getSize: (img, tagValue, tagName) => (tagName === 'signImage' ? [170, 60] : [430, 305]),
         });
         const doc = new Docxtemplater(zip, { modules: [imageModule], paragraphLoop: true, linebreaks: true });
         doc.render(buildData(form));

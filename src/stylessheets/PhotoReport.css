@@ -275,6 +275,110 @@
     color: var(--ink);
 }
 
+/* Sign-off section (shared by both report tools) */
+.signoff-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.signoff-btn {
+    padding: 9px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--ink);
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.signoff-btn:hover { border-color: var(--primary); }
+
+.signoff-btn.active {
+    border-color: var(--es-yellow);
+    background: var(--es-yellow-soft);
+    color: var(--es-yellow-dark);
+}
+
+.signoff-btn.ghost { font-weight: 500; color: var(--ink-soft); }
+
+.signoff-hint {
+    margin: 12px 0 0;
+    font-size: .9rem;
+    color: var(--ink-soft);
+}
+
+.signoff-fields {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px 16px;
+    margin-top: 14px;
+    max-width: 560px;
+}
+
+.signoff-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-weight: 600;
+    color: var(--ink-soft);
+}
+
+.signoff-fields input {
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font: inherit;
+    color: var(--ink);
+}
+
+.signoff-draw { margin-top: 14px; }
+
+.signoff-draw .signature-canvas {
+    width: 100%;
+    max-width: 460px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.signoff-pad-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.signoff-pad-actions button,
+.signoff-upload {
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--ink);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.signoff-preview {
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    display: inline-block;
+}
+
+.signoff-preview img {
+    display: block;
+    max-width: 320px;
+    max-height: 90px;
+}
+
 .subhead {
     margin: 22px 0 12px;
     font-size: 1rem;

@@ -25,7 +25,7 @@ DISCLAIMER = 'All subsurface utilities shown in this photo report should be trea
 def esc(s): return s.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
 def rpr(bold=False, sz=20, color=CHAR, italic=False):
     return f'<w:rPr><w:sz w:val="{sz}"/><w:szCs w:val="{sz}"/>{"<w:b/>" if bold else ""}{"<w:i/>" if italic else ""}<w:color w:val="{color}"/></w:rPr>'
-def ctext(text, bold=False, sz=20, color=CHAR, jc='left', italic=False, pbb=False):
+def ctext(text, bold=False, sz=22, color=CHAR, jc='left', italic=False, pbb=False):
     jcx = f'<w:jc w:val="{jc}"/>' if jc != 'left' else ''
     pb = '<w:pageBreakBefore/>' if pbb else ''
     return (f'<w:p><w:pPr>{pb}<w:spacing w:after="0" w:line="252" w:lineRule="auto"/>{jcx}{rpr(bold,sz,color,italic)}</w:pPr>'
@@ -34,7 +34,7 @@ def cell(text, w, fill=None, bold=False, color=CHAR, span=None, jc='left', raw=N
     shd = f'<w:shd w:val="clear" w:color="auto" w:fill="{fill}"/>' if fill else ''
     gs = f'<w:gridSpan w:val="{span}"/>' if span else ''
     mar = '<w:tcMar><w:top w:w="40" w:type="dxa"/><w:left w:w="110" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="110" w:type="dxa"/></w:tcMar>'
-    inner = raw if raw is not None else ctext(text, bold, 20, color, jc)
+    inner = raw if raw is not None else ctext(text, bold, 22, color, jc)
     return (f'<w:tc><w:tcPr><w:tcW w:w="{w}" w:type="dxa"/>{gs}{shd}{mar}<w:vAlign w:val="center"/></w:tcPr>{inner}</w:tc>')
 def table(rows, widths, borders=True):
     bd = ('<w:tblBorders>' + ''.join(f'<w:{s} w:val="single" w:sz="4" w:space="0" w:color="{LINE}"/>' for s in ['top','left','bottom','right','insideH','insideV']) + '</w:tblBorders>') if borders else ''
@@ -49,9 +49,9 @@ def title_band(text):
 def section(title, pbb=False):
     pb = '<w:pageBreakBefore/>' if pbb else ''
     return (f'<w:p><w:pPr>{pb}<w:pBdr><w:left w:val="single" w:sz="36" w:space="8" w:color="{YELLOW}"/></w:pBdr>'
-            f'<w:spacing w:before="220" w:after="90"/>{rpr(True,24,CHAR)}</w:pPr>'
-            f'<w:r>{rpr(True,24,CHAR)}<w:t xml:space="preserve">{esc(title)}</w:t></w:r></w:p>')
-def bullet(text, sz=19, color='333333'):
+            f'<w:spacing w:before="220" w:after="90"/>{rpr(True,26,CHAR)}</w:pPr>'
+            f'<w:r>{rpr(True,26,CHAR)}<w:t xml:space="preserve">{esc(title)}</w:t></w:r></w:p>')
+def bullet(text, sz=21, color='333333'):
     # Hanging-indent bulleted paragraph.
     return (f'<w:p><w:pPr><w:spacing w:after="60" w:line="252" w:lineRule="auto"/>'
             f'<w:ind w:left="360" w:hanging="220"/>{rpr(False,sz,color)}</w:pPr>'
@@ -81,18 +81,22 @@ for (label, code, fill, tc, key) in UTILS:
         cell('{%s_comment}' % key, UTW[2], None),
     ])
 util_table = table(util_rows, UTW)
-signoff = ('<w:p><w:pPr><w:spacing w:before="160"/></w:pPr><w:r><w:t>{#hasSignoff}</w:t></w:r></w:p>'
-           + ctext('Located and reported by', bold=True, sz=18, color='666666')
-           + f'<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t xml:space="preserve">{{%signature}}</w:t></w:r></w:p>'
-           + ctext('{signName}', bold=True, sz=22) + ctext('{signMeta}', sz=18, color='444444')
-           + '<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>{/hasSignoff}</w:t></w:r></w:p>')
 
 cover = (title_band('POTHOLE REPORT')
          + section('Project details') + proj
          + section('Client details') + client
          + section('Utilities located') + util_table
-         + section('Comments') + ctext('{comments}')
-         + signoff)
+         + section('Comments') + ctext('{comments}'))
+
+# ---- End-of-report sign-off block (Utility locator / Signature / Date) ----
+SOW = [2900, 7186]   # label | value
+sig_cell = ('<w:p><w:pPr><w:spacing w:before="40" w:after="40"/></w:pPr>'
+            '<w:r><w:t>{#hasSign}</w:t></w:r><w:r><w:t xml:space="preserve">{%signImage}</w:t></w:r><w:r><w:t>{/hasSign}</w:t></w:r></w:p>')
+signoff_block = section('Sign-off') + table([
+    [cell('UTILITY LOCATOR', SOW[0], TINT, True), cell('{signLocator}', SOW[1])],
+    [cell('SIGNATURE', SOW[0], TINT, True), cell('', SOW[1], raw=sig_cell)],
+    [cell('DATE', SOW[0], TINT, True), cell('{signDate}', SOW[1])],
+], SOW)
 
 # ---- Legend page ----
 LW = [1900, 8186]   # wider code column for multi-code labels (G, GM, GS)
@@ -100,7 +104,7 @@ legrows = [[cell(code, LW[0], fill, True, tc, jc='center'), cell(label, LW[1])] 
 legend = section('Utility legend — DIT specification', pbb=True) + table(legrows, LW)
 legend += section('Quality levels explained (AS 5488.1:2022)')
 for level, text in QLDEFS:
-    legend += ctext(level, bold=True, sz=21) + ctext(text, sz=19, color='333333')
+    legend += ctext(level, bold=True, sz=23) + ctext(text, sz=21, color='333333')
 
 # ---- Photo pages (loop): page break + heading + main image + pothole thumbnail grid ----
 # Potholes render as a borderless 5-per-row grid of thumbnails, each with just its
@@ -112,8 +116,8 @@ def gcell(i):
     post = '<w:r><w:t>{/potholeRows}</w:t></w:r>' if i == 4 else ''  # ...closes in last cell
     img_p = (f'<w:p><w:pPr><w:spacing w:before="40" w:after="20"/><w:jc w:val="center"/></w:pPr>'
              f'{pre}<w:r><w:t xml:space="preserve">{{%c{i}img}}</w:t></w:r></w:p>')
-    lbl_p = (f'<w:p><w:pPr><w:spacing w:after="60"/><w:jc w:val="center"/>{rpr(True,18,CHAR)}</w:pPr>'
-             f'<w:r>{rpr(True,18,CHAR)}<w:t xml:space="preserve">{{c{i}label}}</w:t></w:r>{post}</w:p>')
+    lbl_p = (f'<w:p><w:pPr><w:spacing w:after="60"/><w:jc w:val="center"/>{rpr(True,20,CHAR)}</w:pPr>'
+             f'<w:r>{rpr(True,20,CHAR)}<w:t xml:space="preserve">{{c{i}label}}</w:t></w:r>{post}</w:p>')
     return cell('', GW[i], raw=img_p + lbl_p)
 pothole_grid = (f'<w:tbl><w:tblPr><w:tblW w:w="{sum(GW)}" w:type="dxa"/><w:jc w:val="left"/><w:tblInd w:w="0" w:type="dxa"/></w:tblPr>'
                 + '<w:tblGrid>' + ''.join(f'<w:gridCol w:w="{w}"/>' for w in GW) + '</w:tblGrid>'
@@ -136,7 +140,7 @@ for i in range(0, len(abbr_cells), 2):
         pair.append(cell('', 5043))
     abbr_rows.append(pair)
 photo_block += section('Abbreviations') + table(abbr_rows, [5043, 5043])
-photo_block += ctext(DISCLAIMER, sz=17, color='666666', italic=True)
+photo_block += ctext(DISCLAIMER, sz=19, color='666666', italic=True)
 photo_block += '<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>{/photos}</w:t></w:r></w:p>'
 
 # ---- Service location quality (Category A–D) + Terms and conditions (end-matter, own pages) ----
@@ -184,11 +188,11 @@ terms = section('Terms and conditions') + ctext(TERMS_INTRO) + ctext(TERMS_LEAD,
 for _t in TERMS:
     terms += bullet(_t)
 
-body = cover + legend + photo_block + quality + terms
+body = cover + legend + photo_block + quality + terms + signoff_block
 
 xml = open(DOC, encoding='utf-8').read()
 xml = re.sub(r'(<w:body>).*?(<w:sectPr)', lambda m: m.group(1) + body + m.group(2), xml, count=1, flags=re.S)
 xml = xml.replace('w:top="851"', 'w:top="2240"')
 open(DOC, 'w', encoding='utf-8').write(xml)
-need = ['{#photos}','{%photo}','{#potholeRows}','{%c0img}','{c0label}','{%c4img}','{/potholeRows}','{gas_quality}','{gas_comment}','{unknown_comment}','{%signature}','{siteAddress}','{#hasSignoff}']
+need = ['{#photos}','{%photo}','{#potholeRows}','{%c0img}','{c0label}','{%c4img}','{/potholeRows}','{gas_quality}','{gas_comment}','{unknown_comment}','{signLocator}','{#hasSign}','{%signImage}','{signDate}','{siteAddress}']
 print('done; tags ok:', all(t in xml for t in need), 'len', len(xml))

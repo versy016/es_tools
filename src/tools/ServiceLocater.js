@@ -16,6 +16,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { renderDocx, docxToPdf, isPdfConfigured } from '../services/serviceReportService';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 import FormSection from '../components/FormSection';
+import SignOffSection from '../components/SignOffSection';
 
 // Per-utility cell colours for the checklist, matched to the service-location.docx
 // template cells (fg only set where the fill is dark). White/none utilities are omitted.
@@ -81,6 +82,7 @@ const ServiceLocater = ({ goBack }) => {
     const contactInputRef = useRef(null);
     const locaterInputRef = useRef(null);
     const formRef = useRef(null);
+    const signOffRef = useRef(null);   // end-of-report sign-off (locator + signature + date)
 
     // TEMP (testing): fill every field with sample data so a report can be generated
     // quickly — upload photos manually. Remove this fn + its button before release.
@@ -299,8 +301,13 @@ const ServiceLocater = ({ goBack }) => {
                 quality: item.quality,
                 comment: item.comment
             }));
+            // End-of-report sign-off (locator + signature + date).
+            const signoff = signOffRef.current ? signOffRef.current.getValue() : { locatorName: '', signature: '', date: '' };
             // Flat data object matching the docx template placeholders.
             const reportForm = {
+                signLocator: signoff.locatorName,
+                signImage: signoff.signature,
+                signDate: signoff.date,
                 date: e.target.date.value,
                 clientOrProject: project.project || client.title || '',
                 jobLocation: address,
@@ -646,6 +653,11 @@ const ServiceLocater = ({ goBack }) => {
                                 )}
                             </Droppable>
                         </DragDropContext>
+                    </FormSection>
+
+                    {/* Step 6 — end-of-report sign-off (locator + signature + date) */}
+                    <FormSection step="6" title="Sign-off">
+                        <SignOffSection ref={signOffRef} />
                     </FormSection>
 
                     {/* Bottom action bar — Word/PDF download links appear once generated;

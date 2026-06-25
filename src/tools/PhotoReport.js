@@ -23,7 +23,7 @@ import PotholePanel from '../components/PotholePanel';
 import Section from '../components/FormSection';
 import { useToast } from '../components/Toast';
 import { saveReport } from '../services/reportsService';
-import { getSignoff } from '../services/profileService';
+import SignOffSection from '../components/SignOffSection';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 import { REPORT_ARCHIVE_EMAIL } from '../config';
 
@@ -79,6 +79,7 @@ const PhotoReport = ({ goBack }) => {
     const clientRef = useRef(null);
     const contactRef = useRef(null);
     const addressRef = useRef(null);
+    const signOffRef = useRef(null);   // end-of-report sign-off (locator + signature + date)
 
     const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
 
@@ -192,7 +193,7 @@ const PhotoReport = ({ goBack }) => {
             };
         });
         const job = { ...form, utilData, photos };
-        const signoff = await getSignoff();
+        const signoff = signOffRef.current ? signOffRef.current.getValue() : { locatorName: '', signature: '', date: '' };
         const docxBlob = await renderPhotoDocx(job, signoff);
         if (docUrl) URL.revokeObjectURL(docUrl);
         setDocUrl(URL.createObjectURL(docxBlob));
@@ -430,8 +431,13 @@ const PhotoReport = ({ goBack }) => {
                     )}
                 </Section>
 
-                {/* Step 5 — optional client recipient; archive copy is always CC'd (see config) */}
-                <Section step="5" title="Send report" subtitle="Email the PDF when you generate it">
+                {/* Step 5 — end-of-report sign-off (locator + signature + date) */}
+                <Section step="5" title="Sign-off" subtitle="Add your signature, or sign on someone else's behalf">
+                    <SignOffSection ref={signOffRef} defaultLocator={form.locatorName} />
+                </Section>
+
+                {/* Step 6 — optional client recipient; archive copy is always CC'd (see config) */}
+                <Section step="6" title="Send report" subtitle="Email the PDF when you generate it">
                     <div className="field-grid">
                         <label>Client email (optional)
                             <input type="email" value={emailTo} placeholder="client@example.com"

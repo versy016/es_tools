@@ -10,17 +10,17 @@ def esc(s): return s.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;'
 def rpr(bold=False, sz=20, color=CHAR):
     return f'<w:rPr><w:sz w:val="{sz}"/><w:szCs w:val="{sz}"/>{"<w:b/>" if bold else ""}<w:color w:val="{color}"/></w:rPr>'
 
-def ctext(text, bold=False, sz=20, color=CHAR, jc='left'):
+def ctext(text, bold=False, sz=22, color=CHAR, jc='left'):
     jcx = f'<w:jc w:val="{jc}"/>' if jc != 'left' else ''
     return (f'<w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/>{jcx}{rpr(bold,sz,color)}</w:pPr>'
             f'<w:r>{rpr(bold,sz,color)}<w:t xml:space="preserve">{text}</w:t></w:r></w:p>')
 
-def cell(text, w, fill=None, bold=False, color=CHAR, span=None, jc='left'):
+def cell(text, w, fill=None, bold=False, color=CHAR, span=None, jc='left', raw=None):
     shd = f'<w:shd w:val="clear" w:color="auto" w:fill="{fill}"/>' if fill else ''
     gs = f'<w:gridSpan w:val="{span}"/>' if span else ''
     mar = '<w:tcMar><w:top w:w="40" w:type="dxa"/><w:left w:w="110" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="110" w:type="dxa"/></w:tcMar>'
-    return (f'<w:tc><w:tcPr><w:tcW w:w="{w}" w:type="dxa"/>{gs}{shd}{mar}<w:vAlign w:val="center"/></w:tcPr>'
-            f'{ctext(text, bold, 20, color, jc)}</w:tc>')
+    inner = raw if raw is not None else ctext(text, bold, 22, color, jc)
+    return (f'<w:tc><w:tcPr><w:tcW w:w="{w}" w:type="dxa"/>{gs}{shd}{mar}<w:vAlign w:val="center"/></w:tcPr>{inner}</w:tc>')
 
 def table(rows, widths):
     bd = '<w:tblBorders>' + ''.join(f'<w:{s} w:val="single" w:sz="4" w:space="0" w:color="{LINE}"/>' for s in ['top','left','bottom','right','insideH','insideV']) + '</w:tblBorders>'
@@ -39,10 +39,10 @@ def title_band(text):
 def section(title, pbb=False):
     pb = '<w:pageBreakBefore/>' if pbb else ''
     return (f'<w:p><w:pPr>{pb}<w:pBdr><w:left w:val="single" w:sz="36" w:space="8" w:color="{YELLOW}"/></w:pBdr>'
-            f'<w:spacing w:before="220" w:after="90"/>{rpr(True,24,CHAR)}</w:pPr>'
-            f'<w:r>{rpr(True,24,CHAR)}<w:t xml:space="preserve">{title}</w:t></w:r></w:p>')
+            f'<w:spacing w:before="220" w:after="90"/>{rpr(True,26,CHAR)}</w:pPr>'
+            f'<w:r>{rpr(True,26,CHAR)}<w:t xml:space="preserve">{title}</w:t></w:r></w:p>')
 
-def bullet(text, sz=19, color='333333'):
+def bullet(text, sz=21, color='333333'):
     # Hanging-indent bulleted paragraph.
     return (f'<w:p><w:pPr><w:spacing w:after="60" w:line="252" w:lineRule="auto"/>'
             f'<w:ind w:left="360" w:hanging="220"/>{rpr(False,sz,color)}</w:pPr>'
@@ -138,13 +138,23 @@ terms = section('Terms and conditions') + ctext(esc(TERMS_INTRO)) + spacer(40) +
 for _t in TERMS:
     terms += bullet(_t)
 
+# ---- End-of-report sign-off block (Utility locator / Signature / Date) ----
+SOW = [2900, 7186]   # label | value
+sig_cell = ('<w:p><w:pPr><w:spacing w:before="40" w:after="40"/></w:pPr>'
+            '<w:r><w:t>{#hasSign}</w:t></w:r><w:r><w:t xml:space="preserve">{%signImage}</w:t></w:r><w:r><w:t>{/hasSign}</w:t></w:r></w:p>')
+signoff_block = section('Sign-off') + table([
+    [cell('UTILITY LOCATOR', SOW[0], TINT, True), cell('{signLocator}', SOW[1])],
+    [cell('SIGNATURE', SOW[0], TINT, True), cell('', SOW[1], raw=sig_cell)],
+    [cell('DATE', SOW[0], TINT, True), cell('{signDate}', SOW[1])],
+], SOW)
+
 body = (title_band('SERVICE LOCATION FIELD REPORT')
         + section('Job details') + jd
         + section('Utility services located') + checklist
         + section('DBYD details') + dbyd
         + section('Site notes') + notes
         + section('Photos') + photos
-        + quality + terms)
+        + quality + terms + signoff_block)
 
 xml = open(DOC, encoding='utf-8').read()
 # Replace the single placeholder paragraph (everything between <w:body> and <w:sectPr>) with our body.
@@ -154,4 +164,4 @@ xml = re.sub(r'(<w:body>).*?(<w:sectPr)', r'\1' + body.replace('\\', '\\\\') + r
 xml = xml.replace('w:top="851"', 'w:top="2240"')
 open(DOC, 'w', encoding='utf-8').write(xml)
 print('body injected; length', len(xml))
-print('tags ok:', all(t in xml for t in ['{#photos}','{%data}','{name}','{^dbydByClient}','{date}','{Gas_quality}','{addnotes}']))
+print('tags ok:', all(t in xml for t in ['{#photos}','{%data}','{name}','{^dbydByClient}','{date}','{Gas_quality}','{addnotes}','{signLocator}','{#hasSign}','{%signImage}','{signDate}']))
