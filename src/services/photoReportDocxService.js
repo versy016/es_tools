@@ -25,9 +25,16 @@ const base64ToArrayBuffer = (src) => {
 const loadTemplate = async () => {
     if (supabase) {
         try {
-            const { data } = await supabase.storage.from('templates').download(TEMPLATE_NAME);
-            if (data) return await data.arrayBuffer();
-        } catch { /* fall back to bundled */ }
+            const { data, error } = await supabase.storage.from('templates').download(TEMPLATE_NAME);
+            if (error) {
+                console.warn(`[photoReport] templates/${TEMPLATE_NAME} not loaded from bucket: ${error.message}. Using the bundled template.`);
+            } else if (data) {
+                console.info(`[photoReport] using managed template from the "templates" bucket.`);
+                return await data.arrayBuffer();
+            }
+        } catch (e) {
+            console.warn(`[photoReport] templates bucket download failed: ${e?.message || e}. Using the bundled template.`);
+        }
     }
     const res = await fetch(`${process.env.PUBLIC_URL || ''}/templates/${TEMPLATE_NAME}`);
     if (!res.ok) throw new Error('Photo report template not found');

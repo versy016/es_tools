@@ -41,9 +41,18 @@ const base64ToArrayBuffer = (src) => {
 const loadTemplate = async () => {
     if (supabase) {
         try {
-            const { data } = await supabase.storage.from('templates').download(TEMPLATE_NAME);
-            if (data) return await data.arrayBuffer();
-        } catch { /* fall back to bundled */ }
+            const { data, error } = await supabase.storage.from('templates').download(TEMPLATE_NAME);
+            if (error) {
+                // Surface WHY the managed copy didn't load (missing file, RLS denied, etc.)
+                // instead of silently using the bundled one.
+                console.warn(`[serviceReport] templates/${TEMPLATE_NAME} not loaded from bucket: ${error.message}. Using the bundled template.`);
+            } else if (data) {
+                console.info(`[serviceReport] using managed template from the "templates" bucket.`);
+                return await data.arrayBuffer();
+            }
+        } catch (e) {
+            console.warn(`[serviceReport] templates bucket download failed: ${e?.message || e}. Using the bundled template.`);
+        }
     }
     const res = await fetch(`${process.env.PUBLIC_URL || ''}/templates/${TEMPLATE_NAME}`);
     if (!res.ok) throw new Error('Template not found');
