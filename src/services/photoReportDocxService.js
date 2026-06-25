@@ -2,7 +2,6 @@ import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import ImageModule from 'docxtemplater-image-module-free';
 import { supabase } from '../lib/supabase';
-import { getUtility, QUALITY_LEVELS } from '../report/legendColors';
 
 // Renders the Photo & Pothole report .docx in the browser from the letterhead-based
 // template (public/templates/photo-report.docx, overridable from the Supabase
@@ -57,7 +56,7 @@ const loadTemplate = async () => {
 // Map the Photo Report tool's form/state to the template tags.
 const buildData = (job, signoff) => {
     const hasSig = !!(signoff && signoff.signature);
-    return {
+    const data = {
         date: job.date || '',
         locatorName: job.locatorName || '',
         dbydNo: job.dbydNo || '',
@@ -68,9 +67,6 @@ const buildData = (job, signoff) => {
         clientContact: job.clientContact || '',
         clientMobile: job.clientMobile || '',
         dbydEmail: job.dbydEmail || '',
-        // Utilities located → loop of { label } in canonical order.
-        utilities: (job.utilitiesLocated || []).map((k) => ({ label: getUtility(k).label })),
-        qlLevels: QUALITY_LEVELS.filter((q) => job.qualityLevels && job.qualityLevels[q]).join(', ') || '—',
         comments: job.comments || '',
         hasSignoff: hasSig,
         signName: (hasSig && (signoff.fullName || job.locatorName)) || '',
@@ -94,6 +90,13 @@ const buildData = (job, signoff) => {
             }),
         })),
     };
+    // Per-utility checklist tags — the "Utilities located" table is the source of
+    // truth: {<key>_quality} + {<key>_comment} for every utility row.
+    Object.entries(job.utilData || {}).forEach(([key, v]) => {
+        data[`${key}_quality`] = (v && v.quality) || '';
+        data[`${key}_comment`] = (v && v.comment) || '';
+    });
+    return data;
 };
 
 export const renderDocx = async (job, signoff) => {

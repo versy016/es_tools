@@ -265,6 +265,16 @@
     white-space: nowrap;
 }
 
+.svc-comment {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font: inherit;
+    color: var(--ink);
+}
+
 .subhead {
     margin: 22px 0 12px;
     font-size: 1rem;

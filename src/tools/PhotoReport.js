@@ -62,7 +62,7 @@ const PhotoReport = ({ goBack }) => {
     const [utilChecklist, setUtilChecklist] = useState(
         UTILITIES.map((u) => ({
             key: u.key, label: u.label, color: u.color, text: u.text,
-            selected: false, quality: { A: false, B: false, C: false, D: false },
+            selected: false, quality: { A: false, B: false, C: false, D: false }, comment: '',
         }))
     );
     // photos: [{ id, src (original), flattenedDataUrl (annotated render), designState (editor state), potholes:[] }]
@@ -101,8 +101,8 @@ const PhotoReport = ({ goBack }) => {
         });
         setUtilChecklist((prev) => prev.map((r) => (
             ['gas', 'water', 'sewer', 'comms'].includes(r.key)
-                ? { ...r, selected: true, quality: { A: true, B: true, C: false, D: false } }
-                : { ...r, selected: false, quality: { A: false, B: false, C: false, D: false } }
+                ? { ...r, selected: true, quality: { A: true, B: true, C: false, D: false }, comment: 'Located with GPR' }
+                : { ...r, selected: false, quality: { A: false, B: false, C: false, D: false }, comment: '' }
         )));
     };
 
@@ -129,6 +129,8 @@ const PhotoReport = ({ goBack }) => {
     // Ticking a quality level also marks that utility as located.
     const toggleUtilQuality = (key, q) => setUtilChecklist((prev) =>
         prev.map((r) => (r.key === key ? { ...r, selected: true, quality: { ...r.quality, [q]: !r.quality[q] } } : r)));
+    const setUtilComment = (key, comment) => setUtilChecklist((prev) =>
+        prev.map((r) => (r.key === key ? { ...r, comment } : r)));
     const allUtilSelected = utilChecklist.every((r) => r.selected);
     const toggleAllUtil = () => setUtilChecklist((prev) => {
         const v = !prev.every((r) => r.selected);
@@ -180,13 +182,16 @@ const PhotoReport = ({ goBack }) => {
     // the docx-to-pdf service. Returns both blobs (pdfBlob is null if the converter isn't
     // configured) and refreshes the Word + PDF download URLs.
     const buildReport = async () => {
-        // Derive the report's "utilities located" list + combined quality levels from
-        // the checklist: a utility counts as located if ticked or any quality is set.
-        const located = utilChecklist.filter((r) => r.selected || Object.values(r.quality).some(Boolean));
-        const utilitiesLocated = located.map((r) => r.key);
-        const qualityLevels = { A: false, B: false, C: false, D: false };
-        located.forEach((r) => QUALITY_LEVELS.forEach((q) => { if (r.quality[q]) qualityLevels[q] = true; }));
-        const job = { ...form, utilitiesLocated, qualityLevels, photos };
+        // The checklist table is the source of truth: emit a per-utility quality
+        // string (e.g. "A, B") + comment, keyed by utility, for the report table.
+        const utilData = {};
+        utilChecklist.forEach((r) => {
+            utilData[r.key] = {
+                quality: QUALITY_LEVELS.filter((q) => r.quality[q]).join(', '),
+                comment: r.comment || '',
+            };
+        });
+        const job = { ...form, utilData, photos };
         const signoff = await getSignoff();
         const docxBlob = await renderPhotoDocx(job, signoff);
         if (docUrl) URL.revokeObjectURL(docUrl);
@@ -324,7 +329,7 @@ const PhotoReport = ({ goBack }) => {
                         </label>
                         <table>
                             <thead>
-                                <tr><th>Service</th><th>Quality</th></tr>
+                                <tr><th>Service</th><th>Quality</th><th>Comment</th></tr>
                             </thead>
                             <tbody>
                                 {utilChecklist.map((r) => (
@@ -344,6 +349,10 @@ const PhotoReport = ({ goBack }) => {
                                                     </label>
                                                 ))}
                                             </div>
+                                        </td>
+                                        <td>
+                                            <input type="text" className="svc-comment" placeholder="Optional"
+                                                value={r.comment} onChange={(e) => setUtilComment(r.key, e.target.value)} />
                                         </td>
                                     </tr>
                                 ))}

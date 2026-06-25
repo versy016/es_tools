@@ -5,12 +5,12 @@ import re
 DOC = r'C:\Users\sverma\Desktop\es_tools\public\templates\_unpacked\word\document.xml'
 YELLOW = 'FFC20E'; CHAR = '130C0E'; TINT = 'FBF6E9'; LINE = 'E6E3DD'
 
-UTILS = [  # label, code, fill, textcolor — ES utility colour-coding scheme
-    ('Gas','G, GM, GS','F6E84F','000000'), ('Telstra','T','FFFFFF','000000'),
-    ('Electricity (LV and HV)','HV, LV, E','F4B183','000000'), ('Communications / Fibre Optic','COMMS, OF','FFFFFF','000000'),
-    ('Water','WS, WM, W','8EAADB','000000'), ('Sewer','SWR','FBE4D5','000000'),
-    ('Stormwater','STW','92D050','000000'), ('Recycled Water','RW','D777C5','000000'),
-    ('Unknown Service','UK','FF3399','000000'), ('Earth Grid (Substation)','EG','FFFF00','000000'),
+UTILS = [  # label, code, fill, textcolor, key — ES utility colour-coding scheme
+    ('Gas','G, GM, GS','F6E84F','000000','gas'), ('Telstra','T','FFFFFF','000000','telstra'),
+    ('Electricity (LV and HV)','HV, LV, E','F4B183','000000','electricity'), ('Communications / Fibre Optic','COMMS, OF','FFFFFF','000000','comms'),
+    ('Water','WS, WM, W','8EAADB','000000','water'), ('Sewer','SWR','FBE4D5','000000','sewer'),
+    ('Stormwater','STW','92D050','000000','stormwater'), ('Recycled Water','RW','D777C5','000000','recycled'),
+    ('Unknown Service','UK','FF3399','000000','unknown'), ('Earth Grid (Substation)','EG','FFFF00','000000','earth'),
 ]
 QLDEFS = [
     ('Quality Level A (QL-A)','Is the highest Quality level accuracy and consists of positive identification of the attribute and location of a subsurface position in three dimensions. It is the only Quality level that defines a subsurface utility has been validated with additional attribute information (e.g. size, material, depth).'),
@@ -69,10 +69,18 @@ client = table([
     [cell('Client', W4[0], TINT, True), cell('{clientName}', W4[1]), cell('Contact', W4[2], TINT, True), cell('{clientContact}', W4[3])],
     [cell('Mobile', W4[0], None, True), cell('{clientMobile}', W4[1]), cell('DBYD Email', W4[2], None, True), cell('{dbydEmail}', W4[3])],
 ], W4)
-utils_line = (f'<w:p><w:pPr><w:spacing w:after="0"/>{rpr(False,21)}</w:pPr>'
-              f'<w:r><w:t>{{#utilities}}</w:t></w:r><w:r>{rpr(True,21)}<w:t xml:space="preserve">{{label}}</w:t></w:r>'
-              f'<w:r>{rpr(False,21)}<w:t xml:space="preserve">    </w:t></w:r><w:r><w:t>{{/utilities}}</w:t></w:r>'
-              f'<w:r>{rpr(False,21,"888888")}<w:t>{{^utilities}}None recorded.{{/utilities}}</w:t></w:r></w:p>')
+# Utilities-located checklist table (Service-report style): one fixed row per
+# utility, coloured by its scheme colour, with quality + comment tags. This table
+# is the source of truth for "utilities located".
+UTW = [3400, 1700, 4986]   # Service | Quality | Comment (= 10086)
+util_rows = [[cell('Service', UTW[0], CHAR, True, 'FFFFFF'), cell('Quality', UTW[1], CHAR, True, 'FFFFFF'), cell('Comment', UTW[2], CHAR, True, 'FFFFFF')]]
+for (label, code, fill, tc, key) in UTILS:
+    util_rows.append([
+        cell(label, UTW[0], (fill if fill != 'FFFFFF' else None), True, tc),
+        cell('{%s_quality}' % key, UTW[1], None, False, CHAR, jc='center'),
+        cell('{%s_comment}' % key, UTW[2], None),
+    ])
+util_table = table(util_rows, UTW)
 signoff = ('<w:p><w:pPr><w:spacing w:before="160"/></w:pPr><w:r><w:t>{#hasSignoff}</w:t></w:r></w:p>'
            + ctext('Located and reported by', bold=True, sz=18, color='666666')
            + f'<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t xml:space="preserve">{{%signature}}</w:t></w:r></w:p>'
@@ -82,14 +90,13 @@ signoff = ('<w:p><w:pPr><w:spacing w:before="160"/></w:pPr><w:r><w:t>{#hasSignof
 cover = (title_band('POTHOLE REPORT')
          + section('Project details') + proj
          + section('Client details') + client
-         + section('Utilities located') + utils_line
-         + section('Located to quality level (AS 5488.1:2022)') + ctext('{qlLevels}')
+         + section('Utilities located') + util_table
          + section('Comments') + ctext('{comments}')
          + signoff)
 
 # ---- Legend page ----
 LW = [1900, 8186]   # wider code column for multi-code labels (G, GM, GS)
-legrows = [[cell(code, LW[0], fill, True, tc, jc='center'), cell(label, LW[1])] for (label, code, fill, tc) in UTILS]
+legrows = [[cell(code, LW[0], fill, True, tc, jc='center'), cell(label, LW[1])] for (label, code, fill, tc, key) in UTILS]
 legend = section('Utility legend — DIT specification', pbb=True) + table(legrows, LW)
 legend += section('Quality levels explained (AS 5488.1:2022)')
 for level, text in QLDEFS:
@@ -183,5 +190,5 @@ xml = open(DOC, encoding='utf-8').read()
 xml = re.sub(r'(<w:body>).*?(<w:sectPr)', lambda m: m.group(1) + body + m.group(2), xml, count=1, flags=re.S)
 xml = xml.replace('w:top="851"', 'w:top="2240"')
 open(DOC, 'w', encoding='utf-8').write(xml)
-need = ['{#photos}','{%photo}','{#potholeRows}','{%c0img}','{c0label}','{%c4img}','{/potholeRows}','{#utilities}','{label}','{%signature}','{qlLevels}','{siteAddress}','{#hasSignoff}']
+need = ['{#photos}','{%photo}','{#potholeRows}','{%c0img}','{c0label}','{%c4img}','{/potholeRows}','{gas_quality}','{gas_comment}','{unknown_comment}','{%signature}','{siteAddress}','{#hasSignoff}']
 print('done; tags ok:', all(t in xml for t in need), 'len', len(xml))
