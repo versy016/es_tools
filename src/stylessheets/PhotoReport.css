@@ -238,44 +238,31 @@
     color: var(--ink-soft);
 }
 
-/* Utilities + quality */
-.utilities-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-    gap: 10px 16px;
-}
-
-.utility-check {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 500;
-    color: var(--ink-soft);
-    padding: 9px 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--surface-2);
-    cursor: pointer;
-    transition: border-color .15s ease, background .15s ease;
-}
-
-.utility-check:hover {
-    border-color: var(--primary);
-}
-
-.utility-check.checked {
-    border-color: var(--primary);
-    background: var(--primary-soft);
+/* Utilities + quality checklist (mirrors the Service report; coloured per utility) */
+.checklist .svc-cell {
+    font-weight: 600;
     color: var(--ink);
 }
 
-.utility-swatch {
-    display: inline-block;
-    width: 26px;
-    height: 12px;
-    border: 1px solid rgba(0, 0, 0, .25);
-    border-radius: 3px;
-    flex: none;
+/* The inline per-utility background colour wins over the row striping/hover. */
+.checklist .svc-cell label {
+    gap: 10px;
+    color: inherit;
+}
+
+.ql-ticks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+}
+
+.ql-ticks label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    white-space: nowrap;
 }
 
 .subhead {
@@ -283,31 +270,6 @@
     font-size: 1rem;
     font-weight: 700;
     color: var(--ink-soft);
-}
-
-.ql-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.ql-check {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 700;
-    color: var(--ink-soft);
-    padding: 9px 18px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--surface-2);
-    cursor: pointer;
-}
-
-.ql-check.checked {
-    border-color: var(--es-yellow);
-    background: var(--es-yellow-soft);
-    color: var(--es-yellow-dark);
 }
 
 /* Drop zone */
@@ -1087,8 +1049,7 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-    .field-grid,
-    .utilities-grid {
+    .field-grid {
         grid-template-columns: 1fr;
     }
 

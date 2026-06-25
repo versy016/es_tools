@@ -17,6 +17,21 @@ import { renderDocx, docxToPdf, isPdfConfigured } from '../services/serviceRepor
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 import FormSection from '../components/FormSection';
 
+// Per-utility cell colours for the checklist, matched to the service-location.docx
+// template cells (fg only set where the fill is dark). White/none utilities are omitted.
+const ASSET_COLORS = {
+    'Gas': { bg: '#FDF483' },
+    'Sewer': { bg: '#FBE4D5' },
+    'Stormwater': { bg: '#92D050' },
+    'SAPN/Electrical': { bg: '#F4B083' },
+    'Traffic Signals': { bg: '#F4B083' },
+    'Street Lighting': { bg: '#F4B083' },
+    'Water': { bg: '#8EAADB' },
+    'Fire Main': { bg: '#C45911', fg: '#fff' },
+    'Reclaimed Water': { bg: '#D777C5' },
+    'Unknown Services': { bg: '#FF3399' },
+};
+
 const ServiceLocater = ({ goBack }) => {
     // project/client are mutually exclusive (selecting one disables the other).
     // After an Algolia pick these may hold the selected object, not a plain string.
@@ -453,7 +468,8 @@ const ServiceLocater = ({ goBack }) => {
                             <tbody>
                                 {checklist.map((item, index) => (
                                     <tr key={index}>
-                                        <td>
+                                        <td className="svc-cell"
+                                            style={ASSET_COLORS[item.type] ? { background: ASSET_COLORS[item.type].bg, color: ASSET_COLORS[item.type].fg } : undefined}>
                                             <label>
                                                 <input
                                                     type="checkbox"

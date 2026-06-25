@@ -22,6 +22,13 @@ const base64ToArrayBuffer = (src) => {
     return bytes.buffer;
 };
 
+// Split an array into fixed-size groups (last group may be short).
+const chunk = (arr, size) => {
+    const out = [];
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+};
+
 const loadTemplate = async () => {
     if (supabase) {
         try {
@@ -69,19 +76,22 @@ const buildData = (job, signoff) => {
         signName: (hasSig && (signoff.fullName || job.locatorName)) || '',
         signMeta: hasSig ? [signoff.role, signoff.accreditation, signoff.mobile, signoff.email].filter(Boolean).join('  ·  ') : '',
         signature: hasSig ? signoff.signature : '',
-        // One block per photo; each carries its main image + a pothole loop.
+        // One block per photo; each carries its main image + its potholes laid out
+        // as a 5-per-row thumbnail grid (image + PH label only — no utility/quality
+        // details). Potholes are chunked into fixed 5-cell rows, blank cells padded.
         photos: (job.photos || []).map((p, i) => ({
             num: String(i + 1).padStart(2, '0'),
             photo: p.flattenedDataUrl || p.src,
             hasPotholes: (p.potholes || []).length > 0,
-            potholes: (p.potholes || []).map((ph) => ({
-                data: ph.src,
-                label: ph.label || '',
-                code: getUtility(ph.utility).code,
-                ql: ph.qualityLevel || '',
-                depth: ph.depth || '',
-                comment: ph.comment || '',
-            })),
+            potholeRows: chunk(p.potholes || [], 5).map((group) => {
+                const row = {};
+                for (let c = 0; c < 5; c++) {
+                    const ph = group[c];
+                    row[`c${c}img`] = ph ? ph.src : '';        // '' -> BLANK_PNG (invisible)
+                    row[`c${c}label`] = ph ? (ph.label || '') : '';
+                }
+                return row;
+            }),
         })),
     };
 };
@@ -96,6 +106,7 @@ export const renderDocx = async (job, signoff) => {
             getSize: (img, tagValue, tagName) => {
                 if (tagName === 'photo') return [440, 300];
                 if (tagName === 'signature') return [150, 46];
+                if (/^c\dimg$/.test(tagName)) return [118, 90];  // pothole grid thumbnail
                 return [92, 70];
             },
         });

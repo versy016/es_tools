@@ -56,8 +56,15 @@ const PhotoReport = ({ goBack }) => {
         refNo: '',
         comments: '',
     });
-    const [utilitiesLocated, setUtilitiesLocated] = useState([]);          // selected utility keys (legendColors)
-    const [qualityLevels, setQualityLevels] = useState({ A: true, B: true, C: false, D: false }); // QL checkboxes
+    // Service-report-style checklist: one row per utility, each with a "located"
+    // checkbox and per-row quality-level ticks. Rows carry their DIT colour for the
+    // coloured background. Derived into utilitiesLocated + qualityLevels at render time.
+    const [utilChecklist, setUtilChecklist] = useState(
+        UTILITIES.map((u) => ({
+            key: u.key, label: u.label, color: u.color, text: u.text,
+            selected: false, quality: { A: false, B: false, C: false, D: false },
+        }))
+    );
     // photos: [{ id, src (original), flattenedDataUrl (annotated render), designState (editor state), potholes:[] }]
     const [photos, setPhotos] = useState([]);
     const [editingPhotoId, setEditingPhotoId] = useState(null);            // which photo the annotator modal is editing
@@ -92,8 +99,11 @@ const PhotoReport = ({ goBack }) => {
             refNo: 'REF-001',
             comments: 'Sample report generated for testing.',
         });
-        setUtilitiesLocated(['gas', 'water', 'sewer', 'comms']);
-        setQualityLevels({ A: true, B: true, C: false, D: false });
+        setUtilChecklist((prev) => prev.map((r) => (
+            ['gas', 'water', 'sewer', 'comms'].includes(r.key)
+                ? { ...r, selected: true, quality: { A: true, B: true, C: false, D: false } }
+                : { ...r, selected: false, quality: { A: false, B: false, C: false, D: false } }
+        )));
     };
 
     // Wire Algolia autocomplete onto the locator/client/contact inputs once mounted.
@@ -114,10 +124,16 @@ const PhotoReport = ({ goBack }) => {
         });
     }, []);
 
-    const toggleUtility = (key) => setUtilitiesLocated((prev) =>
-        prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
-
-    const toggleQuality = (q) => setQualityLevels((prev) => ({ ...prev, [q]: !prev[q] }));
+    const toggleUtilSelected = (key) => setUtilChecklist((prev) =>
+        prev.map((r) => (r.key === key ? { ...r, selected: !r.selected } : r)));
+    // Ticking a quality level also marks that utility as located.
+    const toggleUtilQuality = (key, q) => setUtilChecklist((prev) =>
+        prev.map((r) => (r.key === key ? { ...r, selected: true, quality: { ...r.quality, [q]: !r.quality[q] } } : r)));
+    const allUtilSelected = utilChecklist.every((r) => r.selected);
+    const toggleAllUtil = () => setUtilChecklist((prev) => {
+        const v = !prev.every((r) => r.selected);
+        return prev.map((r) => ({ ...r, selected: v }));
+    });
 
     // Append a new photo block. flattenedDataUrl starts equal to src so an unedited
     // photo still renders in the PDF; the annotator overwrites it once edited.
@@ -164,6 +180,12 @@ const PhotoReport = ({ goBack }) => {
     // the docx-to-pdf service. Returns both blobs (pdfBlob is null if the converter isn't
     // configured) and refreshes the Word + PDF download URLs.
     const buildReport = async () => {
+        // Derive the report's "utilities located" list + combined quality levels from
+        // the checklist: a utility counts as located if ticked or any quality is set.
+        const located = utilChecklist.filter((r) => r.selected || Object.values(r.quality).some(Boolean));
+        const utilitiesLocated = located.map((r) => r.key);
+        const qualityLevels = { A: false, B: false, C: false, D: false };
+        located.forEach((r) => QUALITY_LEVELS.forEach((q) => { if (r.quality[q]) qualityLevels[q] = true; }));
         const job = { ...form, utilitiesLocated, qualityLevels, photos };
         const signoff = await getSignoff();
         const docxBlob = await renderPhotoDocx(job, signoff);
@@ -292,25 +314,41 @@ const PhotoReport = ({ goBack }) => {
                     </div>
                 </Section>
 
-                {/* Step 2 — utility + quality-level selection, both driven by legendColors */}
-                <Section step="2" title="Utilities located" subtitle="Tick the services located on site">
-                    <div className="utilities-grid">
-                        {UTILITIES.map((u) => (
-                            <label key={u.key} className={`utility-check ${utilitiesLocated.includes(u.key) ? 'checked' : ''}`}>
-                                <input type="checkbox" checked={utilitiesLocated.includes(u.key)} onChange={() => toggleUtility(u.key)} />
-                                <span className="utility-swatch" style={{ background: u.color }} />
-                                {u.label}
-                            </label>
-                        ))}
-                    </div>
-                    <h3 className="subhead">Located to quality level</h3>
-                    <div className="ql-row">
-                        {QUALITY_LEVELS.map((q) => (
-                            <label key={q} className={`ql-check ${qualityLevels[q] ? 'checked' : ''}`}>
-                                <input type="checkbox" checked={!!qualityLevels[q]} onChange={() => toggleQuality(q)} />
-                                QL-{q}
-                            </label>
-                        ))}
+                {/* Step 2 — service + quality checklist (mirrors the Service report).
+                    Each utility row is coloured by its DIT colour; tick a row and its
+                    quality levels. Driven by legendColors. */}
+                <Section step="2" title="Utilities located" subtitle="Select each service located and tick its quality level">
+                    <div className="checklist">
+                        <label className="select-all-label">
+                            <input type="checkbox" checked={allUtilSelected} onChange={toggleAllUtil} /> Select all
+                        </label>
+                        <table>
+                            <thead>
+                                <tr><th>Service</th><th>Quality</th></tr>
+                            </thead>
+                            <tbody>
+                                {utilChecklist.map((r) => (
+                                    <tr key={r.key}>
+                                        <td className="svc-cell" style={{ background: r.color, color: r.text }}>
+                                            <label>
+                                                <input type="checkbox" checked={r.selected} onChange={() => toggleUtilSelected(r.key)} />
+                                                {r.label}
+                                            </label>
+                                        </td>
+                                        <td>
+                                            <div className="ql-ticks">
+                                                {QUALITY_LEVELS.map((q) => (
+                                                    <label key={q}>
+                                                        <input type="checkbox" checked={r.quality[q]} onChange={() => toggleUtilQuality(r.key, q)} />
+                                                        QL-{q}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </Section>
 
