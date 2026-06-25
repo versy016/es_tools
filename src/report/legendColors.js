@@ -7,16 +7,18 @@
 // `code`  - short code drawn on text-boxes / used in markings
 // `color` - stroke / fill colour (DIT spec)
 // `text`  - readable text colour to place on top of `color` for text-boxes
+// Colours follow the ES utility colour-coding scheme (shared with the Service
+// report). Telstra / Communications are white per the scheme.
 export const UTILITIES = [
-  { key: 'gas',        label: 'Gas',                       code: 'G',     color: '#F5A623', text: '#000000' },
-  { key: 'telstra',    label: 'Telstra',                   code: 'T',     color: '#FF7F00', text: '#000000' },
-  { key: 'electricity',label: 'Electricity (LV and HV)',   code: 'E',     color: '#FF0000', text: '#FFFFFF' },
-  { key: 'comms',      label: 'Communications/Fibre Optic',code: 'COMMS', color: '#D9D9D9', text: '#000000' },
-  { key: 'water',      label: 'Water',                     code: 'W',     color: '#0000FF', text: '#FFFFFF' },
-  { key: 'sewer',      label: 'Sewer',                     code: 'SWR',   color: '#00A651', text: '#FFFFFF' },
-  { key: 'stormwater', label: 'Stormwater',                code: 'STW',   color: '#7030A0', text: '#FFFFFF' },
-  { key: 'recycled',   label: 'Recycled Water',            code: 'RW',    color: '#7030A0', text: '#FFFFFF' },
-  { key: 'unknown',    label: 'Unknown Service',           code: 'UK',    color: '#FF66CC', text: '#000000' },
+  { key: 'gas',        label: 'Gas',                       code: 'G',     color: '#F6E84F', text: '#000000' },
+  { key: 'telstra',    label: 'Telstra',                   code: 'T',     color: '#FFFFFF', text: '#000000' },
+  { key: 'electricity',label: 'Electricity (LV and HV)',   code: 'E',     color: '#F4B183', text: '#000000' },
+  { key: 'comms',      label: 'Communications/Fibre Optic',code: 'COMMS', color: '#FFFFFF', text: '#000000' },
+  { key: 'water',      label: 'Water',                     code: 'W',     color: '#8EAADB', text: '#000000' },
+  { key: 'sewer',      label: 'Sewer',                     code: 'SWR',   color: '#FBE4D5', text: '#000000' },
+  { key: 'stormwater', label: 'Stormwater',                code: 'STW',   color: '#92D050', text: '#000000' },
+  { key: 'recycled',   label: 'Recycled Water',            code: 'RW',    color: '#D777C5', text: '#000000' },
+  { key: 'unknown',    label: 'Unknown Service',           code: 'UK',    color: '#FF3399', text: '#000000' },
   { key: 'earth',      label: 'Earth Grid (Substation)',   code: 'EG',    color: '#FFFF00', text: '#000000' },
 ];
 

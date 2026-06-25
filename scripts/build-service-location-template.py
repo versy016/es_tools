@@ -61,7 +61,7 @@ jd = table([
 W3 = [3400, 1700, 4986]   # = 10086
 # name, tag-prefix, asset-cell fill, asset-cell text colour (utility colours matched
 # exactly to the original ES template).
-ASSETS = [('Gas','Gas','FDF483','130C0E'), ('Sewer','Sewer','FBE4D5','130C0E'),
+ASSETS = [('Gas','Gas','F6E84F','130C0E'), ('Sewer','Sewer','FBE4D5','130C0E'),
           ('Stormwater','Stormwater','92D050','130C0E'), ('Telecommunications','Telecommunications','FFFFFF','130C0E'),
           ('SAPN / Electrical','SAPN','F4B083','130C0E'), ('Traffic Signals','Traffic','F4B083','130C0E'),
           ('Street Lighting','Street','F4B083','130C0E'), ('Water','Water','8EAADB','130C0E'),

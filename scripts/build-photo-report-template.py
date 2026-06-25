@@ -5,12 +5,12 @@ import re
 DOC = r'C:\Users\sverma\Desktop\es_tools\public\templates\_unpacked\word\document.xml'
 YELLOW = 'FFC20E'; CHAR = '130C0E'; TINT = 'FBF6E9'; LINE = 'E6E3DD'
 
-UTILS = [  # label, code, fill, textcolor
-    ('Gas','G','F5A623','000000'), ('Telstra','T','FF7F00','000000'),
-    ('Electricity (LV and HV)','E','FF0000','FFFFFF'), ('Communications / Fibre Optic','COMMS','D9D9D9','000000'),
-    ('Water','W','0000FF','FFFFFF'), ('Sewer','SWR','00A651','FFFFFF'),
-    ('Stormwater','STW','7030A0','FFFFFF'), ('Recycled Water','RW','7030A0','FFFFFF'),
-    ('Unknown Service','UK','FF66CC','000000'), ('Earth Grid (Substation)','EG','FFFF00','000000'),
+UTILS = [  # label, code, fill, textcolor — ES utility colour-coding scheme
+    ('Gas','G','F6E84F','000000'), ('Telstra','T','FFFFFF','000000'),
+    ('Electricity (LV and HV)','E','F4B183','000000'), ('Communications / Fibre Optic','COMMS','FFFFFF','000000'),
+    ('Water','W','8EAADB','000000'), ('Sewer','SWR','FBE4D5','000000'),
+    ('Stormwater','STW','92D050','000000'), ('Recycled Water','RW','D777C5','000000'),
+    ('Unknown Service','UK','FF3399','000000'), ('Earth Grid (Substation)','EG','FFFF00','000000'),
 ]
 QLDEFS = [
     ('Quality Level A (QL-A)','Is the highest Quality level accuracy and consists of positive identification of the attribute and location of a subsurface position in three dimensions. It is the only Quality level that defines a subsurface utility has been validated with additional attribute information (e.g. size, material, depth).'),

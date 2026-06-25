@@ -20,7 +20,7 @@ import FormSection from '../components/FormSection';
 // Per-utility cell colours for the checklist, matched to the service-location.docx
 // template cells (fg only set where the fill is dark). White/none utilities are omitted.
 const ASSET_COLORS = {
-    'Gas': { bg: '#FDF483' },
+    'Gas': { bg: '#F6E84F' },
     'Sewer': { bg: '#FBE4D5' },
     'Stormwater': { bg: '#92D050' },
     'SAPN/Electrical': { bg: '#F4B083' },
