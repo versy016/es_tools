@@ -36,10 +36,17 @@ def title_band(text):
             f'<w:ind w:left="140" w:right="140"/>{rpr(True,30,"FFFFFF")}</w:pPr>'
             f'<w:r>{rpr(True,30,"FFFFFF")}<w:t xml:space="preserve">{text}</w:t></w:r></w:p>')
 
-def section(title):
-    return (f'<w:p><w:pPr><w:pBdr><w:left w:val="single" w:sz="36" w:space="8" w:color="{YELLOW}"/></w:pBdr>'
+def section(title, pbb=False):
+    pb = '<w:pageBreakBefore/>' if pbb else ''
+    return (f'<w:p><w:pPr>{pb}<w:pBdr><w:left w:val="single" w:sz="36" w:space="8" w:color="{YELLOW}"/></w:pBdr>'
             f'<w:spacing w:before="220" w:after="90"/>{rpr(True,24,CHAR)}</w:pPr>'
             f'<w:r>{rpr(True,24,CHAR)}<w:t xml:space="preserve">{title}</w:t></w:r></w:p>')
+
+def bullet(text, sz=19, color='333333'):
+    # Hanging-indent bulleted paragraph.
+    return (f'<w:p><w:pPr><w:spacing w:after="60" w:line="252" w:lineRule="auto"/>'
+            f'<w:ind w:left="360" w:hanging="220"/>{rpr(False,sz,color)}</w:pPr>'
+            f'<w:r>{rpr(False,sz,color)}<w:t xml:space="preserve">•  {esc(text)}</w:t></w:r></w:p>')
 
 # ---- Job details (4-col) ----
 W4 = [2100, 2943, 2100, 2943]   # = 10086
@@ -85,12 +92,59 @@ photos = ('<w:p><w:pPr><w:spacing w:before="120" w:after="120"/><w:jc w:val="cen
           '<w:r><w:br/></w:r><w:r><w:rPr><w:sz w:val="20"/><w:color w:val="555555"/></w:rPr><w:t xml:space="preserve">{description}</w:t></w:r>'
           '<w:r><w:br/></w:r><w:r><w:br/></w:r><w:r><w:t>{/photos}</w:t></w:r></w:p>')
 
+# ---- Service location quality (Category A–D) ----
+QUALITY = [
+    ('(Category A) Direct Services Location', [
+        'Direct Service location is the highest accuracy order of service location. It refers to services which are openly visible and can be surveyed by direct measurement to the object.',
+        'Examples include: exposed pipes, open cable trenches and exposed drainage where invert/obvert measurement is possible.',
+    ]),
+    ('(Category B) Active Services Location', [
+        'Active Services are to be located using Location methods whereby services are traced using an electromagnetic signal emitted from the transmitter and received by the service detection device.',
+        'Examples of Active Location methods include using a Direct Connection or Induction Clamp. Readings are required to be marked on the ground surface.',
+        'Active Location methods are suitable for metal conduits, cables that are welded, soldered, or braided together or where a tracing wire/cathodic protection is present. This method is mandatory for rail services.',
+    ]),
+    ('(Category C) Passive Services Location', [
+        'Passive Services Location uses passive methods which do not involve the use of an electromagnetic signal, transponders, or sondes. In this class the service detection device is used as a standalone.',
+        'Examples of Passive Service Location capture include radiolocation or GPR. These methods are commonly used for materials such as cast iron or steel pipes where active induction is not possible. Readings are required to be marked on the ground surface.',
+    ]),
+    ('(Category D) Unverified Services Location', [
+        'Unverified Services are services that have been located without confirmation by any of the above-mentioned methods. Unverified Services can include service locations approximated from DBYD plans or by joining top stones. The resulting services will be determined as unverified services.',
+        'Unverified location methods are commonly used for materials such as plastic poly tubing, clay, concrete, or uninsulated/rubber jointed cast iron pipes where other methods are not possible.',
+    ]),
+]
+# ---- Terms and conditions ----
+TERMS_INTRO = ('Engineering Surveys accepts no responsibility for damage occurring to Underground services, other than '
+               'as a direct result of its negligence. All Engineering Surveys employees undertake regular Training and '
+               'compliance with industry standards.')
+TERMS_LEAD = 'Engineering Surveys will not accept responsibility for damage under the following:'
+TERMS = [
+    'Damage to any services outside the area designated by the client, as is the entire area in which work will be carried out, and/or',
+    'Damage to any service which has not been indicated, or incorrectly indicated on plans obtained through dial before you dig, or from any other source, and/or',
+    'Where the spray marker is no longer visible/legible, and/or',
+    'Failure by the client to physically expose (by non-destructive potholing methods) any marked services to confirm alignment and depth. Refer to affected asset owners ‘Duty of care’ for safe approach distance requirements, and/or',
+    'Non-conductive services are not detectable with equipment currently available. No responsibility is taken for any damage incurred to any non-conductive services (i.e. poly, pvc, concrete, and earthenware etc.), and/or',
+    'Where no visible signs or reasonable access to a conductive service is known, and/or',
+    'If conductive continuity is not maintained through the service being located.',
+    'Engineering Surveys accepts no responsibility for damage to services that have not been verified by ‘potholing’. In the event of damage to services:',
+    'All damage must be reported to Engineering Surveys prior to any repairs occurring, and/or further earthworks being conducted.',
+    'An Engineering Surveys representative is to carry out site inspection within a reasonable time period that will not delay necessary repair work.',
+]
+quality = section('Service location quality', pbb=True)
+for _head, _paras in QUALITY:
+    quality += ctext(esc(_head), bold=True, sz=21)
+    for _p in _paras:
+        quality += bullet(_p)
+terms = section('Terms and conditions') + ctext(esc(TERMS_INTRO)) + spacer(40) + ctext(esc(TERMS_LEAD), bold=True)
+for _t in TERMS:
+    terms += bullet(_t)
+
 body = (title_band('SERVICE LOCATION FIELD REPORT')
         + section('Job details') + jd
         + section('Utility services located') + checklist
         + section('DBYD details') + dbyd
         + section('Site notes') + notes
-        + section('Photos') + photos)
+        + section('Photos') + photos
+        + quality + terms)
 
 xml = open(DOC, encoding='utf-8').read()
 # Replace the single placeholder paragraph (everything between <w:body> and <w:sectPr>) with our body.
