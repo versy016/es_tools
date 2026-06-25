@@ -138,15 +138,19 @@ terms = section('Terms and conditions') + ctext(esc(TERMS_INTRO)) + spacer(40) +
 for _t in TERMS:
     terms += bullet(_t)
 
-# ---- End-of-report sign-off block (Utility locator / Signature / Date) ----
-SOW = [2900, 7186]   # label | value
-sig_cell = ('<w:p><w:pPr><w:spacing w:before="40" w:after="40"/></w:pPr>'
-            '<w:r><w:t>{#hasSign}</w:t></w:r><w:r><w:t xml:space="preserve">{%signImage}</w:t></w:r><w:r><w:t>{/hasSign}</w:t></w:r></w:p>')
-signoff_block = section('Sign-off') + table([
-    [cell('UTILITY LOCATOR', SOW[0], TINT, True), cell('{signLocator}', SOW[1])],
-    [cell('SIGNATURE', SOW[0], TINT, True), cell('', SOW[1], raw=sig_cell)],
-    [cell('DATE', SOW[0], TINT, True), cell('{signDate}', SOW[1])],
-], SOW)
+# ---- End-of-report sign-off: "UTILITY LOCATOR : ... <tab> DATE : ..." on one
+# line, then "SIGNATURE : <image>" below (signature is inline after the label). ----
+def _sr(text, bold=False, sz=24):
+    return f'<w:r>{rpr(bold,sz)}<w:t xml:space="preserve">{esc(text)}</w:t></w:r>'
+signoff_block = (
+    section('Sign-off')
+    + ('<w:p><w:pPr><w:tabs><w:tab w:val="left" w:pos="6400"/></w:tabs><w:spacing w:before="120" w:after="360"/></w:pPr>'
+       + _sr('UTILITY LOCATOR : ', True) + _sr('{signLocator}')
+       + '<w:r><w:tab/></w:r>' + _sr('DATE : ', True) + _sr('{signDate}') + '</w:p>')
+    + ('<w:p><w:pPr><w:spacing w:before="160" w:after="0"/></w:pPr>'
+       + _sr('SIGNATURE : ', True)
+       + '<w:r><w:t>{#hasSign}</w:t></w:r><w:r><w:t xml:space="preserve">{%signImage}</w:t></w:r><w:r><w:t>{/hasSign}</w:t></w:r></w:p>')
+)
 
 body = (title_band('SERVICE LOCATION FIELD REPORT')
         + section('Job details') + jd

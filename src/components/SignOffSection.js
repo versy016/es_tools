@@ -21,14 +21,35 @@ const SignOffSection = forwardRef(({ defaultLocator = '' }, ref) => {
     // Load the saved profile + signature once (for the "my signature" option).
     useEffect(() => { getSignoff().then(setProfile).catch(() => {}); }, []);
 
-    useImperativeHandle(ref, () => ({
-        getValue: () => ({ locatorName: (locatorName || '').trim(), signature, date }),
-    }), [locatorName, signature, date]);
+    // ISO (yyyy-mm-dd) -> dd/mm/yyyy for the report.
+    const fmtDate = (iso) => {
+        if (!iso) return '';
+        const [y, m, d] = iso.split('-');
+        return (y && m && d) ? `${d}/${m}/${y}` : iso;
+    };
 
-    const chooseMe = () => {
+    useImperativeHandle(ref, () => ({
+        getValue: () => {
+            // Auto-capture a drawn signature even if the user didn't press "Use drawing".
+            let sig = signature;
+            if (mode === 'other' && padRef.current && !padRef.current.isEmpty()) {
+                sig = padRef.current.toDataURL();
+            }
+            return { locatorName: (locatorName || '').trim(), signature: sig, date: fmtDate(date) };
+        },
+    }), [locatorName, signature, date, mode]);
+
+    // "Add my signature": load the profile signature (awaiting the fetch if it hasn't
+    // arrived yet, so an immediate click still works) and prefill the locator name.
+    const chooseMe = async () => {
         setMode('me');
-        setSignature((profile && profile.signature) || '');
-        if (profile && profile.fullName) setLocatorName(profile.fullName);
+        let p = profile;
+        if (!p || !p.signature) {
+            p = await getSignoff().catch(() => null);
+            if (p) setProfile(p);
+        }
+        setSignature((p && p.signature) || '');
+        if (p && p.fullName) setLocatorName(p.fullName);
     };
     const chooseOther = () => { setMode('other'); setSignature(''); };
     const reset = () => { setMode('none'); setSignature(''); };

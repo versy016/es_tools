@@ -109,7 +109,7 @@ export const renderDocx = async (job, signoff) => {
             // Size per image tag: the main photo large, signature medium, pothole thumb small.
             getSize: (img, tagValue, tagName) => {
                 if (tagName === 'photo') return [600, 400];      // main photo: wide + taller
-                if (tagName === 'signImage') return [170, 60];   // sign-off signature
+                if (tagName === 'signImage') return [230, 85];   // sign-off signature
                 if (/^c\dimg$/.test(tagName)) return [118, 90];  // pothole grid thumbnail
                 return [92, 70];
             },

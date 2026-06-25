@@ -124,7 +124,7 @@ export const renderDocx = async (form) => {
         const imageModule = new ImageModule({
             getImage: (tagValue) => base64ToArrayBuffer(tagValue),
             // One photo per row (~430px wide); the sign-off signature renders smaller.
-            getSize: (img, tagValue, tagName) => (tagName === 'signImage' ? [170, 60] : [430, 305]),
+            getSize: (img, tagValue, tagName) => (tagName === 'signImage' ? [230, 85] : [430, 305]),
         });
         const doc = new Docxtemplater(zip, { modules: [imageModule], paragraphLoop: true, linebreaks: true });
         doc.render(buildData(form));
