@@ -52,13 +52,19 @@ jd = table([
 
 # ---- Checklist (3-col) ----
 W3 = [3400, 1700, 4986]   # = 10086
-ASSETS = [('Gas','Gas'),('Sewer','Sewer'),('Stormwater','Stormwater'),('Telecommunications','Telecommunications'),
-          ('SAPN / Electrical','SAPN'),('Traffic Signals','Traffic'),('Street Lighting','Street'),('Water','Water'),
-          ('Fire Main','Fire'),('Optic Fibre','Optic'),('Reclaimed Water','Reclaimed'),('Unknown Services','Unknown')]
+# name, tag-prefix, asset-cell fill, asset-cell text colour (utility colours matched
+# exactly to the original ES template).
+ASSETS = [('Gas','Gas','FDF483','130C0E'), ('Sewer','Sewer','FBE4D5','130C0E'),
+          ('Stormwater','Stormwater','92D050','130C0E'), ('Telecommunications','Telecommunications','FFFFFF','130C0E'),
+          ('SAPN / Electrical','SAPN','F4B083','130C0E'), ('Traffic Signals','Traffic','F4B083','130C0E'),
+          ('Street Lighting','Street','F4B083','130C0E'), ('Water','Water','8EAADB','130C0E'),
+          ('Fire Main','Fire','C45911','FFFFFF'), ('Optic Fibre','Optic','FFFFFF','130C0E'),
+          ('Reclaimed Water','Reclaimed','D777C5','130C0E'), ('Unknown Services','Unknown','FF3399','130C0E')]
 rows = [[cell('Asset type', W3[0], CHAR, True, 'FFFFFF'), cell('Quality', W3[1], CHAR, True, 'FFFFFF'), cell('Comment', W3[2], CHAR, True, 'FFFFFF')]]
-for i,(name,pfx) in enumerate(ASSETS):
-    fill = TINT if i % 2 == 1 else None
-    rows.append([cell(name, W3[0], fill, True), cell('{%s_quality}' % pfx, W3[1], fill, False, CHAR, jc='center'), cell('{%s_comment}' % pfx, W3[2], fill)])
+for (name, pfx, fill, tc) in ASSETS:
+    rows.append([cell(name, W3[0], (fill if fill != 'FFFFFF' else None), True, tc),
+                 cell('{%s_quality}' % pfx, W3[1], None, False, CHAR, jc='center'),
+                 cell('{%s_comment}' % pfx, W3[2], None)])
 checklist = table(rows, W3)
 
 # ---- DBYD (4-col), wrapped in inverse section; note shows when supplied by client ----
