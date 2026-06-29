@@ -116,29 +116,42 @@ legend += section('Quality levels explained (AS 5488.1:2022)')
 for level, text in QLDEFS:
     legend += ctext(level, bold=True, sz=23) + ctext(text, sz=21, color='333333')
 
-# ---- Photo pages (loop): page break + heading + main image + pothole thumbnail grid ----
-# Potholes render as a borderless 5-per-row grid of thumbnails, each with just its
-# PH label below (no utility / quality / depth). potholeRows is pre-chunked in JS into
-# rows of 5 fixed cells (c0..c4), blank cells padded with a transparent image.
-GW = [2017, 2017, 2017, 2017, 2018]   # 5-col grid (= 10086)
-def gcell(i):
-    pre = '<w:r><w:t>{#potholeRows}</w:t></w:r>' if i == 0 else ''   # row loop opens in 1st cell
-    post = '<w:r><w:t>{/potholeRows}</w:t></w:r>' if i == 4 else ''  # ...closes in last cell
-    img_p = (f'<w:p><w:pPr><w:spacing w:before="40" w:after="20"/><w:jc w:val="center"/></w:pPr>'
-             f'{pre}<w:r><w:t xml:space="preserve">{{%c{i}img}}</w:t></w:r></w:p>')
-    lbl_p = (f'<w:p><w:pPr><w:spacing w:after="60"/><w:jc w:val="center"/>{rpr(True,20,CHAR)}</w:pPr>'
-             f'<w:r>{rpr(True,20,CHAR)}<w:t xml:space="preserve">{{c{i}label}}</w:t></w:r>{post}</w:p>')
-    return cell('', GW[i], raw=img_p + lbl_p)
-pothole_grid = (f'<w:tbl><w:tblPr><w:tblW w:w="{sum(GW)}" w:type="dxa"/><w:jc w:val="left"/><w:tblInd w:w="0" w:type="dxa"/></w:tblPr>'
-                + '<w:tblGrid>' + ''.join(f'<w:gridCol w:w="{w}"/>' for w in GW) + '</w:tblGrid>'
-                + '<w:tr>' + ''.join(gcell(i) for i in range(5)) + '</w:tr></w:tbl>')
+# ---- Photo pages (loop): page break + heading + main image + ADAPTIVE pothole grid ----
+# The pothole layout adapts to the count (decided in JS): 1 -> one big image,
+# 2 -> 2 columns, 3 -> 3 columns, 4+ -> a 4-column grid. Each is its own conditional
+# section ({#g1}/{#g2}/{#g3}/{#g4}) with its own image tags so they can be sized
+# differently. JS chunks the potholes into rows of <cols> as g{cols}rows. The image
+# tag sits ALONE in its paragraph (and loop markers in their own paragraphs) so the
+# layout survives Word re-saving the template.
+TOTAL = 10086
+def pgrid(cols, prefix):
+    w = TOTAL // cols
+    widths = [w] * (cols - 1) + [TOTAL - w * (cols - 1)]
+    def cellx(i):
+        p = ''
+        if i == 0:
+            p += f'<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>{{#{prefix}rows}}</w:t></w:r></w:p>'
+        p += (f'<w:p><w:pPr><w:spacing w:before="60" w:after="20"/><w:jc w:val="center"/></w:pPr>'
+              f'<w:r><w:t xml:space="preserve">{{%{prefix}c{i}img}}</w:t></w:r></w:p>')
+        p += (f'<w:p><w:pPr><w:spacing w:after="80"/><w:jc w:val="center"/>{rpr(True,22,CHAR)}</w:pPr>'
+              f'<w:r>{rpr(True,22,CHAR)}<w:t xml:space="preserve">{{{prefix}c{i}label}}</w:t></w:r></w:p>')
+        if i == cols - 1:
+            p += f'<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>{{/{prefix}rows}}</w:t></w:r></w:p>'
+        return cell('', widths[i], raw=p)
+    tbl = (f'<w:tbl><w:tblPr><w:tblW w:w="{TOTAL}" w:type="dxa"/><w:jc w:val="left"/><w:tblInd w:w="0" w:type="dxa"/></w:tblPr>'
+           + '<w:tblGrid>' + ''.join(f'<w:gridCol w:w="{x}"/>' for x in widths) + '</w:tblGrid>'
+           + '<w:tr>' + ''.join(cellx(i) for i in range(cols)) + '</w:tr></w:tbl>')
+    return (f'<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>{{#{prefix}}}</w:t></w:r></w:p>'
+            + tbl
+            + f'<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>{{/{prefix}}}</w:t></w:r></w:p>')
+pothole_grids = pgrid(1, 'g1') + pgrid(2, 'g2') + pgrid(3, 'g3') + pgrid(4, 'g4')
 photo_block = (
     '<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>{#photos}</w:t></w:r></w:p>'
     + f'<w:p><w:pPr><w:pageBreakBefore/><w:pBdr><w:left w:val="single" w:sz="36" w:space="8" w:color="{YELLOW}"/></w:pBdr><w:spacing w:before="40" w:after="120"/>{rpr(True,28,CHAR)}</w:pPr><w:r><w:t>Photo </w:t></w:r><w:r><w:t>{{num}}</w:t></w:r></w:p>'
     + f'<w:p><w:pPr><w:spacing w:after="120"/><w:jc w:val="center"/></w:pPr><w:r><w:t xml:space="preserve">{{%photo}}</w:t></w:r></w:p>'
     + '<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>{#hasPotholes}</w:t></w:r></w:p>'
     + ctext('Potholes', bold=True, sz=22)
-    + pothole_grid
+    + pothole_grids
     + '<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>{/hasPotholes}</w:t></w:r></w:p>'
 )
 # abbreviations + disclaimer per photo
@@ -204,5 +217,5 @@ xml = open(DOC, encoding='utf-8').read()
 xml = re.sub(r'(<w:body>).*?(<w:sectPr)', lambda m: m.group(1) + body + m.group(2), xml, count=1, flags=re.S)
 xml = xml.replace('w:top="851"', 'w:top="2240"')
 open(DOC, 'w', encoding='utf-8').write(xml)
-need = ['{#photos}','{%photo}','{#potholeRows}','{%c0img}','{c0label}','{%c4img}','{/potholeRows}','{gas_quality}','{gas_comment}','{unknown_comment}','{signLocator}','{#hasSign}','{%signImage}','{signDate}','{siteAddress}']
+need = ['{#photos}','{%photo}','{#g1}','{%g1c0img}','{#g4rows}','{%g4c3img}','{/g4rows}','{/g4}','{gas_quality}','{gas_comment}','{unknown_comment}','{signLocator}','{#hasSign}','{%signImage}','{signDate}','{siteAddress}']
 print('done; tags ok:', all(t in xml for t in need), 'len', len(xml))

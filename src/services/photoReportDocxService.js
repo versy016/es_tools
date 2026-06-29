@@ -73,23 +73,32 @@ const buildData = (job, signoff) => {
         hasSign: !!sign.signature,
         signImage: sign.signature || '',
         signDate: sign.date || '',
-        // One block per photo; each carries its main image + its potholes laid out
-        // as a 5-per-row thumbnail grid (image + PH label only — no utility/quality
-        // details). Potholes are chunked into fixed 5-cell rows, blank cells padded.
-        photos: (job.photos || []).map((p, i) => ({
-            num: String(i + 1).padStart(2, '0'),
-            photo: p.flattenedDataUrl || p.src,
-            hasPotholes: (p.potholes || []).length > 0,
-            potholeRows: chunk(p.potholes || [], 5).map((group) => {
+        // One block per photo; potholes render under the main image in an ADAPTIVE
+        // grid: 1 pothole -> one big image, 2 -> 2 columns, 3 -> 3 columns, 4+ -> a
+        // 4-column grid (so fewer potholes show bigger). The column count picks the
+        // matching template section (g1/g2/g3/g4) and image size (see getSize).
+        photos: (job.photos || []).map((p, i) => {
+            const phs = p.potholes || [];
+            const n = phs.length;
+            const cols = n <= 1 ? 1 : n === 2 ? 2 : n === 3 ? 3 : 4;
+            const prefix = `g${cols}`;
+            const rows = chunk(phs, cols).map((group) => {
                 const row = {};
-                for (let c = 0; c < 5; c++) {
+                for (let c = 0; c < cols; c++) {
                     const ph = group[c];
-                    row[`c${c}img`] = ph ? ph.src : '';        // '' -> BLANK_PNG (invisible)
-                    row[`c${c}label`] = ph ? (ph.label || '') : '';
+                    row[`${prefix}c${c}img`] = ph ? ph.src : '';        // '' -> BLANK_PNG (invisible)
+                    row[`${prefix}c${c}label`] = ph ? (ph.label || '') : '';
                 }
                 return row;
-            }),
-        })),
+            });
+            return {
+                num: String(i + 1).padStart(2, '0'),
+                photo: p.flattenedDataUrl || p.src,
+                hasPotholes: n > 0,
+                g1: cols === 1, g2: cols === 2, g3: cols === 3, g4: cols === 4,
+                [`${prefix}rows`]: rows,
+            };
+        }),
     };
     // Per-utility checklist tags — the "Utilities located" table is the source of
     // truth: {<key>_quality} + {<key>_comment} for every utility row.
@@ -108,9 +117,12 @@ export const renderDocx = async (job, signoff) => {
             getImage: (tagValue) => base64ToArrayBuffer(tagValue),
             // Size per image tag: the main photo large, signature medium, pothole thumb small.
             getSize: (img, tagValue, tagName) => {
-                if (tagName === 'photo') return [600, 400];      // main photo: wide + taller
-                if (tagName === 'signImage') return [230, 85];   // sign-off signature
-                if (/^c\dimg$/.test(tagName)) return [118, 90];  // pothole grid thumbnail
+                if (tagName === 'photo') return [600, 400];          // main photo: wide + taller
+                if (tagName === 'signImage') return [230, 85];       // sign-off signature
+                if (/^g1c\d+img$/.test(tagName)) return [480, 360];  // 1 pothole -> big
+                if (/^g2c\d+img$/.test(tagName)) return [320, 240];  // 2 -> 2 columns
+                if (/^g3c\d+img$/.test(tagName)) return [215, 160];  // 3 -> 3 columns
+                if (/^g4c\d+img$/.test(tagName)) return [150, 112];  // 4+ -> 4-col grid
                 return [92, 70];
             },
         });
