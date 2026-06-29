@@ -7,19 +7,22 @@
 // `code`  - short code drawn on text-boxes / used in markings
 // `color` - stroke / fill colour (DIT spec)
 // `text`  - readable text colour to place on top of `color` for text-boxes
-// Colours follow the ES utility colour-coding scheme (shared with the Service
-// report). Telstra / Communications are white per the scheme.
+// Standard DBYD / AS 5488 utility locating colour code. Single source of truth for
+// the legend, the annotation editor, the pothole panel and the report tables.
+// Communications is white (use black when drawn on a white background).
 export const UTILITIES = [
-  { key: 'gas',        label: 'Gas',                       code: 'G, GM, GS', color: '#F6E84F', text: '#000000' },
-  { key: 'telstra',    label: 'Telstra',                   code: 'T',         color: '#FFFFFF', text: '#000000' },
-  { key: 'electricity',label: 'Electricity (LV and HV)',   code: 'HV, LV, E', color: '#F4B183', text: '#000000' },
-  { key: 'comms',      label: 'Communications/Fibre Optic',code: 'COMMS, OF', color: '#FFFFFF', text: '#000000' },
-  { key: 'water',      label: 'Water',                     code: 'WS, WM, W', color: '#8EAADB', text: '#000000' },
-  { key: 'sewer',      label: 'Sewer',                     code: 'SWR',       color: '#FBE4D5', text: '#000000' },
-  { key: 'stormwater', label: 'Stormwater',                code: 'STW',       color: '#92D050', text: '#000000' },
-  { key: 'recycled',   label: 'Recycled Water',            code: 'RW',        color: '#D777C5', text: '#000000' },
-  { key: 'unknown',    label: 'Unknown Service',           code: 'UK',        color: '#FF3399', text: '#000000' },
-  { key: 'earth',      label: 'Earth Grid (Substation)',   code: 'EG',        color: '#FFFF00', text: '#000000' },
+  { key: 'cadastral',    label: 'Cadastral Boundaries', code: 'CAD',       color: '#A6A6A6', text: '#000000' },
+  { key: 'water',        label: 'Potable Water Supply', code: 'WS, WM, W', color: '#2E75B6', text: '#FFFFFF' },
+  { key: 'stormwater',   label: 'Storm Water',          code: 'STW',       color: '#00B050', text: '#FFFFFF' },
+  { key: 'sewer',        label: 'Sewerage',             code: 'SWR',       color: '#F2E2C4', text: '#000000' },
+  { key: 'reclaimed',    label: 'Reclaimed Water',      code: 'RW',        color: '#7030A0', text: '#FFFFFF' },
+  { key: 'comms',        label: 'Communications',       code: 'COMMS',     color: '#FFFFFF', text: '#000000' },
+  { key: 'fire',         label: 'Fire Service',         code: 'FS',        color: '#FF0000', text: '#FFFFFF' },
+  { key: 'electrical',   label: 'Electrical',           code: 'HV, LV, E', color: '#ED7D31', text: '#000000' },
+  { key: 'gas',          label: 'Gas',                  code: 'G, GM, GS', color: '#FFD500', text: '#000000' },
+  { key: 'petroleum',    label: 'Petroleum',            code: 'P',         color: '#974706', text: '#FFFFFF' },
+  { key: 'reticulation', label: 'Reticulation',         code: 'RET',       color: '#375623', text: '#FFFFFF' },
+  { key: 'unknown',      label: 'Unknown Services',     code: 'UK',        color: '#FF66CC', text: '#000000' },
 ];
 
 // Quick lookup by key, e.g. UTILITY_BY_KEY.water.color

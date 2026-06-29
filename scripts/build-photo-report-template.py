@@ -5,12 +5,13 @@ import re
 DOC = r'C:\Users\sverma\Desktop\es_tools\public\templates\_unpacked\word\document.xml'
 YELLOW = 'FFC20E'; CHAR = '130C0E'; TINT = 'FBF6E9'; LINE = 'E6E3DD'
 
-UTILS = [  # label, code, fill, textcolor, key — ES utility colour-coding scheme
-    ('Gas','G, GM, GS','F6E84F','000000','gas'), ('Telstra','T','FFFFFF','000000','telstra'),
-    ('Electricity (LV and HV)','HV, LV, E','F4B183','000000','electricity'), ('Communications / Fibre Optic','COMMS, OF','FFFFFF','000000','comms'),
-    ('Water','WS, WM, W','8EAADB','000000','water'), ('Sewer','SWR','FBE4D5','000000','sewer'),
-    ('Stormwater','STW','92D050','000000','stormwater'), ('Recycled Water','RW','D777C5','000000','recycled'),
-    ('Unknown Service','UK','FF3399','000000','unknown'), ('Earth Grid (Substation)','EG','FFFF00','000000','earth'),
+UTILS = [  # label, code, fill, textcolor, key — standard DBYD/AS 5488 colour code
+    ('Cadastral Boundaries','CAD','A6A6A6','000000','cadastral'), ('Potable Water Supply','WS, WM, W','2E75B6','FFFFFF','water'),
+    ('Storm Water','STW','00B050','FFFFFF','stormwater'), ('Sewerage','SWR','F2E2C4','000000','sewer'),
+    ('Reclaimed Water','RW','7030A0','FFFFFF','reclaimed'), ('Communications','COMMS','FFFFFF','000000','comms'),
+    ('Fire Service','FS','FF0000','FFFFFF','fire'), ('Electrical','HV, LV, E','ED7D31','000000','electrical'),
+    ('Gas','G, GM, GS','FFD500','000000','gas'), ('Petroleum','P','974706','FFFFFF','petroleum'),
+    ('Reticulation','RET','375623','FFFFFF','reticulation'), ('Unknown Services','UK','FF66CC','000000','unknown'),
 ]
 QLDEFS = [
     ('Quality Level A (QL-A)','Is the highest Quality level accuracy and consists of positive identification of the attribute and location of a subsurface position in three dimensions. It is the only Quality level that defines a subsurface utility has been validated with additional attribute information (e.g. size, material, depth).'),

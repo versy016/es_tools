@@ -21,17 +21,20 @@ import SignOffSection from '../components/SignOffSection';
 
 // Per-utility cell colours for the checklist, matched to the service-location.docx
 // template cells (fg only set where the fill is dark). White/none utilities are omitted.
+// Standard DBYD/AS 5488 colour code, mapped onto the service-location asset list.
 const ASSET_COLORS = {
-    'Gas': { bg: '#F6E84F' },
-    'Sewer': { bg: '#FBE4D5' },
-    'Stormwater': { bg: '#92D050' },
-    'SAPN/Electrical': { bg: '#F4B083' },
-    'Traffic Signals': { bg: '#F4B083' },
-    'Street Lighting': { bg: '#F4B083' },
-    'Water': { bg: '#8EAADB' },
-    'Fire Main': { bg: '#C45911', fg: '#fff' },
-    'Reclaimed Water': { bg: '#D777C5' },
-    'Unknown Services': { bg: '#FF3399' },
+    'Gas': { bg: '#FFD500' },
+    'Sewer': { bg: '#F2E2C4' },
+    'Stormwater': { bg: '#00B050', fg: '#fff' },
+    'Telecommunications': { bg: '#FFFFFF' },
+    'SAPN/Electrical': { bg: '#ED7D31' },
+    'Traffic Signals': { bg: '#ED7D31' },
+    'Street Lighting': { bg: '#ED7D31' },
+    'Water': { bg: '#2E75B6', fg: '#fff' },
+    'Fire Main': { bg: '#FF0000', fg: '#fff' },
+    'Optic Fibre': { bg: '#FFFFFF' },
+    'Reclaimed Water': { bg: '#7030A0', fg: '#fff' },
+    'Unknown Services': { bg: '#FF66CC' },
 };
 
 const ServiceLocater = ({ goBack }) => {

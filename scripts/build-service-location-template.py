@@ -61,12 +61,12 @@ jd = table([
 W3 = [3400, 1700, 4986]   # = 10086
 # name, tag-prefix, asset-cell fill, asset-cell text colour (utility colours matched
 # exactly to the original ES template).
-ASSETS = [('Gas','Gas','F6E84F','130C0E'), ('Sewer','Sewer','FBE4D5','130C0E'),
-          ('Stormwater','Stormwater','92D050','130C0E'), ('Telecommunications','Telecommunications','FFFFFF','130C0E'),
-          ('SAPN / Electrical','SAPN','F4B083','130C0E'), ('Traffic Signals','Traffic','F4B083','130C0E'),
-          ('Street Lighting','Street','F4B083','130C0E'), ('Water','Water','8EAADB','130C0E'),
-          ('Fire Main','Fire','C45911','FFFFFF'), ('Optic Fibre','Optic','FFFFFF','130C0E'),
-          ('Reclaimed Water','Reclaimed','D777C5','130C0E'), ('Unknown Services','Unknown','FF3399','130C0E')]
+ASSETS = [('Gas','Gas','FFD500','130C0E'), ('Sewer','Sewer','F2E2C4','130C0E'),
+          ('Stormwater','Stormwater','00B050','FFFFFF'), ('Telecommunications','Telecommunications','FFFFFF','130C0E'),
+          ('SAPN / Electrical','SAPN','ED7D31','130C0E'), ('Traffic Signals','Traffic','ED7D31','130C0E'),
+          ('Street Lighting','Street','ED7D31','130C0E'), ('Water','Water','2E75B6','FFFFFF'),
+          ('Fire Main','Fire','FF0000','FFFFFF'), ('Optic Fibre','Optic','FFFFFF','130C0E'),
+          ('Reclaimed Water','Reclaimed','7030A0','FFFFFF'), ('Unknown Services','Unknown','FF66CC','130C0E')]
 rows = [[cell('Asset type', W3[0], CHAR, True, 'FFFFFF'), cell('Quality', W3[1], CHAR, True, 'FFFFFF'), cell('Comment', W3[2], CHAR, True, 'FFFFFF')]]
 for (name, pfx, fill, tc) in ASSETS:
     rows.append([cell(name, W3[0], (fill if fill != 'FFFFFF' else None), True, tc),
