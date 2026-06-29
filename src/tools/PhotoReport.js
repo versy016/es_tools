@@ -75,6 +75,7 @@ const PhotoReport = ({ goBack }) => {
     const [pdfUrl, setPdfUrl] = useState('');                              // object URL for the PDF Download/Open buttons
     const [docUrl, setDocUrl] = useState('');                              // object URL for the Word (.docx) download
     const [loading, setLoading] = useState(false);
+    const [uploadingPhotos, setUploadingPhotos] = useState(false);         // spinner while photos decode
     const [showExitPrompt, setShowExitPrompt] = useState(false);           // "save as draft?" on exit
     const finalizedRef = useRef(false);                                    // a Final report was generated this session
 
@@ -150,11 +151,21 @@ const PhotoReport = ({ goBack }) => {
 
     // File picker handler: keep only images, read each to a data URL, add all.
     // Reset the input value so re-selecting the same file fires onChange again.
+    // Shows a loading indicator (held for a minimum so it's always visible).
     const handleFileUpload = async (event) => {
         const files = Array.from(event.target.files).filter((f) => f.type.startsWith('image/'));
-        const srcs = await Promise.all(files.map(readFileAsDataURL));
-        srcs.forEach(addPhoto);
         event.target.value = '';
+        if (!files.length) return;
+        setUploadingPhotos(true);
+        const start = Date.now();
+        try {
+            const srcs = await Promise.all(files.map(readFileAsDataURL));
+            srcs.forEach(addPhoto);
+        } finally {
+            const wait = 450 - (Date.now() - start);
+            if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+            setUploadingPhotos(false);
+        }
     };
 
     const updatePhoto = (id, patch) => setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
@@ -454,6 +465,10 @@ const PhotoReport = ({ goBack }) => {
                             <span className="dropzone-sub">Use the device camera</span>
                         </button>
                     </div>
+
+                    {uploadingPhotos && (
+                        <div className="photo-loading"><span className="spinner" /> Adding photo(s)…</div>
+                    )}
 
                     {photos.length > 0 && (
                         <DragDropContext onDragEnd={onDragEnd}>

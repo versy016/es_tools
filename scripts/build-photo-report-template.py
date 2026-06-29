@@ -108,13 +108,9 @@ signoff_block = (
        + '<w:p><w:r><w:t>{/hasSign}</w:t></w:r></w:p>')
 )
 
-# ---- Legend page ----
-LW = [1900, 8186]   # wider code column for multi-code labels (G, GM, GS)
-legrows = [[cell(code, LW[0], fill, True, tc, jc='center'), cell(label, LW[1])] for (label, code, fill, tc, key) in UTILS]
-legend = section('Utility legend — DIT specification', pbb=True) + table(legrows, LW)
-legend += section('Quality levels explained (AS 5488.1:2022)')
-for level, text in QLDEFS:
-    legend += ctext(level, bold=True, sz=23) + ctext(text, sz=21, color='333333')
+# (Legend page intentionally removed — the report goes straight from the cover to
+#  the photo pages. The utility colours/codes still appear on the cover's
+#  "Utilities located" table, so no separate DIT legend / AS 5488.1 page is included.)
 
 # ---- Photo pages (loop): page break + heading + main image + ADAPTIVE pothole grid ----
 # The pothole layout adapts to the count (decided in JS): 1 -> one big image,
@@ -211,7 +207,7 @@ terms = section('Terms and conditions') + ctext(TERMS_INTRO) + ctext(TERMS_LEAD,
 for _t in TERMS:
     terms += bullet(_t)
 
-body = cover + legend + photo_block + quality + terms + signoff_block
+body = cover + photo_block + quality + terms + signoff_block
 
 xml = open(DOC, encoding='utf-8').read()
 xml = re.sub(r'(<w:body>).*?(<w:sectPr)', lambda m: m.group(1) + body + m.group(2), xml, count=1, flags=re.S)

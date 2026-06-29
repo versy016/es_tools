@@ -34,11 +34,19 @@ const PotholePanel = ({ potholes, onChange }) => {
     const [busy, setBusy] = useState(false);   // processing/downscaling uploads
 
     // Append photos (from a file picker), downscaled + auto-named in sequence.
+    // Hold `busy` for at least `ms` so the spinner is always visible, even for a fast op.
+    const stopBusyAfter = async (start, ms = 450) => {
+        const wait = ms - (Date.now() - start);
+        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+        setBusy(false);
+    };
+
     const handleAdd = async (event) => {
         const files = Array.from(event.target.files);
         event.target.value = '';
         if (!files.length) return;
         setBusy(true);
+        const start = Date.now();
         try {
             const dataUrls = await Promise.all(files.map(readFileAsDataURL));
             const small = await Promise.all(dataUrls.map((s) => downscaleImage(s)));
@@ -46,18 +54,19 @@ const PotholePanel = ({ potholes, onChange }) => {
             small.forEach((src) => { list = [...list, { id: newId(), label: nextLabel(list), src }]; });
             onChange(list);
         } finally {
-            setBusy(false);
+            await stopBusyAfter(start);
         }
     };
 
     // Append a single photo captured on the spot, downscaled + auto-named in sequence.
     const addCaptured = async (src) => {
         setBusy(true);
+        const start = Date.now();
         try {
             const small = await downscaleImage(src);
             onChange([...potholes, { id: newId(), label: nextLabel(potholes), src: small }]);
         } finally {
-            setBusy(false);
+            await stopBusyAfter(start);
         }
     };
 

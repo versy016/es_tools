@@ -187,6 +187,7 @@ const ServiceLocater = ({ goBack }) => {
         const files = Array.from(event.target.files);
         if (files.length === 0) return;
         setUploadingPhotos(true); // show the loading animation until every preview decodes
+        const start = Date.now();
         const fileNames = files.map(file => file.name);
         const promises = files.map(file => {
             return new Promise((resolve, reject) => {
@@ -207,7 +208,9 @@ const ServiceLocater = ({ goBack }) => {
         }).catch(error => {
             console.error("Error loading images", error);
         }).finally(() => {
-            setUploadingPhotos(false);
+            // Hold the spinner for a minimum so it's always visible, even for a fast read.
+            const wait = 450 - (Date.now() - start);
+            setTimeout(() => setUploadingPhotos(false), Math.max(0, wait));
         });
     };
 

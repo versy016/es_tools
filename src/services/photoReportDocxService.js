@@ -119,7 +119,7 @@ export const renderDocx = async (job, signoff) => {
             getSize: (img, tagValue, tagName) => {
                 if (tagName === 'photo') return [600, 400];          // main photo: wide + taller
                 if (tagName === 'signImage') return [230, 85];       // sign-off signature
-                if (/^g1c\d+img$/.test(tagName)) return [480, 360];  // 1 pothole -> big
+                if (/^g1c\d+img$/.test(tagName)) return [384, 288];  // 1 pothole -> big (but clearly < main photo)
                 if (/^g2c\d+img$/.test(tagName)) return [320, 240];  // 2 -> 2 columns
                 if (/^g3c\d+img$/.test(tagName)) return [215, 160];  // 3 -> 3 columns
                 if (/^g4c\d+img$/.test(tagName)) return [150, 112];  // 4+ -> 4-col grid
