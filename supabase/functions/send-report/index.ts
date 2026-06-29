@@ -49,8 +49,9 @@ Deno.serve(async (req) => {
     const pass = Deno.env.get('SMTP_PASS');
     const port = parseInt(Deno.env.get('SMTP_PORT') || '465', 10);
     const from = Deno.env.get('SMTP_FROM') || user;
-    // Implicit TLS unless explicitly disabled; always implicit on 465.
-    const secure = Deno.env.get('SMTP_SECURE') !== 'false' || port === 465;
+    // Implicit TLS (SSL) on 465; STARTTLS on 587 and others. SMTP_SECURE overrides.
+    const secureEnv = Deno.env.get('SMTP_SECURE');
+    const secure = secureEnv != null ? secureEnv === 'true' : port === 465;
 
     const missing = ['SMTP_USER:' + (user ? 1 : 0), 'SMTP_PASS:' + (pass ? 1 : 0)].filter((m) => m.endsWith(':0'));
     if (!user || !pass) {
