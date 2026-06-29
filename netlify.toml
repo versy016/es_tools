@@ -1,0 +1,25 @@
+# Netlify build + hosting config for the ES Tools React (CRA) PWA.
+
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[build.environment]
+  # CRA treats ESLint warnings as errors when CI is set (which Netlify does) — this
+  # repo has warnings, so without CI=false the deploy fails. Keep warnings non-fatal.
+  CI = "false"
+  NODE_VERSION = "18"
+
+# Single-page-app fallback: serve index.html for any path that isn't a real file,
+# so client-side (react-router) routes work on refresh / deep links. Real files
+# (JS, CSS, /service-worker.js, /manifest.json, images) are served before this rule.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Always re-validate the service worker so a new deploy is picked up promptly.
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "no-cache"
