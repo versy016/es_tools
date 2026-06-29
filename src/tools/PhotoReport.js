@@ -294,7 +294,7 @@ const PhotoReport = ({ goBack }) => {
                 : 'Report emailed, but saving to your reports failed — check you are signed in (see console)');
         } catch (err) {
             console.error('Error sending email', err);
-            alert('Could not send the email. The PDF was generated — see console for details.');
+            alert(`Could not send the email: ${err.message || 'see console for details.'}\n\nThe report was still generated — use Download.`);
         } finally {
             setLoading(false);
         }

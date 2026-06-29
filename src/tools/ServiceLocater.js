@@ -516,7 +516,7 @@ const ServiceLocater = ({ goBack }) => {
             alert('Report emailed successfully.');
         } catch (err) {
             console.error('Error sending email', err);
-            alert('Could not send the email. The report was generated — use Download instead. See console for details.');
+            alert(`Could not send the email: ${err.message || 'see console for details.'}\n\nThe report was generated — use Download instead.`);
         } finally {
             setLoading(false);
         }

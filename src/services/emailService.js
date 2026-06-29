@@ -24,12 +24,23 @@ export const sendReportEmail = async ({ to, subject, text, filename, contentBase
         ...(Array.isArray(to) ? to : [to]).filter(Boolean),
         ...(archive ? [REPORT_ARCHIVE_EMAIL] : []),
     ]));
-    const res = await fetch(EMAIL_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // `contentBase64` is the canonical field; `pdfBase64` kept for backwards compatibility.
-        body: JSON.stringify({ to: recipients, subject, text, filename, contentBase64, pdfBase64: contentBase64 }),
-    });
-    if (!res.ok) throw new Error(`Email service returned ${res.status}`);
+    let res;
+    try {
+        res = await fetch(EMAIL_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // `contentBase64` is the canonical field; `pdfBase64` kept for backwards compatibility.
+            body: JSON.stringify({ to: recipients, subject, text, filename, contentBase64, pdfBase64: contentBase64 }),
+        });
+    } catch (e) {
+        // Network/CORS failure before any HTTP response.
+        throw new Error('Could not reach the email service (network/CORS). Check REACT_APP_EMAIL_ENDPOINT and that the function is deployed.');
+    }
+    if (!res.ok) {
+        // Surface the backend's JSON error (e.g. SMTP timeout / App Password) so the user sees why.
+        let detail = '';
+        try { detail = (await res.json())?.error || ''; } catch (e) { /* non-JSON body */ }
+        throw new Error(detail || `Email service returned ${res.status}`);
+    }
     return true;
 };

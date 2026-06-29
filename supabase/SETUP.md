@@ -69,10 +69,16 @@ supabase functions deploy admin-users
 
 # Report email over SMTP — public endpoint, called by the app with a plain fetch.
 supabase functions deploy send-report --no-verify-jwt
-supabase secrets set SMTP_HOST=smtp.yourhost.com SMTP_PORT=587 \
-  SMTP_USER=apikey-or-user SMTP_PASS=your-smtp-password \
-  SMTP_FROM="Engineering Surveys <office@engsurveys.com.au>"
-#   add SMTP_SECURE=true only if you use implicit TLS on port 465
+
+# Gmail / Google Workspace (recommended: implicit SSL on 465):
+supabase secrets set \
+  SMTP_HOST=smtp.gmail.com SMTP_PORT=465 SMTP_SECURE=true \
+  SMTP_USER=you@gmail.com SMTP_PASS=xxxxxxxxxxxxxxxx \
+  SMTP_FROM="Engineering Surveys <you@gmail.com>"
+#   SMTP_PASS MUST be a 16-char Google **App Password** (Google Account → Security →
+#   2-Step Verification → App passwords) — your normal Gmail password will be rejected.
+#   The function defaults to smtp.gmail.com:465 SSL, so those three can be omitted for Gmail.
+#   (For a provider that needs STARTTLS on 587, set SMTP_PORT=587 and SMTP_SECURE=false.)
 
 # (Optional) Service Location PDF export via the Google Drive API (see step 5a).
 supabase functions deploy docx-to-pdf --no-verify-jwt
