@@ -9,7 +9,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../stylessheets/ServiceLocater.css';
 import '../stylessheets/PhotoReport.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faFilePdf, faPaperPlane, faDownload, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faFilePdf, faPaperPlane, faDownload, faCheck, faCamera } from '@fortawesome/free-solid-svg-icons';
 import { setupClientsSearch, setupProjectsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
 import { loadGoogleMapsScript, attachAddressAutocomplete } from '../scripts/googleMaps';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
@@ -18,6 +18,7 @@ import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/em
 import { saveReport, saveDraft } from '../services/reportsService';
 import FormSection from '../components/FormSection';
 import SignOffSection from '../components/SignOffSection';
+import CameraCapture from '../components/CameraCapture';
 
 // Per-utility cell colours for the checklist, matched to the service-location.docx
 // template cells (fg only set where the fill is dark). White/none utilities are omitted.
@@ -77,6 +78,7 @@ const ServiceLocater = ({ goBack }) => {
     ]);
     const [loading, setLoading] = useState(false);
     const [uploadingPhotos, setUploadingPhotos] = useState(false); // spinner while previews decode
+    const [showCamera, setShowCamera] = useState(false);           // on-the-spot camera modal
     const [showSuccess, setShowSuccess] = useState(false);         // centred "report generated" modal
     const [savedToReports, setSavedToReports] = useState(false);   // did the last report persist to Supabase?
     const [showExitPrompt, setShowExitPrompt] = useState(false);   // "save as draft?" on exit
@@ -205,6 +207,15 @@ const ServiceLocater = ({ goBack }) => {
         }).finally(() => {
             setUploadingPhotos(false);
         });
+    };
+
+    // Add a photo captured on the spot (a data URL from CameraCapture). Keeps all four
+    // parallel photo arrays index-aligned (imageFiles is unused downstream — null is fine).
+    const addCapturedPhoto = (dataUrl) => {
+        setImagePreviews(prev => [...prev, dataUrl]);
+        setImageFiles(prev => [...prev, null]);
+        setImageNames(prev => [...prev, '']);
+        setImageDescriptions(prev => [...prev, '']);
     };
 
     // Toggle a boolean field (used for the row "selected" checkbox).
@@ -706,10 +717,15 @@ const ServiceLocater = ({ goBack }) => {
                     {/* Step 5 — photos: upload, then drag to reorder; each thumbnail has an
                         editable name + description that flow into the docx. */}
                     <FormSection step="5" title="Photos">
-                        <label className="photo-upload-btn">
-                            + Add photos
-                            <input type="file" accept="image/*" multiple onChange={handleFileUpload} hidden />
-                        </label>
+                        <div className="photo-upload-row">
+                            <label className="photo-upload-btn">
+                                + Add photos
+                                <input type="file" accept="image/*" multiple onChange={handleFileUpload} hidden />
+                            </label>
+                            <button type="button" className="photo-upload-btn" onClick={() => setShowCamera(true)}>
+                                <FontAwesomeIcon icon={faCamera} /> Take a photo
+                            </button>
+                        </div>
                         {uploadingPhotos && (
                             <div className="photo-loading"><span className="spinner" /> Loading photos…</div>
                         )}
@@ -845,6 +861,11 @@ const ServiceLocater = ({ goBack }) => {
                             <button type="button" className="success-close" onClick={() => setShowExitPrompt(false)}>Keep editing</button>
                         </div>
                     </div>
+                )}
+
+                {/* On-the-spot camera capture; each shot is appended as a photo */}
+                {showCamera && (
+                    <CameraCapture onCapture={addCapturedPhoto} onClose={() => setShowCamera(false)} />
                 )}
             </div>
         </div>

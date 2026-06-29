@@ -219,6 +219,13 @@ input {
     background: var(--primary-soft);
 }
 
+/* Photo intake buttons row (file picker + camera) */
+.photo-upload-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
 /* Styled file picker (the native input is hidden) */
 .photo-upload-btn {
     display: inline-flex;
