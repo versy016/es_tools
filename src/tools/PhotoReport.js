@@ -22,7 +22,7 @@ import CameraCapture from '../components/CameraCapture';
 import PotholePanel from '../components/PotholePanel';
 import Section from '../components/FormSection';
 import { useToast } from '../components/Toast';
-import { saveReport } from '../services/reportsService';
+import { saveReport, saveDraft } from '../services/reportsService';
 import SignOffSection from '../components/SignOffSection';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 import { REPORT_ARCHIVE_EMAIL } from '../config';
@@ -73,6 +73,8 @@ const PhotoReport = ({ goBack }) => {
     const [pdfUrl, setPdfUrl] = useState('');                              // object URL for the PDF Download/Open buttons
     const [docUrl, setDocUrl] = useState('');                              // object URL for the Word (.docx) download
     const [loading, setLoading] = useState(false);
+    const [showExitPrompt, setShowExitPrompt] = useState(false);           // "save as draft?" on exit
+    const finalizedRef = useRef(false);                                    // a Final report was generated this session
 
     // Refs for the inputs that get Algolia/Maps autocomplete attached imperatively.
     const locatorRef = useRef(null);
@@ -179,6 +181,24 @@ const PhotoReport = ({ goBack }) => {
     // saved record instead of creating duplicates (useRef keeps it across renders).
     const reportId = useRef(`rep_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
 
+    // Resume a saved draft handed off from the Reports screen (via localStorage):
+    // re-hydrate the form and reuse its id so finishing it overwrites the draft row.
+    useEffect(() => {
+        let payload;
+        try { payload = JSON.parse(localStorage.getItem('es_tools_resume') || 'null'); } catch (e) { payload = null; }
+        if (!payload || payload.tool !== 'photo-report') return;
+        localStorage.removeItem('es_tools_resume');
+        reportId.current = payload.id || reportId.current;
+        const s = payload.state || {};
+        if (s.form) setForm((prev) => ({ ...prev, ...s.form }));
+        if (Array.isArray(s.utilChecklist)) setUtilChecklist(s.utilChecklist);
+        if (Array.isArray(s.photos)) setPhotos(s.photos);
+        if (typeof s.emailTo === 'string') setEmailTo(s.emailTo);
+    }, []);
+
+    // Snapshot of everything needed to re-open this report as a draft.
+    const draftState = () => ({ form, utilChecklist, photos, emailTo });
+
     // Render the report from the letterhead .docx template, then convert it to PDF via
     // the docx-to-pdf service. Returns both blobs (pdfBlob is null if the converter isn't
     // configured) and refreshes the Word + PDF download URLs.
@@ -230,9 +250,10 @@ const PhotoReport = ({ goBack }) => {
         setLoading(true);
         try {
             const { docxBlob, pdfBlob } = await buildReport();
-            const saved = await persistReport(pdfBlob || docxBlob, 'Draft');
+            const saved = await persistReport(pdfBlob || docxBlob, 'Final');
+            if (saved) finalizedRef.current = true;   // a Final report exists → no draft prompt on exit
             showToast(saved
-                ? (pdfBlob ? 'Report generated & saved' : 'Word report generated & saved (configure the PDF converter for a PDF)')
+                ? (pdfBlob ? 'Final report generated & saved' : 'Final Word report generated & saved (configure the PDF converter for a PDF)')
                 : 'Report generated, but saving to your reports failed — check you are signed in (see console)');
         } catch (err) {
             console.error('Error generating PDF', err);
@@ -265,6 +286,7 @@ const PhotoReport = ({ goBack }) => {
                 contentBase64,
             });
             const saved = await persistReport(sendBlob, 'Sent');
+            if (saved) finalizedRef.current = true;
             showToast(saved
                 ? 'Branded PDF generated, emailed & saved'
                 : 'Report emailed, but saving to your reports failed — check you are signed in (see console)');
@@ -276,6 +298,34 @@ const PhotoReport = ({ goBack }) => {
         }
     };
 
+    // Is there enough entered to be worth keeping as a draft?
+    const hasContent = () => photos.length > 0 || !!form.siteAddress || !!form.clientName
+        || !!form.locatorName || !!form.dbydNo || utilChecklist.some((r) => r.selected);
+
+    // Leaving the tool: if there's unsaved work and no Final report was produced this
+    // session, offer to save a draft; otherwise just go back.
+    const requestExit = () => {
+        if (!finalizedRef.current && hasContent()) setShowExitPrompt(true);
+        else goBack();
+    };
+    const saveDraftAndExit = async () => {
+        setShowExitPrompt(false);
+        setLoading(true);
+        try {
+            const potholeCount = photos.reduce((n, p) => n + (p.potholes ? p.potholes.length : 0), 0);
+            await saveDraft({
+                id: reportId.current,
+                tool: 'photo-report',
+                state: draftState(),
+                title: `Pothole report — ${form.siteAddress || 'Untitled site'}`,
+                meta: `${photos.length} photo${photos.length === 1 ? '' : 's'} · ${potholeCount} pothole${potholeCount === 1 ? '' : 's'} · draft saved ${new Date().toLocaleDateString('en-AU')}`,
+            });
+        } finally {
+            setLoading(false);
+            goBack();
+        }
+    };
+
     return (
         <div className="photo-report">
             <div className="pr-content">
@@ -283,7 +333,7 @@ const PhotoReport = ({ goBack }) => {
                 <div className="tool-topbar">
                     <div className="tool-topbar-left">
                         <nav className="breadcrumb">
-                            <span className="crumb-link" onClick={goBack}>Dashboard</span>
+                            <span className="crumb-link" onClick={requestExit}>Dashboard</span>
                             <span className="crumb-sep">/</span>
                             <span>Tools</span>
                             <span className="crumb-sep">/</span>
@@ -291,7 +341,7 @@ const PhotoReport = ({ goBack }) => {
                         </nav>
                         <div className="tool-title-row">
                             <h1>Pothole Report Generator</h1>
-                            <span className="pill pill-draft">Draft · autosaved</span>
+                            <span className="pill pill-draft">Editing — Generate to finalise</span>
                             {/* TEMP testing helper — remove before release */}
                             <button type="button" onClick={quickFill} style={{
                                 marginLeft: 'auto', padding: '6px 12px', fontSize: '.8rem', fontWeight: 600,
@@ -477,7 +527,22 @@ const PhotoReport = ({ goBack }) => {
                 {/* Full-screen working overlay while the Word/PDF are generated (matches the Service report) */}
                 {loading && (
                     <div className="loading-overlay">
-                        <p><span className="spinner spinner-light" /> Generating report, please wait…</p>
+                        <p><span className="spinner spinner-light" /> Working, please wait…</p>
+                    </div>
+                )}
+
+                {/* Save-as-draft prompt when leaving with unsaved work */}
+                {showExitPrompt && (
+                    <div className="success-overlay" onClick={() => setShowExitPrompt(false)}>
+                        <div className="success-card" onClick={(e) => e.stopPropagation()}>
+                            <h3>Save as draft?</h3>
+                            <p>You haven't generated a final report yet. Save your progress as a draft to finish it later?</p>
+                            <div className="success-actions">
+                                <button type="button" className="btn-yellow" onClick={saveDraftAndExit}>Save as draft</button>
+                                <button type="button" className="btn-outline" onClick={() => { setShowExitPrompt(false); goBack(); }}>Discard &amp; leave</button>
+                            </div>
+                            <button type="button" className="success-close" onClick={() => setShowExitPrompt(false)}>Keep editing</button>
+                        </div>
                     </div>
                 )}
 

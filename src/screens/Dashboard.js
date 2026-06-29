@@ -7,7 +7,7 @@ import { TOOLS } from '../data/toolsRegistry';
 import ToolTile from '../components/ToolTile';
 import EmptyState from '../components/EmptyState';
 import { useToast } from '../components/Toast';
-import { listReports, getReportUrl } from '../services/reportsService';
+import { listReports, getReportUrl, loadDraft } from '../services/reportsService';
 
 // Favourites are persisted client-side only (localStorage), keyed by tool id.
 const FAVS_KEY = 'es_tools_favs';
@@ -44,6 +44,21 @@ const Dashboard = () => {
     const tools = q ? TOOLS.filter((t) => (t.name + ' ' + t.desc).toLowerCase().includes(q)) : TOOLS;
     const recent = (reports || []).slice(0, 4);
     const draftCount = (reports || []).filter((r) => (r.status || '').toLowerCase() === 'draft').length;
+    // Most recent in-progress draft, used by the resume card.
+    const latestDraft = (reports || []).find((r) => (r.status || '').toLowerCase() === 'draft');
+
+    // Resume the latest draft in its tool (pre-filled), else start a fresh report.
+    const resumeOrStart = async () => {
+        if (latestDraft) {
+            const draft = await loadDraft(latestDraft.id);
+            if (draft && draft.tool) {
+                try { localStorage.setItem('es_tools_resume', JSON.stringify({ id: latestDraft.id, tool: draft.tool, state: draft.state })); } catch (e) { /* ignore */ }
+                navigate(draft.tool === 'service-location' ? '/tools/service-location' : '/tools/photo-report');
+                return;
+            }
+        }
+        navigate('/tools/photo-report');
+    };
 
     const toggleFav = (id) => {
         setFavs((prev) => {
@@ -74,7 +89,7 @@ const Dashboard = () => {
                 <p>{draftCount > 0 ? `You have ${draftCount} draft${draftCount === 1 ? '' : 's'} in progress.` : 'Pick a tool to start a new report.'}</p>
             </div>
 
-            <div className="resume-card" onClick={() => navigate('/tools/photo-report')}>
+            <div className="resume-card" onClick={resumeOrStart}>
                 <div className="resume-glow" />
                 <div className="resume-icon">
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1B2230" strokeWidth="2">
@@ -83,11 +98,11 @@ const Dashboard = () => {
                     </svg>
                 </div>
                 <div className="resume-body">
-                    <div className="resume-eyebrow">{recent.length ? 'CONTINUE WHERE YOU LEFT OFF' : 'START HERE'}</div>
-                    <div className="resume-title">{recent.length ? recent[0].title : 'New pothole report'}</div>
-                    <div className="resume-meta">{recent.length ? recent[0].meta : 'Capture photos, annotate, attach potholes and export a branded PDF.'}</div>
+                    <div className="resume-eyebrow">{latestDraft ? 'CONTINUE WHERE YOU LEFT OFF' : 'START HERE'}</div>
+                    <div className="resume-title">{latestDraft ? latestDraft.title : 'New pothole report'}</div>
+                    <div className="resume-meta">{latestDraft ? latestDraft.meta : 'Capture photos, annotate, attach potholes and export a branded PDF.'}</div>
                 </div>
-                <div className="resume-cta">{recent.length ? 'Resume' : 'Start'}
+                <div className="resume-cta">{latestDraft ? 'Resume' : 'Start'}
                     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#F5A623" strokeWidth="2.4"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                 </div>
             </div>

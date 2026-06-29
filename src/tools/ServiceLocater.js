@@ -15,7 +15,7 @@ import { loadGoogleMapsScript, attachAddressAutocomplete } from '../scripts/goog
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { renderDocx, docxToPdf, isPdfConfigured } from '../services/serviceReportService';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
-import { saveReport } from '../services/reportsService';
+import { saveReport, saveDraft } from '../services/reportsService';
 import FormSection from '../components/FormSection';
 import SignOffSection from '../components/SignOffSection';
 
@@ -79,6 +79,8 @@ const ServiceLocater = ({ goBack }) => {
     const [uploadingPhotos, setUploadingPhotos] = useState(false); // spinner while previews decode
     const [showSuccess, setShowSuccess] = useState(false);         // centred "report generated" modal
     const [savedToReports, setSavedToReports] = useState(false);   // did the last report persist to Supabase?
+    const [showExitPrompt, setShowExitPrompt] = useState(false);   // "save as draft?" on exit
+    const finalizedRef = useRef(false);                            // a Final report was generated this session
     // Stable id for the session so re-generating overwrites the same saved record.
     const reportId = useRef(`rep_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
 
@@ -290,6 +292,84 @@ const ServiceLocater = ({ goBack }) => {
         setImageDescriptions(newDescriptions);
     };
 
+    // Resume a saved draft handed off from the Reports screen (via localStorage):
+    // re-hydrate controlled state immediately and uncontrolled DOM fields after mount.
+    useEffect(() => {
+        let payload;
+        try { payload = JSON.parse(localStorage.getItem('es_tools_resume') || 'null'); } catch (e) { payload = null; }
+        if (!payload || payload.tool !== 'service-location') return;
+        localStorage.removeItem('es_tools_resume');
+        reportId.current = payload.id || reportId.current;
+        const s = payload.state || {};
+        if (s.project) setProject(s.project);
+        if (s.client) setClient(s.client);
+        if (typeof s.address === 'string') setAddress(s.address);
+        if (typeof s.email === 'string') setEmail(s.email);
+        if (typeof s.dbydByClient === 'boolean') setDbydByClient(s.dbydByClient);
+        if (Array.isArray(s.checklist)) setChecklist(s.checklist);
+        if (Array.isArray(s.notes)) setNotes(s.notes);
+        if (Array.isArray(s.photos)) {
+            setImagePreviews(s.photos.map((p) => p.src));
+            setImageNames(s.photos.map((p) => p.name || ''));
+            setImageDescriptions(s.photos.map((p) => p.description || ''));
+        }
+        setTimeout(() => {
+            const f = formRef.current;
+            if (!f) return;
+            Object.entries(s.fields || {}).forEach(([name, val]) => {
+                const el = f.querySelector(`[name="${name}"]`);
+                if (el && val != null) el.value = val;
+            });
+        }, 0);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Snapshot of the form (controlled state + uncontrolled DOM fields) for a draft.
+    const draftState = () => {
+        const f = formRef.current;
+        const get = (name) => { const el = f && f.querySelector(`[name="${name}"]`); return el ? el.value : ''; };
+        return {
+            fields: {
+                date: get('date'), contact: get('contact'), ContactMob: get('ContactMob'),
+                surveyor: get('surveyor'), LocaterMob: get('LocaterMob'),
+                dbydJobNumber: get('dbydJobNumber'), dbydDateRequested: get('dbydDateRequested'),
+                dbydPlansAvailable: get('dbydPlansAvailable'), dbydPlansCoverAreas: get('dbydPlansCoverAreas'),
+                swmsCompleted: get('swmsCompleted'), dbydPlansSupplied: get('dbydPlansSupplied'),
+            },
+            project, client, address, email, dbydByClient, checklist, notes,
+            photos: imagePreviews.map((src, i) => ({ src, name: imageNames[i] || '', description: imageDescriptions[i] || '' })),
+        };
+    };
+
+    // Worth keeping as a draft? (reads the uncontrolled contact/surveyor fields too)
+    const hasContent = () => {
+        const f = formRef.current;
+        const v = (name) => { const el = f && f.querySelector(`[name="${name}"]`); return el ? el.value.trim() : ''; };
+        return imagePreviews.length > 0 || !!address || !!email || !!v('contact') || !!v('surveyor') || checklist.some((it) => it.selected);
+    };
+
+    const requestExit = () => {
+        if (!finalizedRef.current && hasContent()) setShowExitPrompt(true);
+        else goBack();
+    };
+    const saveDraftAndExit = async () => {
+        setShowExitPrompt(false);
+        setLoading(true);
+        try {
+            const siteLabel = address || project.project || client.title || 'Untitled site';
+            await saveDraft({
+                id: reportId.current,
+                tool: 'service-location',
+                state: draftState(),
+                title: `Service Location report — ${siteLabel}`,
+                meta: `${imagePreviews.length} photo${imagePreviews.length === 1 ? '' : 's'} · draft saved ${new Date().toLocaleDateString('en-AU')}`,
+            });
+        } finally {
+            setLoading(false);
+            goBack();
+        }
+    };
+
     // Generate report: validate, gather a flat reportForm, render the .docx from
     // the template, then try to convert it to PDF. Many values are pulled directly
     // off the form DOM (e.target.<name>) since those inputs are uncontrolled.
@@ -361,13 +441,14 @@ const ServiceLocater = ({ goBack }) => {
                     title: `Service Location report — ${siteLabel}`,
                     siteAddress: address,
                     client: email || client.title || '',
-                    status: 'Draft',
+                    status: 'Final',
                     photoCount: imagePreviews.length,
                     potholeCount: 0,
                     meta: `${imagePreviews.length} photo${imagePreviews.length === 1 ? '' : 's'} · ${new Date().toLocaleDateString('en-AU')}`,
                 },
             });
             setSavedToReports(saved);
+            if (saved) finalizedRef.current = true;   // a Final report exists → no draft prompt on exit
 
             setShowSuccess(true); // centred confirmation with the download options
         } catch (err) {
@@ -420,7 +501,7 @@ const ServiceLocater = ({ goBack }) => {
                 <div className="tool-topbar">
                     <div className="tool-topbar-left">
                         <nav className="breadcrumb">
-                            <span className="crumb-link" onClick={goBack}>Dashboard</span>
+                            <span className="crumb-link" onClick={requestExit}>Dashboard</span>
                             <span className="crumb-sep">/</span>
                             <span>Tools</span>
                             <span className="crumb-sep">/</span>
@@ -747,6 +828,21 @@ const ServiceLocater = ({ goBack }) => {
                                 </p>
                             )}
                             <button type="button" className="success-close" onClick={() => setShowSuccess(false)}>Close</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Save-as-draft prompt when leaving with unsaved work */}
+                {showExitPrompt && (
+                    <div className="success-overlay" onClick={() => setShowExitPrompt(false)}>
+                        <div className="success-card" onClick={(e) => e.stopPropagation()}>
+                            <h3>Save as draft?</h3>
+                            <p>You haven't generated a final report yet. Save your progress as a draft to finish it later?</p>
+                            <div className="success-actions">
+                                <button type="button" className="btn-yellow" onClick={saveDraftAndExit}>Save as draft</button>
+                                <button type="button" className="btn-outline" onClick={() => { setShowExitPrompt(false); goBack(); }}>Discard &amp; leave</button>
+                            </div>
+                            <button type="button" className="success-close" onClick={() => setShowExitPrompt(false)}>Keep editing</button>
                         </div>
                     </div>
                 )}

@@ -124,6 +124,7 @@
 }
 
 .pill-draft { color: var(--status-draft-fg); background: var(--status-draft-bg); }
+.pill-final { color: #0b6b3a; background: #d8f3e3; }
 .pill-sent { color: var(--status-sent-fg); background: var(--status-sent-bg); }
 .pill-approved { color: var(--status-approved-fg); background: var(--status-approved-bg); }
 .pill-live { color: var(--success); background: var(--status-approved-bg); }

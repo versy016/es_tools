@@ -2,18 +2,20 @@
 // downloads via a signed URL, and re-sends a report by email (fetch blob -> base64
 // -> emailService). Data comes from reportsService.
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import EmptyState from '../components/EmptyState';
-import { listReports, getReportUrl, getReportBlob } from '../services/reportsService';
+import { listReports, getReportUrl, getReportBlob, loadDraft, removeReport } from '../services/reportsService';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 
 // Status filter tabs; trailing "s" is stripped when matching a report's status.
-const FILTERS = ['All', 'Drafts', 'Sent', 'Approved'];
+const FILTERS = ['All', 'Drafts', 'Final', 'Sent', 'Approved'];
 const statusClass = (s) => `pill pill-${String(s || 'draft').toLowerCase()}`;
 const monogram = (s) => (s || 'PR').replace(/[^A-Za-z]/g, ' ').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || 'PR';
 
 const Reports = () => {
     const showToast = useToast();
+    const navigate = useNavigate();
     const [filter, setFilter] = useState('All');
     const [reports, setReports] = useState(null); // null = loading, [] = loaded-but-empty
 
@@ -28,6 +30,22 @@ const Reports = () => {
         const url = await getReportUrl(r.id);
         if (url) window.open(url, '_blank', 'noreferrer');
         else showToast('Could not download this report');
+    };
+
+    // Re-open a draft in its tool, pre-filled. The tool reads this handoff on mount.
+    const cont = async (r) => {
+        const draft = await loadDraft(r.id);
+        if (!draft || !draft.tool) { showToast('Could not open this draft'); return; }
+        try { localStorage.setItem('es_tools_resume', JSON.stringify({ id: r.id, tool: draft.tool, state: draft.state })); } catch (e) { /* ignore */ }
+        navigate(draft.tool === 'service-location' ? '/tools/service-location' : '/tools/photo-report');
+    };
+
+    // Delete a draft (or report) row + its stored file.
+    const del = async (r) => {
+        if (!window.confirm('Delete this draft? This cannot be undone.')) return;
+        const ok = await removeReport(r.id);
+        if (ok) { setReports((prev) => (prev || []).filter((x) => x.id !== r.id)); showToast('Draft deleted'); }
+        else showToast('Could not delete this draft');
     };
 
     // Re-email a report: bail if email isn't configured, otherwise fetch the PDF
@@ -84,14 +102,24 @@ const Reports = () => {
                                 <div className="recent-meta">{r.meta}</div>
                             </div>
                             <span className={statusClass(r.status)}>{r.status || 'Draft'}</span>
-                            <div className="row-actions">
-                                <button type="button" className="icon-btn" title="Download" onClick={() => download(r)}>
-                                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
-                                </button>
-                                <button type="button" className="icon-btn" title="Re-send" onClick={() => resend(r)}>
-                                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
-                                </button>
-                            </div>
+                            {(r.status || 'Draft') === 'Draft' ? (
+                                // Drafts are in-progress: resume editing, not download.
+                                <div className="row-actions">
+                                    <button type="button" className="btn-outline sm" onClick={() => cont(r)}>Continue</button>
+                                    <button type="button" className="icon-btn" title="Delete draft" onClick={() => del(r)}>
+                                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></svg>
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="row-actions">
+                                    <button type="button" className="icon-btn" title="Download" onClick={() => download(r)}>
+                                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+                                    </button>
+                                    <button type="button" className="icon-btn" title="Re-send" onClick={() => resend(r)}>
+                                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
