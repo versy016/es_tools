@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faPlus, faCamera } from '@fortawesome/free-solid-svg-icons';
 import CameraCapture from './CameraCapture';
+import { downscaleImage } from '../utils/image';
 
 // Read a File/Blob into a base64 data URL (so thumbnails can be stored/serialised
 // without a server round-trip).
@@ -30,20 +31,35 @@ const newId = () => `ph_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
 // through onChange.
 const PotholePanel = ({ potholes, onChange }) => {
     const [showCamera, setShowCamera] = useState(false);
+    const [busy, setBusy] = useState(false);   // processing/downscaling uploads
 
-    // Append photos (from a file picker), auto-naming each in sequence.
+    // Append photos (from a file picker), downscaled + auto-named in sequence.
     const handleAdd = async (event) => {
         const files = Array.from(event.target.files);
-        if (!files.length) return;
-        const dataUrls = await Promise.all(files.map(readFileAsDataURL));
-        let list = potholes;
-        dataUrls.forEach((src) => { list = [...list, { id: newId(), label: nextLabel(list), src }]; });
-        onChange(list);
         event.target.value = '';
+        if (!files.length) return;
+        setBusy(true);
+        try {
+            const dataUrls = await Promise.all(files.map(readFileAsDataURL));
+            const small = await Promise.all(dataUrls.map((s) => downscaleImage(s)));
+            let list = potholes;
+            small.forEach((src) => { list = [...list, { id: newId(), label: nextLabel(list), src }]; });
+            onChange(list);
+        } finally {
+            setBusy(false);
+        }
     };
 
-    // Append a single photo captured on the spot, auto-named in sequence.
-    const addCaptured = (src) => onChange([...potholes, { id: newId(), label: nextLabel(potholes), src }]);
+    // Append a single photo captured on the spot, downscaled + auto-named in sequence.
+    const addCaptured = async (src) => {
+        setBusy(true);
+        try {
+            const small = await downscaleImage(src);
+            onChange([...potholes, { id: newId(), label: nextLabel(potholes), src: small }]);
+        } finally {
+            setBusy(false);
+        }
+    };
 
     // Edit a pothole's name.
     const rename = (id, label) => onChange(potholes.map((p) => (p.id === id ? { ...p, label } : p)));
@@ -66,7 +82,11 @@ const PotholePanel = ({ potholes, onChange }) => {
                 </div>
             </div>
 
-            {potholes.length === 0 ? (
+            {busy && (
+                <div className="photo-loading"><span className="spinner" /> Adding photo(s)…</div>
+            )}
+
+            {potholes.length === 0 && !busy ? (
                 <p className="pothole-empty">No potholes added for this photo.</p>
             ) : (
                 <div className="pothole-list">
