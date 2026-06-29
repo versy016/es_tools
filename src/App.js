@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import NavBar from './components/Navbar';
 import { ToastProvider } from './components/Toast';
+import { NavGuardProvider } from './components/NavGuard';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import Login from './screens/Login';
 import Dashboard from './screens/Dashboard';
@@ -86,7 +87,7 @@ const Gate = () => {
   if (!configured) return <ConfigureNotice />;
   if (loading) return <div className="boot-notice"><p>Loading…</p></div>;
   if (!session) return <Login />;
-  return <Routed />;
+  return <NavGuardProvider><Routed /></NavGuardProvider>;
 };
 
 // Provider composition: router > auth > toast > gate. Auth must wrap Toast/Gate

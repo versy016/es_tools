@@ -3,6 +3,7 @@
 // box, a profile button, and the sign-out button.
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useNavGuard } from './NavGuard';
 import '../stylessheets/Navbar.css';
 
 const Logo = () => (
@@ -20,22 +21,26 @@ const initials = (name) => (name || 'User').split(' ').map((w) => w[0]).slice(0,
 // Search/role/sign-out state is owned by AppShell and passed in as props.
 const NavBar = ({ userName, role = 'Surveyor', search, onSearch, onSignOut }) => {
     const navigate = useNavigate();
+    const { runGuarded } = useNavGuard();
     const linkClass = ({ isActive }) => `nav-link ${isActive ? 'active' : ''}`;
+    // Route every navigation through the guard so a tool can prompt "save as draft?".
+    const go = (to) => runGuarded(() => navigate(to));
+    const onLink = (to) => (e) => { e.preventDefault(); go(to); };
     // Mirror App's RBAC check so only managers/admins see the Users link.
     const canManageUsers = ['admin', 'manager'].includes(String(role).toLowerCase());
 
     return (
         <nav className="nav">
-            <div className="nav-brand" onClick={() => navigate('/dashboard')}>
+            <div className="nav-brand" onClick={() => go('/dashboard')}>
                 <Logo />
                 <span className="nav-wordmark">ES Tools</span>
             </div>
 
             <div className="nav-links">
-                <NavLink to="/dashboard" className={linkClass}>Dashboard</NavLink>
-                <NavLink to="/reports" className={linkClass}>Reports</NavLink>
+                <NavLink to="/dashboard" className={linkClass} onClick={onLink('/dashboard')}>Dashboard</NavLink>
+                <NavLink to="/reports" className={linkClass} onClick={onLink('/reports')}>Reports</NavLink>
                 {/* Role-gated: hidden from surveyors. */}
-                {canManageUsers && <NavLink to="/users" className={linkClass}>Users</NavLink>}
+                {canManageUsers && <NavLink to="/users" className={linkClass} onClick={onLink('/users')}>Users</NavLink>}
             </div>
 
             <div className="nav-search">
@@ -48,7 +53,7 @@ const NavBar = ({ userName, role = 'Surveyor', search, onSearch, onSignOut }) =>
             </div>
 
             {/* Profile button: avatar + name/role, routes to the profile screen. */}
-            <button type="button" className="nav-profile" onClick={() => navigate('/profile')}>
+            <button type="button" className="nav-profile" onClick={() => go('/profile')}>
                 <span className="nav-avatar">{initials(userName)}</span>
                 <span className="nav-id">
                     <span className="nav-name">{userName || 'User'}</span>
@@ -58,7 +63,7 @@ const NavBar = ({ userName, role = 'Surveyor', search, onSearch, onSignOut }) =>
 
             {/* Sign-out: only rendered when a handler is supplied. */}
             {onSignOut && (
-                <button type="button" className="nav-signout" onClick={onSignOut} title="Sign out" aria-label="Sign out">
+                <button type="button" className="nav-signout" onClick={() => runGuarded(onSignOut)} title="Sign out" aria-label="Sign out">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
                     </svg>

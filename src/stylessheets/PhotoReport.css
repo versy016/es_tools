@@ -908,33 +908,34 @@
     border: 1px solid var(--border);
 }
 
-.pothole-fields {
+.pothole-add-actions {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 8px;
-    margin-top: 8px;
 }
 
-.pothole-fields label {
+/* Editable pothole name (defaults to PH01, PH02…) */
+.pothole-name {
     display: flex;
     flex-direction: column;
+    gap: 3px;
+    margin-top: 8px;
     font-size: .76rem;
     font-weight: 700;
     color: var(--ink-soft);
-    gap: 3px;
 }
 
-.pothole-fields input,
-.pothole-fields select {
-    padding: 6px 8px;
-    font-size: .85rem;
+.pothole-name input {
+    padding: 7px 9px;
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--ink);
     border: 1px solid var(--border-strong);
     border-radius: 7px;
     font-family: var(--font);
 }
 
-.pothole-fields input:focus,
-.pothole-fields select:focus {
+.pothole-name input:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px var(--primary-soft);

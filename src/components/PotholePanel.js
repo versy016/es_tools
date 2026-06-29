@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { UTILITIES, QUALITY_LEVELS } from '../report/legendColors';
+import { faTimes, faPlus, faCamera } from '@fortawesome/free-solid-svg-icons';
+import CameraCapture from './CameraCapture';
 
 // Read a File/Blob into a base64 data URL (so thumbnails can be stored/serialised
 // without a server round-trip).
@@ -12,59 +12,58 @@ const readFileAsDataURL = (file) => new Promise((resolve, reject) => {
     reader.readAsDataURL(file);
 });
 
-// Manages the pothole photos attached to a single main photo.
-// Each pothole gets an auto label (PH01, PH02...) and utility / quality level /
-// depth / comment fields, which render below the main photo in the report.
-// Controlled component: `potholes` is the source of truth, every mutation flows
-// out through onChange. A pothole = { id, label PHxx, src dataURL, utility,
-// qualityLevel A-E, depth, comment }.
+const pad2 = (n) => String(n).padStart(2, '0');
+
+// Next sequential pothole name (PH01, PH02…) based on the highest existing number,
+// so adds — including camera shots — are numbered in order. Names are then editable
+// and are NOT auto-renumbered on remove (so user edits are preserved).
+const nextLabel = (list) => {
+    const nums = list.map((p) => parseInt(String(p.label || '').replace(/\D/g, ''), 10)).filter((n) => !Number.isNaN(n));
+    return `PH${pad2((nums.length ? Math.max(...nums) : 0) + 1)}`;
+};
+
+const newId = () => `ph_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+
+// Manages the pothole photos attached to a single main photo. Each pothole is just
+// an image + an editable name (defaulting to PH01, PH02…). A pothole = { id, label, src }.
+// Controlled component: `potholes` is the source of truth, every mutation flows out
+// through onChange.
 const PotholePanel = ({ potholes, onChange }) => {
+    const [showCamera, setShowCamera] = useState(false);
 
-    // Re-derive sequential PH01, PH02… labels from list position. Run after any
-    // add/remove so labels always match the displayed order with no gaps.
-    const relabel = (list) => list.map((p, i) => ({
-        ...p,
-        label: `PH${String(i + 1).padStart(2, '0')}`,
-    }));
-
-    // Upload one or more thumbnails: read each to a data URL, build new pothole
-    // records with sensible defaults, append, then relabel. Reset the input value
-    // so picking the same file again still fires onChange.
+    // Append photos (from a file picker), auto-naming each in sequence.
     const handleAdd = async (event) => {
         const files = Array.from(event.target.files);
         if (!files.length) return;
         const dataUrls = await Promise.all(files.map(readFileAsDataURL));
-        const added = dataUrls.map((src, i) => ({
-            id: `ph_${Date.now()}_${i}`,
-            label: '',                 // filled in by relabel()
-            src,
-            utility: 'water',
-            qualityLevel: 'A',
-            depth: '',
-            comment: '',
-        }));
-        onChange(relabel([...potholes, ...added]));
+        let list = potholes;
+        dataUrls.forEach((src) => { list = [...list, { id: newId(), label: nextLabel(list), src }]; });
+        onChange(list);
         event.target.value = '';
     };
 
-    // Patch a single field on one pothole (label is unaffected, so no relabel needed).
-    const update = (id, patch) => {
-        onChange(potholes.map((p) => (p.id === id ? { ...p, ...patch } : p)));
-    };
+    // Append a single photo captured on the spot, auto-named in sequence.
+    const addCaptured = (src) => onChange([...potholes, { id: newId(), label: nextLabel(potholes), src }]);
 
-    // Delete a pothole, then relabel so the remaining PHxx numbers stay contiguous.
-    const remove = (id) => {
-        onChange(relabel(potholes.filter((p) => p.id !== id)));
-    };
+    // Edit a pothole's name.
+    const rename = (id, label) => onChange(potholes.map((p) => (p.id === id ? { ...p, label } : p)));
+
+    // Delete a pothole (no renumbering — keeps any edited names intact).
+    const remove = (id) => onChange(potholes.filter((p) => p.id !== id));
 
     return (
         <div className="pothole-panel">
             <div className="pothole-panel-header">
                 <h4>Potholes ({potholes.length})</h4>
-                <label className="pothole-add-btn">
-                    <FontAwesomeIcon icon={faPlus} /> Add pothole photo(s)
-                    <input type="file" accept="image/*" multiple onChange={handleAdd} hidden />
-                </label>
+                <div className="pothole-add-actions">
+                    <label className="pothole-add-btn">
+                        <FontAwesomeIcon icon={faPlus} /> Add photo(s)
+                        <input type="file" accept="image/*" multiple onChange={handleAdd} hidden />
+                    </label>
+                    <button type="button" className="pothole-add-btn" onClick={() => setShowCamera(true)}>
+                        <FontAwesomeIcon icon={faCamera} /> Take photo
+                    </button>
+                </div>
             </div>
 
             {potholes.length === 0 ? (
@@ -77,39 +76,19 @@ const PotholePanel = ({ potholes, onChange }) => {
                                 onClick={() => remove(p.id)}>
                                 <FontAwesomeIcon icon={faTimes} />
                             </button>
-                            <div className="pothole-label">{p.label}</div>
                             <img src={p.src} alt={p.label} className="pothole-thumb" />
-                            <div className="pothole-fields">
-                                <label>
-                                    Utility
-                                    <select value={p.utility} onChange={(e) => update(p.id, { utility: e.target.value })}>
-                                        {UTILITIES.map((u) => (
-                                            <option key={u.key} value={u.key}>{u.label}</option>
-                                        ))}
-                                    </select>
-                                </label>
-                                <label>
-                                    Quality Level
-                                    <select value={p.qualityLevel} onChange={(e) => update(p.id, { qualityLevel: e.target.value })}>
-                                        {QUALITY_LEVELS.map((q) => (
-                                            <option key={q} value={q}>{q}</option>
-                                        ))}
-                                    </select>
-                                </label>
-                                <label>
-                                    Depth / note
-                                    <input type="text" value={p.depth} placeholder="e.g. 0.6d, 0.52 Top"
-                                        onChange={(e) => update(p.id, { depth: e.target.value })} />
-                                </label>
-                                <label>
-                                    Comment
-                                    <input type="text" value={p.comment} placeholder="Optional"
-                                        onChange={(e) => update(p.id, { comment: e.target.value })} />
-                                </label>
-                            </div>
+                            <label className="pothole-name">
+                                Name
+                                <input type="text" value={p.label} placeholder="e.g. PH01"
+                                    onChange={(e) => rename(p.id, e.target.value)} />
+                            </label>
                         </div>
                     ))}
                 </div>
+            )}
+
+            {showCamera && (
+                <CameraCapture onCapture={addCaptured} onClose={() => setShowCamera(false)} />
             )}
         </div>
     );

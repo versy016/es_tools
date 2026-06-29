@@ -24,6 +24,7 @@ import Section from '../components/FormSection';
 import { useToast } from '../components/Toast';
 import { saveReport, saveDraft } from '../services/reportsService';
 import SignOffSection from '../components/SignOffSection';
+import { useNavGuard } from '../components/NavGuard';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 import { REPORT_ARCHIVE_EMAIL } from '../config';
 
@@ -42,6 +43,7 @@ const newId = () => `photo_${Date.now()}_${Math.random().toString(36).slice(2, 7
 
 const PhotoReport = ({ goBack }) => {
     const showToast = useToast();
+    const { setBlocker } = useNavGuard();
     // Cover-page form fields (mirrors the PROJECT/CLIENT detail tables in the PDF).
     const [form, setForm] = useState({
         date: today(),
@@ -302,12 +304,26 @@ const PhotoReport = ({ goBack }) => {
     const hasContent = () => photos.length > 0 || !!form.siteAddress || !!form.clientName
         || !!form.locatorName || !!form.dbydNo || utilChecklist.some((r) => r.selected);
 
-    // Leaving the tool: if there's unsaved work and no Final report was produced this
-    // session, offer to save a draft; otherwise just go back.
-    const requestExit = () => {
-        if (!finalizedRef.current && hasContent()) setShowExitPrompt(true);
-        else goBack();
+    // Leaving the tool (back button OR any navbar/profile/sign-out navigation): if
+    // there's unsaved work and no Final report was produced, offer to save a draft.
+    const pendingNavRef = useRef(null);                 // where to go once the user decides
+    const exitGuardRef = useRef(() => false);
+    exitGuardRef.current = () => !finalizedRef.current && hasContent();   // fresh each render
+    const promptOrProceed = (proceed) => {
+        if (exitGuardRef.current()) { pendingNavRef.current = proceed; setShowExitPrompt(true); return true; }
+        proceed();
+        return false;
     };
+    const requestExit = () => promptOrProceed(goBack);
+    const leaveNow = () => { const go = pendingNavRef.current || goBack; pendingNavRef.current = null; go(); };
+
+    // Register the navigation blocker so navbar/profile/sign-out also prompt.
+    useEffect(() => {
+        setBlocker((proceed) => promptOrProceed(proceed));
+        return () => setBlocker(null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const saveDraftAndExit = async () => {
         setShowExitPrompt(false);
         setLoading(true);
@@ -322,7 +338,7 @@ const PhotoReport = ({ goBack }) => {
             });
         } finally {
             setLoading(false);
-            goBack();
+            leaveNow();
         }
     };
 
@@ -539,9 +555,9 @@ const PhotoReport = ({ goBack }) => {
                             <p>You haven't generated a final report yet. Save your progress as a draft to finish it later?</p>
                             <div className="success-actions">
                                 <button type="button" className="btn-yellow" onClick={saveDraftAndExit}>Save as draft</button>
-                                <button type="button" className="btn-outline" onClick={() => { setShowExitPrompt(false); goBack(); }}>Discard &amp; leave</button>
+                                <button type="button" className="btn-outline" onClick={() => { setShowExitPrompt(false); leaveNow(); }}>Discard &amp; leave</button>
                             </div>
-                            <button type="button" className="success-close" onClick={() => setShowExitPrompt(false)}>Keep editing</button>
+                            <button type="button" className="success-close" onClick={() => { setShowExitPrompt(false); pendingNavRef.current = null; }}>Keep editing</button>
                         </div>
                     </div>
                 )}

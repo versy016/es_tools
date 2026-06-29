@@ -19,6 +19,7 @@ import { saveReport, saveDraft } from '../services/reportsService';
 import FormSection from '../components/FormSection';
 import SignOffSection from '../components/SignOffSection';
 import CameraCapture from '../components/CameraCapture';
+import { useNavGuard } from '../components/NavGuard';
 
 // Per-utility cell colours for the checklist, matched to the service-location.docx
 // template cells (fg only set where the fill is dark). White/none utilities are omitted.
@@ -39,6 +40,7 @@ const ASSET_COLORS = {
 };
 
 const ServiceLocater = ({ goBack }) => {
+    const { setBlocker } = useNavGuard();
     // project/client are mutually exclusive (selecting one disables the other).
     // After an Algolia pick these may hold the selected object, not a plain string.
     const [project, setProject] = useState('');
@@ -359,10 +361,24 @@ const ServiceLocater = ({ goBack }) => {
         return imagePreviews.length > 0 || !!address || !!email || !!v('contact') || !!v('surveyor') || checklist.some((it) => it.selected);
     };
 
-    const requestExit = () => {
-        if (!finalizedRef.current && hasContent()) setShowExitPrompt(true);
-        else goBack();
+    const pendingNavRef = useRef(null);                 // where to go once the user decides
+    const exitGuardRef = useRef(() => false);
+    exitGuardRef.current = () => !finalizedRef.current && hasContent();   // fresh each render
+    const promptOrProceed = (proceed) => {
+        if (exitGuardRef.current()) { pendingNavRef.current = proceed; setShowExitPrompt(true); return true; }
+        proceed();
+        return false;
     };
+    const requestExit = () => promptOrProceed(goBack);
+    const leaveNow = () => { const go = pendingNavRef.current || goBack; pendingNavRef.current = null; go(); };
+
+    // Register the navigation blocker so navbar/profile/sign-out also prompt.
+    useEffect(() => {
+        setBlocker((proceed) => promptOrProceed(proceed));
+        return () => setBlocker(null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const saveDraftAndExit = async () => {
         setShowExitPrompt(false);
         setLoading(true);
@@ -377,7 +393,7 @@ const ServiceLocater = ({ goBack }) => {
             });
         } finally {
             setLoading(false);
-            goBack();
+            leaveNow();
         }
     };
 
@@ -856,9 +872,9 @@ const ServiceLocater = ({ goBack }) => {
                             <p>You haven't generated a final report yet. Save your progress as a draft to finish it later?</p>
                             <div className="success-actions">
                                 <button type="button" className="btn-yellow" onClick={saveDraftAndExit}>Save as draft</button>
-                                <button type="button" className="btn-outline" onClick={() => { setShowExitPrompt(false); goBack(); }}>Discard &amp; leave</button>
+                                <button type="button" className="btn-outline" onClick={() => { setShowExitPrompt(false); leaveNow(); }}>Discard &amp; leave</button>
                             </div>
-                            <button type="button" className="success-close" onClick={() => setShowExitPrompt(false)}>Keep editing</button>
+                            <button type="button" className="success-close" onClick={() => { setShowExitPrompt(false); pendingNavRef.current = null; }}>Keep editing</button>
                         </div>
                     </div>
                 )}
