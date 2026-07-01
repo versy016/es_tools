@@ -1,7 +1,7 @@
 # ES Tools — Supabase setup runbook
 
 Run these steps once to stand up the backend for the app
-(`https://rqjywiqdeqzdzlyfmden.supabase.co`). Your **service-role key never leaves
+(`https://<project-ref>.supabase.co`). Your **service-role key never leaves
 your machine** — it's only used by the Supabase CLI / dashboard, never committed.
 
 Order: **1) database → 2) first admin → 3) template → 4) auth → 5) edge functions →
@@ -13,7 +13,7 @@ Order: **1) database → 2) first admin → 3) template → 4) auth → 5) edge 
 
 - Access to the Supabase project dashboard.
 - (For edge functions) the Supabase CLI: `npm i -g supabase`, then
-  `supabase login` and `supabase link --project-ref rqjywiqdeqzdzlyfmden`.
+  `supabase login` and `supabase link --project-ref <project-ref>`.
 
 ## 1. Database schema + RLS + buckets
 
@@ -129,7 +129,7 @@ supabase secrets set --env-file supabase/functions/.env
 Then test:
 
 ```bash
-curl -X POST https://rqjywiqdeqzdzlyfmden.supabase.co/functions/v1/docx-to-pdf \
+curl -X POST https://<project-ref>.supabase.co/functions/v1/docx-to-pdf \
   -F "file=@public/templates/service-location.docx" -o out.pdf
 ```
 
@@ -142,12 +142,12 @@ curl -X POST https://rqjywiqdeqzdzlyfmden.supabase.co/functions/v1/docx-to-pdf \
 Create `.env` (or `.env.local`) in the repo root — these are public/publishable keys:
 
 ```
-REACT_APP_SUPABASE_URL=https://rqjywiqdeqzdzlyfmden.supabase.co
+REACT_APP_SUPABASE_URL=https://<project-ref>.supabase.co
 REACT_APP_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxxxxxx
 
 # Email + PDF (the function URLs from step 5)
-REACT_APP_EMAIL_ENDPOINT=https://rqjywiqdeqzdzlyfmden.supabase.co/functions/v1/send-report
-REACT_APP_DOCX_PDF_ENDPOINT=https://rqjywiqdeqzdzlyfmden.supabase.co/functions/v1/docx-to-pdf
+REACT_APP_EMAIL_ENDPOINT=https://<project-ref>.supabase.co/functions/v1/send-report
+REACT_APP_DOCX_PDF_ENDPOINT=https://<project-ref>.supabase.co/functions/v1/docx-to-pdf
 
 # Internal archive copy of every report (flip to bgosling@ after testing)
 REACT_APP_REPORT_ARCHIVE_EMAIL=sverma@engsurveys.com.au

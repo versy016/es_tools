@@ -9,6 +9,12 @@
   # repo has warnings, so without CI=false the deploy fails. Keep warnings non-fatal.
   CI = "false"
   NODE_VERSION = "18"
+  # Every REACT_APP_* value is baked into the client bundle by design — these are all
+  # PUBLIC client-side values (Supabase publishable/anon key + public function URLs),
+  # not real secrets, so exempt them from Netlify's secret scanner (which otherwise
+  # blocks the build for finding them in the bundle). The real secrets (service-role
+  # key, SMTP password) live only on Supabase and must NEVER be a REACT_APP_* var.
+  SECRETS_SCAN_OMIT_KEYS = "REACT_APP_SUPABASE_URL,REACT_APP_SUPABASE_PUBLISHABLE_KEY,REACT_APP_EMAIL_ENDPOINT,REACT_APP_DOCX_PDF_ENDPOINT,REACT_APP_REPORT_ARCHIVE_EMAIL"
 
 # Single-page-app fallback: serve index.html for any path that isn't a real file,
 # so client-side (react-router) routes work on refresh / deep links. Real files
