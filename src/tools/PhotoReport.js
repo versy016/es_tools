@@ -259,7 +259,7 @@ const PhotoReport = ({ goBack }) => {
 
     // "Generate PDF": build + persist as a Draft (no email). Sets pdfUrl for download.
     const handleGenerate = async () => {
-        if (photos.length === 0) { alert('Add at least one photo before generating the report.'); return; }
+        if (photos.length === 0) { showToast('Add at least one photo before generating the report.', 'error'); return; }
         setLoading(true);
         try {
             const { docxBlob, pdfBlob } = await buildReport();
@@ -270,7 +270,7 @@ const PhotoReport = ({ goBack }) => {
                 : 'Report generated, but saving to your reports failed — check you are signed in (see console)');
         } catch (err) {
             console.error('Error generating PDF', err);
-            alert('Something went wrong generating the PDF. See console for details.');
+            showToast('Something went wrong generating the PDF (see console).', 'error');
         } finally {
             setLoading(false);
         }
@@ -280,13 +280,13 @@ const PhotoReport = ({ goBack }) => {
     // always added downstream), then persist as "Sent". If email isn't configured
     // the PDF is still generated/downloadable — we just skip the send.
     const handleGenerateAndEmail = async () => {
-        if (photos.length === 0) { alert('Add at least one photo before sending the report.'); return; }
-        if (emailTo && !isEmail(emailTo)) { alert('Please enter a valid client email, or leave it blank.'); return; }
+        if (photos.length === 0) { showToast('Add at least one photo before sending the report.', 'error'); return; }
+        if (emailTo && !isEmail(emailTo)) { showToast('Please enter a valid client email, or leave it blank.', 'error'); return; }
         setLoading(true);
         try {
             const { docxBlob, pdfBlob } = await buildReport();
             if (!isEmailConfigured()) {
-                alert('Email is not configured yet (REACT_APP_EMAIL_ENDPOINT is not set). The report was generated — use Download for now.');
+                showToast('Email is not configured yet — the report was generated, use Download for now.', 'error');
                 return;
             }
             const sendBlob = pdfBlob || docxBlob; // prefer the PDF; fall back to the Word file
@@ -305,7 +305,7 @@ const PhotoReport = ({ goBack }) => {
                 : 'Report emailed, but saving to your reports failed — check you are signed in (see console)');
         } catch (err) {
             console.error('Error sending email', err);
-            alert(`Could not send the email: ${err.message || 'see console for details.'}\n\nThe report was still generated — use Download.`);
+            showToast(`Could not send the email: ${err.message || 'see console'}. The report was generated — use Download.`, 'error');
         } finally {
             setLoading(false);
         }

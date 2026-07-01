@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import EmptyState from '../components/EmptyState';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { listReports, getReportUrl, getReportBlob, loadDraft, removeReport } from '../services/reportsService';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 
@@ -18,6 +19,7 @@ const Reports = () => {
     const navigate = useNavigate();
     const [filter, setFilter] = useState('All');
     const [reports, setReports] = useState(null); // null = loading, [] = loaded-but-empty
+    const [pendingDelete, setPendingDelete] = useState(null); // report queued for deletion (drives the confirm dialog)
 
     useEffect(() => { listReports().then(setReports); }, []);
 
@@ -40,12 +42,15 @@ const Reports = () => {
         navigate(draft.tool === 'service-location' ? '/tools/service-location' : '/tools/photo-report');
     };
 
-    // Delete a draft (or report) row + its stored file.
-    const del = async (r) => {
-        if (!window.confirm('Delete this draft? This cannot be undone.')) return;
+    // Delete a draft (or report) row + its stored file (after confirming).
+    const del = (r) => setPendingDelete(r);
+    const confirmDelete = async () => {
+        const r = pendingDelete;
+        setPendingDelete(null);
+        if (!r) return;
         const ok = await removeReport(r.id);
-        if (ok) { setReports((prev) => (prev || []).filter((x) => x.id !== r.id)); showToast('Draft deleted'); }
-        else showToast('Could not delete this draft');
+        if (ok) { setReports((prev) => (prev || []).filter((x) => x.id !== r.id)); showToast('Draft deleted', 'success'); }
+        else showToast('Could not delete this draft', 'error');
     };
 
     // Re-email a report: bail if email isn't configured, otherwise fetch the PDF
@@ -124,6 +129,16 @@ const Reports = () => {
                     ))}
                 </div>
             )}
+
+            <ConfirmDialog
+                open={!!pendingDelete}
+                title="Delete draft?"
+                message="This draft and its file will be permanently removed. This cannot be undone."
+                confirmLabel="Delete"
+                destructive
+                onConfirm={confirmDelete}
+                onCancel={() => setPendingDelete(null)}
+            />
         </div>
     );
 };

@@ -10,6 +10,7 @@ import {
     faCheck, faXmark, faClone, faEraser,
 } from '@fortawesome/free-solid-svg-icons';
 import { UTILITIES, getUtility } from '../report/legendColors';
+import ConfirmDialog from './ConfirmDialog';
 
 // Monotonic id generator for new shapes. Date.now() + counter avoids collisions
 // when several annotations are created within the same millisecond.
@@ -71,6 +72,7 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
     const [history, setHistory] = useState([photo.annotations || []]);
     const [histIndex, setHistIndex] = useState(0);
     const [editing, setEditing] = useState(null);  // in-progress inline text edit (overlay textarea), or null
+    const [confirmClear, setConfirmClear] = useState(false); // "clear all annotations?" dialog
 
     const stageRef = useRef(null);   // Konva Stage
     const trRef = useRef(null);      // Konva Transformer (resize/rotate handles)
@@ -159,9 +161,11 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
     };
 
     const clearAll = () => {
-        if (annotationsRef.current.length && window.confirm('Remove all annotations from this photo?')) {
-            commit([]); setSelectedId(null); setEditing(null);
-        }
+        if (annotationsRef.current.length) setConfirmClear(true);
+    };
+    const doClearAll = () => {
+        setConfirmClear(false);
+        commit([]); setSelectedId(null); setEditing(null);
     };
 
     // Current pointer position in stage coordinates (already in on-screen px).
@@ -639,6 +643,16 @@ const PhotoAnnotator = ({ photo, onSave, onCancel }) => {
                     )}
                 </div>
             </div>
+
+            <ConfirmDialog
+                open={confirmClear}
+                title="Clear annotations?"
+                message="Remove all annotations from this photo? This cannot be undone."
+                confirmLabel="Clear all"
+                destructive
+                onConfirm={doClearAll}
+                onCancel={() => setConfirmClear(false)}
+            />
 
             {/* Inline editor: a real <textarea> floated over the shape's screen position.
                 Enter (without Shift) commits, Escape cancels, blur commits. */}

@@ -5,10 +5,12 @@
 import React, { useEffect, useState } from 'react';
 import { useToast } from '../components/Toast';
 import EmptyState from '../components/EmptyState';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { listUsers, setUserActive, setUserRole, inviteUser, isConfigured } from '../services/usersService';
 
 // Assignable roles for the per-user role <select>.
 const ROLES = ['Surveyor', 'Manager', 'Admin'];
+const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
 
 const roleClass = (r) => `pill pill-role-${String(r || 'surveyor').toLowerCase()}`;
 const initials = (n) => (n || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -16,6 +18,7 @@ const initials = (n) => (n || '?').split(' ').map((w) => w[0]).slice(0, 2).join(
 const UserManagement = () => {
     const showToast = useToast();
     const [data, setData] = useState(null); // null = loading; { users, audit } once loaded
+    const [inviteOpen, setInviteOpen] = useState(false); // invite dialog visibility
     const configured = isConfigured(); // false => backend not wired; disables invite + shows hint
 
     // Re-fetch users + audit after any mutation so the UI reflects server state.
@@ -36,13 +39,12 @@ const UserManagement = () => {
         else showToast('Could not update user');
     };
 
-    // Prompt for an email and send an invite (defaults the new user to Surveyor).
-    const invite = async () => {
-        const email = window.prompt('Email address to invite:');
-        if (!email) return;
+    // Send an invite for the entered email (defaults the new user to Surveyor).
+    const doInvite = async (email) => {
+        setInviteOpen(false);
         const ok = await inviteUser(email, 'Surveyor');
-        if (ok) { showToast('Invite sent'); refresh(); }
-        else showToast('Could not send invite');
+        if (ok) { showToast('Invite sent', 'success'); refresh(); }
+        else showToast('Could not send invite', 'error');
     };
 
     // Change a user's role; no-op if unchanged.
@@ -60,7 +62,7 @@ const UserManagement = () => {
                     <h1>User management</h1>
                     <p>Manage who can access ES Tools and what they can do.</p>
                 </div>
-                <button type="button" className="btn-yellow" onClick={invite} disabled={!configured}>
+                <button type="button" className="btn-yellow" onClick={() => setInviteOpen(true)} disabled={!configured}>
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M23 11h-6" /></svg>
                     Invite user
                 </button>
@@ -125,6 +127,17 @@ const UserManagement = () => {
                     </div>
                 ))}
             </div>
+
+            <ConfirmDialog
+                open={inviteOpen}
+                title="Invite user"
+                message="Send a new team member an email invite. They'll join as a Surveyor."
+                input={{ type: 'email', label: 'Email address', placeholder: 'name@engsurveys.com.au' }}
+                validate={(v) => (isEmail(v) ? '' : 'Enter a valid email address.')}
+                confirmLabel="Send invite"
+                onConfirm={doInvite}
+                onCancel={() => setInviteOpen(false)}
+            />
         </div>
     );
 };

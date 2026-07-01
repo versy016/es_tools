@@ -20,6 +20,7 @@ import FormSection from '../components/FormSection';
 import SignOffSection from '../components/SignOffSection';
 import CameraCapture from '../components/CameraCapture';
 import { useNavGuard } from '../components/NavGuard';
+import { useToast } from '../components/Toast';
 
 // Per-utility cell colours for the checklist, matched to the service-location.docx
 // template cells (fg only set where the fill is dark). White/none utilities are omitted.
@@ -41,6 +42,7 @@ const ASSET_COLORS = {
 
 const ServiceLocater = ({ goBack }) => {
     const { setBlocker } = useNavGuard();
+    const showToast = useToast();
     // project/client are mutually exclusive (selecting one disables the other).
     // After an Algolia pick these may hold the selected object, not a plain string.
     const [project, setProject] = useState('');
@@ -406,7 +408,7 @@ const ServiceLocater = ({ goBack }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
-            alert('Please ensure all selected assets have a quality selected and at least one asset is selected.');
+            showToast('Select at least one asset and give each a quality level.', 'error');
             return;
         }
 
@@ -483,7 +485,7 @@ const ServiceLocater = ({ goBack }) => {
             setShowSuccess(true); // centred confirmation with the download options
         } catch (err) {
             console.error('Error generating the document', err);
-            alert('Something went wrong generating the report. See console for details.');
+            showToast('Something went wrong generating the report (see console).', 'error');
         } finally {
             setLoading(false);
         }
@@ -495,15 +497,15 @@ const ServiceLocater = ({ goBack }) => {
     // email is optional/validated; bails with a notice if email isn't configured.
     const handleSendEmail = async () => {
         if (!docBlob) {
-            alert('Please generate the report first.');
+            showToast('Please generate the report first.', 'error');
             return;
         }
         if (email && !isEmail(email)) {
-            alert('Please enter a valid email address, or leave it blank.');
+            showToast('Please enter a valid email address, or leave it blank.', 'error');
             return;
         }
         if (!isEmailConfigured()) {
-            alert('Email is not configured yet (REACT_APP_EMAIL_ENDPOINT is not set). Use Download for now.');
+            showToast('Email is not configured yet — use Download for now.', 'error');
             return;
         }
         setLoading(true);
@@ -516,10 +518,10 @@ const ServiceLocater = ({ goBack }) => {
                 filename: 'Service Location Field Report.docx',
                 contentBase64,
             });
-            alert('Report emailed successfully.');
+            showToast('Report emailed successfully', 'success');
         } catch (err) {
             console.error('Error sending email', err);
-            alert(`Could not send the email: ${err.message || 'see console for details.'}\n\nThe report was generated — use Download instead.`);
+            showToast(`Could not send the email: ${err.message || 'see console'}. Use Download instead.`, 'error');
         } finally {
             setLoading(false);
         }

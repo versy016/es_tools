@@ -45,6 +45,24 @@ test.describe('as an admin', () => {
         await expect(page.getByRole('heading', { name: /Your tools/i })).toHaveCount(0);
     });
 
+    test('invite uses a branded dialog (not a native prompt) with inline validation', async ({ page }) => {
+        await page.goto('/users');
+        await page.getByRole('button', { name: /Invite user/i }).click();
+
+        const dialog = page.getByRole('dialog');
+        await expect(dialog).toBeVisible();
+
+        // A bad email is rejected inline (dialog stays open).
+        await page.getByPlaceholder('name@engsurveys.com.au').fill('not-an-email');
+        await dialog.getByRole('button', { name: /Send invite/i }).click();
+        await expect(page.getByText(/valid email address/i)).toBeVisible();
+
+        // A valid email sends and surfaces a toast.
+        await page.getByPlaceholder('name@engsurveys.com.au').fill('newhire@engsurveys.com.au');
+        await dialog.getByRole('button', { name: /Send invite/i }).click();
+        await expect(page.getByText(/Invite sent/i)).toBeVisible();
+    });
+
     test('signs out back to the login screen', async ({ page }) => {
         await page.goto('/dashboard');
         await page.getByRole('button', { name: /Sign out/i }).click();
