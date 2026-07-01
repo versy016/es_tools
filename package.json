@@ -34,6 +34,12 @@
     "start": "craco start",
     "build": "craco build",
     "test": "craco test",
+    "test:ci": "craco test --watchAll=false",
+    "test:coverage": "craco test --watchAll=false --coverage",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:install": "npm i -D @playwright/test && npx playwright install chromium",
+    "cleanup:test-data": "node scripts/cleanup-test-data.mjs",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

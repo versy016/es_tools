@@ -7,6 +7,10 @@
 /.claude
 # testing
 /coverage
+# Playwright (E2E) artifacts + local browser install
+/test-results
+/playwright-report
+/playwright/.cache
 
 # production
 /build
