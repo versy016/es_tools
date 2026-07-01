@@ -37,9 +37,12 @@ Deno.serve(async (req) => {
         if (userErr || !userData?.user) return json({ ok: false, error: 'Invalid session' }, 401);
         const caller = userData.user;
 
-        // Only admins may use this function.
+        // Only admins may use this function (case-insensitive; report the seen role to aid setup).
         const { data: callerProfile } = await admin.from('profiles').select('role').eq('id', caller.id).single();
-        if ((callerProfile?.role || 'surveyor') !== 'admin') return json({ ok: false, error: 'Admins only' }, 403);
+        const callerRole = String(callerProfile?.role || 'surveyor').toLowerCase();
+        if (callerRole !== 'admin') {
+            return json({ ok: false, error: `Admins only — your account role is "${callerRole}". Ask an admin to set your role to 'admin'.` }, 403);
+        }
 
         const { action, email, role, userId, active } = await req.json();
         const writeAudit = (what: string) => admin.from('audit').insert({ who: caller.email, what });
