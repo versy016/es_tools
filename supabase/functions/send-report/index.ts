@@ -71,10 +71,16 @@ Deno.serve(async (req) => {
     const content64 = (body.contentBase64 || body.pdfBase64) as string | undefined;
     const filename = (body.filename as string) || 'report.pdf';
 
+    // Log the connection settings (NEVER the password) so the function logs show what it's
+    // actually using — the #1 way to diagnose a hang/rejection (wrong port/TLS, non-App-Password).
+    console.log(`send-report: host=${host} port=${port} tls=${secure} user=${user} recipients=${recipients.length} attachment=${content64 ? 'yes' : 'no'}`);
+
     const client = new SMTPClient({
         connection: { hostname: host, port, tls: secure, auth: { username: user, password: pass } },
     });
     try {
+        // Short timeout so the function returns a clean error BEFORE the platform kills it
+        // ("Thread killed by timeout manager" = the old code hanging with no guard).
         await withTimeout(client.send({
             from: from!,
             to: recipients,
@@ -83,13 +89,14 @@ Deno.serve(async (req) => {
             attachments: content64
                 ? [{ filename, contentType: contentTypeFor(filename), encoding: 'base64', content: content64 }]
                 : [],
-        }), 25000, 'SMTP send');
-        try { await withTimeout(client.close(), 5000, 'SMTP close'); } catch { /* ignore close errors */ }
+        }), 15000, 'SMTP send');
+        try { await withTimeout(client.close(), 4000, 'SMTP close'); } catch { /* ignore close errors */ }
+        console.log('send-report: sent OK');
         return json({ ok: true });
     } catch (err) {
         try { await client.close(); } catch { /* ignore */ }
         const msg = String((err as Error)?.message || err);
-        console.error('send-report failed:', msg);
+        console.error('send-report FAILED:', msg);
         // 502: we reached the function but the upstream SMTP server failed/timed out.
         return json({ error: `Email send failed: ${msg}` }, 502);
     }
