@@ -19,7 +19,6 @@ module.exports = {
                 '!src/reportWebVitals.js',
                 '!src/service-worker.js',
                 '!src/serviceWorkerRegistration.js',
-                '!src/aws-exports.js',
                 '!src/tools/**',
                 '!src/screens/**',
                 '!src/components/engines/**',

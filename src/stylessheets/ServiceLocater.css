@@ -1,7 +1,7 @@
 /* ============================================================
    Shared tool-form styling (Service Locater v1 + Photo Report v2)
    Modern card-based forms. Inputs are scoped to .service-locater
-   so the Amplify Authenticator login page is left untouched.
+   so these styles don't leak into the rest of the app.
    ============================================================ */
 
 .service-locater {

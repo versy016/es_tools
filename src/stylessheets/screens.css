@@ -711,11 +711,6 @@
 }
 
 /* ---- Auth (login) branding ---- */
-[data-amplify-authenticator] {
-    --amplify-components-button-primary-background-color: var(--es-yellow);
-    padding: 40px 16px;
-}
-
 .auth-header {
     display: flex;
     flex-direction: column;
