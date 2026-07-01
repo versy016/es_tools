@@ -64,6 +64,21 @@ test('a successful sign-in transitions into the dashboard', async ({ page }) => 
     await expect(page.getByRole('heading', { name: /Your tools/i })).toBeVisible();
 });
 
+test('forgot password: validates the org domain, then shows a generic sent message', async ({ page }) => {
+    await page.getByRole('button', { name: /Forgot password/i }).click();
+    await expect(page.getByRole('heading', { name: /Reset your password/i })).toBeVisible();
+
+    // Off-domain address is rejected client-side (mirrors the server guard).
+    await page.getByPlaceholder(/@engsurveys\.com\.au/i).fill('someone@gmail.com');
+    await page.getByRole('button', { name: /Send reset link/i }).click();
+    await expect(page.getByText(/@engsurveys\.com\.au email address/i)).toBeVisible();
+
+    // Org address -> generic confirmation (resetPasswordForEmail is stubbed by the auth mock).
+    await page.getByPlaceholder(/@engsurveys\.com\.au/i).fill('newhire@engsurveys.com.au');
+    await page.getByRole('button', { name: /Send reset link/i }).click();
+    await expect(page.getByText(/reset link is on its way/i)).toBeVisible();
+});
+
 test('the Google button starts the OAuth handshake for google', async ({ page }) => {
     const oauthReq = page.waitForRequest(/\/auth\/v1\/authorize\?.*provider=google/i);
     await page.getByRole('button', { name: /Continue with Google/i }).click();

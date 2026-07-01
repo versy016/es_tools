@@ -46,7 +46,11 @@ Deno.serve(async (req) => {
 
         if (action === 'invite') {
             if (!email) return json({ ok: false, error: 'Email is required' }, 400);
-            const { data, error } = await admin.auth.admin.inviteUserByEmail(email);
+            // Land invited users on the set-password screen. The branded invite email is
+            // sent by the send-email-hook function (Supabase calls it instead of templating).
+            const siteUrl = (Deno.env.get('SITE_URL') || '').replace(/\/$/, '');
+            const redirectTo = siteUrl ? `${siteUrl}/reset-password` : undefined;
+            const { data, error } = await admin.auth.admin.inviteUserByEmail(email, redirectTo ? { redirectTo } : undefined);
             if (error) throw error;
             const newId = data?.user?.id;
             if (newId && role) await admin.from('profiles').update({ role }).eq('id', newId);

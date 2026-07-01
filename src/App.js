@@ -14,6 +14,7 @@ import Dashboard from './screens/Dashboard';
 import Reports from './screens/Reports';
 import UserManagement from './screens/UserManagement';
 import Profile from './screens/Profile';
+import ResetPassword from './screens/ResetPassword';
 import ServiceLocater from './tools/ServiceLocater';
 import PhotoReport from './tools/PhotoReport';
 
@@ -63,6 +64,7 @@ const Routed = () => (
       {/* Users screen is gated behind the manager/admin RBAC guard. */}
       <Route path="/users" element={<RequireManager><UserManagement /></RequireManager>} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/tools/photo-report" element={<PhotoReportRoute />} />
       <Route path="/tools/service-location" element={<ServiceLocaterRoute />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

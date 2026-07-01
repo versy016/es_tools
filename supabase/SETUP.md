@@ -137,6 +137,38 @@ curl -X POST https://<project-ref>.supabase.co/functions/v1/docx-to-pdf \
 > an internal endpoint guarded by CORS; if you want to lock it down further, add a shared
 > secret header check in the function later.
 
+### 5b. Branded auth emails (Send Email Hook)
+
+ES Tools sends its **own branded HTML** for every auth email — invite, password reset,
+signup confirmation, magic link, email change, reauthentication — instead of Supabase's
+built-in templates. Supabase's "Send Email Hook" calls the `send-email-hook` function for
+each email; it renders the branded HTML and sends via your SMTP.
+
+1. Deploy the function:
+   ```bash
+   supabase functions deploy send-email-hook --no-verify-jwt
+   ```
+2. Enable the hook: **Authentication → Hooks → Send Email Hook** → Enable → type **HTTPS**
+   → URI `https://<project-ref>.supabase.co/functions/v1/send-email-hook`. Supabase shows a
+   **signing secret** (`v1,whsec_…`) — copy it.
+3. Set the secrets (SMTP_* are reused from `send-report`):
+   ```bash
+   supabase secrets set \
+     SEND_EMAIL_HOOK_SECRET='v1,whsec_...' \
+     ALLOWED_EMAIL_DOMAIN=engsurveys.com.au \
+     SITE_URL=https://estools.com.au
+   ```
+   - `SEND_EMAIL_HOOK_SECRET` — verifies the request really came from Supabase Auth.
+   - `ALLOWED_EMAIL_DOMAIN` — password-reset emails are only sent to this domain (abuse guard).
+   - `SITE_URL` — invited users are redirected to `<SITE_URL>/reset-password` to set a password.
+4. **Auth → URL Configuration → Redirect URLs**: allow `https://estools.com.au/reset-password`
+   (and `http://localhost:3000/reset-password` for local dev).
+
+Once the hook is enabled, Supabase **stops** sending its default templated emails — the Auth
+"SMTP provider settings" screen is no longer used for these; the hook sends via the function's
+own `SMTP_*` secrets. Verify: **Users → Invite** (branded invite arrives) and **Login → Forgot
+password** (branded reset link arrives, only for `@engsurveys.com.au`).
+
 ## 6. Frontend environment
 
 Create `.env` (or `.env.local`) in the repo root — these are public/publishable keys:

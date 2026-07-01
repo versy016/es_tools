@@ -14,9 +14,12 @@ const Logo = ({ light }) => (
     </svg>
 );
 
+// Password resets are limited to the org domain (mirrors the send-email-hook guard).
+const ORG_DOMAIN = 'engsurveys.com.au';
+
 const Login = () => {
-    const { signIn, signUp, signInWithGoogle } = useAuth();
-    const [mode, setMode] = useState('signin'); // signin | signup — drives form fields and copy
+    const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
+    const [mode, setMode] = useState('signin'); // signin | signup | forgot — drives form fields and copy
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
@@ -30,7 +33,15 @@ const Login = () => {
         e.preventDefault();
         setError(''); setInfo(''); setBusy(true);
         try {
-            if (mode === 'signin') {
+            if (mode === 'forgot') {
+                if (!email.trim().toLowerCase().endsWith(`@${ORG_DOMAIN}`)) {
+                    setError(`Use your @${ORG_DOMAIN} email address.`);
+                    return;
+                }
+                await resetPassword(email.trim());
+                // Generic message — never reveal whether the account exists.
+                setInfo('If an account exists for that email, a password reset link is on its way.');
+            } else if (mode === 'signin') {
                 const { error: err } = await signIn(email, password);
                 if (err) setError(err.message);
             } else {
@@ -42,6 +53,9 @@ const Login = () => {
             setBusy(false);
         }
     };
+
+    // Switch modes, clearing any stale error/notice.
+    const go = (m) => { setMode(m); setError(''); setInfo(''); };
 
     return (
         <div className="login">
@@ -55,7 +69,7 @@ const Login = () => {
                 <div className="login-hero">
                     <span className="login-pill">ES Tools platform</span>
                     <h1>Every field tool,<br />one login.</h1>
-                    <p>Capture photos, log potholes, locate services and send branded reports — from the truck or the office.</p>
+                    <p>Capture photos, log potholes, locate services and send branded reports, from the field or the office.</p>
                 </div>
                 <div className="login-footer">
                     <span>Service location</span><span>Photo reports</span><span>As‑built</span>
@@ -64,8 +78,8 @@ const Login = () => {
 
             <div className="login-form-wrap">
                 <form className="login-form" onSubmit={submit}>
-                    <h2>{mode === 'signin' ? 'Welcome back' : 'Create your account'}</h2>
-                    <p className="login-sub">{mode === 'signin' ? 'Sign in to your ES Tools account.' : 'Set up your ES Tools account.'}</p>
+                    <h2>{mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Create your account' : 'Reset your password'}</h2>
+                    <p className="login-sub">{mode === 'signin' ? 'Sign in to your ES Tools account.' : mode === 'signup' ? 'Set up your ES Tools account.' : 'We’ll email you a link to choose a new password.'}</p>
 
                     {mode === 'signup' && (
                         <label className="login-label">Full name
@@ -75,18 +89,27 @@ const Login = () => {
                     <label className="login-label">Email address
                         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="dave.mitchell@engsurveys.com.au" required />
                     </label>
-                    <label className="login-label">Password
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••••" required />
-                    </label>
+                    {mode !== 'forgot' && (
+                        <label className="login-label">Password
+                            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••••" required />
+                        </label>
+                    )}
+                    {mode === 'signin' && (
+                        <button type="button" onClick={() => go('forgot')}
+                            style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: '13px', cursor: 'pointer', alignSelf: 'flex-end', padding: '2px 0', marginTop: '-4px' }}>
+                            Forgot password?
+                        </button>
+                    )}
 
                     {error && <div className="login-error">{error}</div>}
                     {info && <div className="login-info">{info}</div>}
 
                     <button type="submit" className="login-submit" disabled={busy}>
-                        {busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+                        {busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link'}
                     </button>
 
-                    {/* Google OAuth — redirects out to the org identity provider. */}
+                    {/* Google OAuth — hidden on the reset screen. */}
+                    {mode !== 'forgot' && (<>
                     <div className="login-or"><span>or</span></div>
                     <button type="button" className="login-oauth" onClick={signInWithGoogle}>
                         <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
@@ -97,12 +120,13 @@ const Login = () => {
                         </svg>
                         Continue with Google
                     </button>
+                    </>)}
 
-                    {/* Toggle between sign-in and sign-up, clearing any stale error. */}
+                    {/* Mode switch links, clearing any stale error/notice. */}
                     <div className="login-switch">
-                        {mode === 'signin'
-                            ? <>New here? <button type="button" onClick={() => { setMode('signup'); setError(''); }}>Create an account</button></>
-                            : <>Have an account? <button type="button" onClick={() => { setMode('signin'); setError(''); }}>Sign in</button></>}
+                        {mode === 'signin' && <>New here? <button type="button" onClick={() => go('signup')}>Create an account</button></>}
+                        {mode === 'signup' && <>Have an account? <button type="button" onClick={() => go('signin')}>Sign in</button></>}
+                        {mode === 'forgot' && <button type="button" onClick={() => go('signin')}>Back to sign in</button>}
                     </div>
                     <div className="login-note">Protected by your organisation · Engineering Surveys Pty Ltd</div>
                 </form>

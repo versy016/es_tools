@@ -77,6 +77,15 @@ export const AuthProvider = ({ children }) => {
             supabase
                 ? supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
                 : Promise.resolve(NOT_CONFIGURED),
+        // Send a password-reset email (the branded email is sent by the send-email-hook
+        // function). The link returns the user to /reset-password to choose a new one.
+        resetPassword: (email) =>
+            supabase
+                ? supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` })
+                : Promise.resolve(NOT_CONFIGURED),
+        // Set a new password for the current (recovery/invite) session.
+        updatePassword: (password) =>
+            supabase ? supabase.auth.updateUser({ password }) : Promise.resolve(NOT_CONFIGURED),
         // Sign out; onAuthStateChange clears session/profile.
         signOut: async () => { if (supabase) await supabase.auth.signOut(); },
         // Re-fetch the current user's profile (e.g. after editing it).
