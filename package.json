@@ -61,6 +61,7 @@
     ]
   },
   "devDependencies": {
-    "@craco/craco": "^7.1.0"
+    "@craco/craco": "^7.1.0",
+    "@playwright/test": "^1.61.1"
   }
 }
