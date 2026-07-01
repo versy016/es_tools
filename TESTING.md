@@ -60,20 +60,32 @@ npm run e2e             # headless (boots `npm start` automatically)
 npm run e2e:ui          # interactive runner
 ```
 
-Specs live in `e2e/`. `e2e/smoke.spec.js` covers: the app boots to the sign-in screen,
-renders the key controls, throws no uncaught runtime errors, and the email field is
-required before submit.
+Specs live in `e2e/` (shared helpers in `e2e/fixtures.js`):
+
+- **`smoke.spec.js`** — the app boots without uncaught errors (works configured *or* not),
+  and a guard that no request escapes to a real backend host.
+- **`auth.spec.js`** — sign-in/sign-up: branded screen renders, mode toggle reveals the
+  full-name field, email is required before submit, invalid-credentials surfaces the
+  backend error, a **successful sign-in transitions into the dashboard**, and the Google
+  button kicks off the OAuth handshake.
+- **`app.spec.js`** — the **authenticated** app: lands on the dashboard tool grid,
+  navbar navigation (Reports/Users/Profile), **RBAC** (admin sees Users; a surveyor
+  doesn't and is redirected from `/users`), opening a tool tile, and sign-out.
 
 ### Why these can't populate the database
 
-Each test's `beforeEach` calls `page.route(/supabase\.co/, …)` to **intercept every
-Supabase request in the browser** and answer it locally (no session for auth, empty
-arrays for reads). Google Maps/Algolia are stubbed too. The E2E run is effectively
-offline — it never signs in and never creates a report.
+`e2e/fixtures.js` intercepts **every** Supabase/Maps/Algolia request in the browser and
+answers it locally. Signed-in flows are faked by **seeding a session into localStorage**
+(no real login) and returning fake profile/report rows — so the run never signs in for
+real and never reads or writes a real row. PostgREST `.single()` vs list shapes are
+honoured via the `Accept: …pgrst.object…` header.
 
-To extend coverage into signed-in flows, keep faking the responses (return a fake
-session + fake rows) rather than logging into the real project — that keeps every run
-data-safe.
+### Requirements / gating
+
+The authenticated + login specs need the app to be **configured** — they read
+`REACT_APP_SUPABASE_URL` from `.env.local`/`.env` to derive the project ref for the auth
+localStorage key. On a box without that env they **skip automatically** (only the
+env-agnostic smoke test runs). Nothing here contacts the real project regardless.
 
 ---
 
