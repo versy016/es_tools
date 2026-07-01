@@ -70,7 +70,13 @@ export const AuthProvider = ({ children }) => {
         // by the handle_new_user() trigger (see 0001_init.sql).
         signUp: (email, password, fullName) =>
             supabase
-                ? supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } })
+                ? supabase.auth.signUp({
+                    email,
+                    password,
+                    // full_name -> user metadata (copied to the profile row by handle_new_user);
+                    // confirming the email lands the user on the friendly /welcome screen.
+                    options: { data: { full_name: fullName }, emailRedirectTo: `${window.location.origin}/welcome` },
+                })
                 : Promise.resolve(NOT_CONFIGURED),
         // SSO via Google (Workspace); redirects back to this origin after auth.
         signInWithGoogle: () =>

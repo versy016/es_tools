@@ -69,6 +69,14 @@ test.describe('as an admin', () => {
         await expect(page.getByRole('heading', { name: /Welcome back/i })).toBeVisible();
     });
 
+    test('the post-confirmation welcome screen routes to the dashboard', async ({ page }) => {
+        await page.goto('/welcome');
+        await expect(page.getByRole('heading', { name: /all set/i })).toBeVisible();
+        await page.getByRole('button', { name: /Go to the dashboard/i }).click();
+        await expect(page).toHaveURL(/\/dashboard$/);
+        await expect(page.getByRole('heading', { name: /Your tools/i })).toBeVisible();
+    });
+
     test('deep-links: /reports renders directly when authenticated', async ({ page }) => {
         await page.goto('/reports');
         await expect(page.getByRole('heading', { name: /^Reports$/i })).toBeVisible();
