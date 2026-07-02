@@ -3,6 +3,7 @@
 // Reports come from reportsService; favourites and grid/list view are local UI state.
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useAuth } from '../auth/AuthProvider';
 import { TOOLS } from '../data/toolsRegistry';
 import ToolTile from '../components/ToolTile';
 import EmptyState from '../components/EmptyState';
@@ -31,6 +32,7 @@ const Dashboard = () => {
     const showToast = useToast();
     // search/userName come from AppShell via the router Outlet context.
     const { search = '', userName } = useOutletContext() || {};
+    const { allowedTools } = useAuth(); // null = all tools; else only these tool ids
     const [favs, setFavs] = useState(loadFavs);
     const [view, setView] = useState('grid');
     const [reports, setReports] = useState(null); // null = loading, [] = loaded-but-empty
@@ -40,8 +42,9 @@ const Dashboard = () => {
 
     const firstName = (userName || 'there').split(' ')[0];
     const q = search.trim().toLowerCase();
-    // Filter tools by the nav search term (matches name + description).
-    const tools = q ? TOOLS.filter((t) => (t.name + ' ' + t.desc).toLowerCase().includes(q)) : TOOLS;
+    // Tools this user is allowed to see (manager/admin restriction), then the search filter.
+    const visible = allowedTools ? TOOLS.filter((t) => allowedTools.includes(t.id)) : TOOLS;
+    const tools = q ? visible.filter((t) => (t.name + ' ' + t.desc).toLowerCase().includes(q)) : visible;
     const recent = (reports || []).slice(0, 4);
     const draftCount = (reports || []).filter((r) => (r.status || '').toLowerCase() === 'draft').length;
     // Most recent in-progress draft, used by the resume card.
@@ -110,7 +113,7 @@ const Dashboard = () => {
             <div className="tools-head">
                 <div className="tools-head-left">
                     <h2>Your tools</h2>
-                    <span className="tools-count">{tools.length} of {TOOLS.length}</span>
+                    <span className="tools-count">{tools.length} of {visible.length}</span>
                 </div>
                 <div className="view-toggle">
                     <button type="button" className={view === 'grid' ? 'on' : ''} onClick={() => setView('grid')} aria-label="Grid view">

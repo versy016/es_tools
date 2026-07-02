@@ -53,7 +53,7 @@ function fakeSession() {
     };
 }
 
-const profileRow = (role = 'admin') => ({
+const profileRow = (role = 'admin', tools = null) => ({
     id: USER.id,
     full_name: 'E2E Tester',
     email: USER.email,
@@ -62,13 +62,14 @@ const profileRow = (role = 'admin') => ({
     mobile: '0400000000',
     active: true,
     signature: null,
+    tools, // null = all tools; array = allowlist
     created_at: '2020-01-01T00:00:00.000Z',
 });
 
 // Intercept every backend call. `role` sets the profile role (drives RBAC); `reports`
 // is the fake reports list returned to the dashboard/reports screen.
-async function installMocks(page, { role = 'admin', reports = [] } = {}) {
-    const prof = profileRow(role);
+async function installMocks(page, { role = 'admin', reports = [], tools = null } = {}) {
+    const prof = profileRow(role, tools);
 
     await page.route(/https?:\/\/[^/]*supabase\.[^/]*\/.*/i, (route) => {
         const req = route.request();

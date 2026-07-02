@@ -61,6 +61,9 @@ export const AuthProvider = ({ children }) => {
         loading,
         userName: profile?.full_name || session?.user?.email || 'User',
         role: profile?.role || 'surveyor',     // default least-privilege role
+        // Allowed tool ids, or null = unrestricted (all tools). Set by a manager/admin.
+        allowedTools: Array.isArray(profile?.tools) ? profile.tools : null,
+        canUseTool: (id) => !Array.isArray(profile?.tools) || profile.tools.includes(id),
         // Email/password sign-in.
         signIn: (email, password) =>
             supabase

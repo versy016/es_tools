@@ -44,11 +44,29 @@ Deno.serve(async (req) => {
             return json({ ok: false, error: `Managers or admins only — your account role is "${callerRole}".` }, 403);
         }
 
-        const { action, email, role, userId, active } = await req.json();
+        const { action, email, role, userId, active, tools } = await req.json();
         const writeAudit = (what: string) => admin.from('audit').insert({ who: caller.email, what });
+
+        // Role hierarchy: manager (top) > admin > surveyor. Managers may act on anyone;
+        // admins may act on anyone EXCEPT a manager, and may not grant the manager role.
+        const isManager = callerRole === 'manager';
+        const targetRole = async (id: string) => {
+            const { data } = await admin.from('profiles').select('role').eq('id', id).single();
+            return String(data?.role || 'surveyor').toLowerCase();
+        };
+        // Block an admin from acting on a manager (a manager outranks them). Managers pass.
+        const denyIfOutranked = async (id: string) => {
+            if (isManager) return null;
+            if ((await targetRole(id)) === 'manager') {
+                return json({ ok: false, error: 'Only a manager can modify a manager.' }, 403);
+            }
+            return null;
+        };
 
         if (action === 'invite') {
             if (!email) return json({ ok: false, error: 'Email is required' }, 400);
+            const wanted = String(role || 'surveyor').toLowerCase();
+            if (!isManager && wanted === 'manager') return json({ ok: false, error: 'Only a manager can create a manager.' }, 403);
             // Land invited users on the set-password screen. The branded invite email is
             // sent by the send-email-hook function (Supabase calls it instead of templating).
             const siteUrl = (Deno.env.get('SITE_URL') || '').replace(/\/$/, '');
@@ -56,26 +74,44 @@ Deno.serve(async (req) => {
             const { data, error } = await admin.auth.admin.inviteUserByEmail(email, redirectTo ? { redirectTo } : undefined);
             if (error) throw error;
             const newId = data?.user?.id;
-            if (newId && role) await admin.from('profiles').update({ role }).eq('id', newId);
-            await writeAudit(`invited ${email}${role ? ' as ' + role : ''}`);
+            if (newId && role) await admin.from('profiles').update({ role: wanted }).eq('id', newId);
+            await writeAudit(`invited ${email}${role ? ' as ' + wanted : ''}`);
             return json({ ok: true });
         }
 
         if (action === 'setRole') {
             if (!userId || !role) return json({ ok: false, error: 'userId and role are required' }, 400);
-            const { error } = await admin.from('profiles').update({ role }).eq('id', userId);
+            const wanted = String(role).toLowerCase();
+            const denied = await denyIfOutranked(userId);
+            if (denied) return denied;
+            if (!isManager && wanted === 'manager') return json({ ok: false, error: 'Only a manager can grant the manager role.' }, 403);
+            const { error } = await admin.from('profiles').update({ role: wanted }).eq('id', userId);
             if (error) throw error;
-            await writeAudit(`set a user's role to ${role}`);
+            await writeAudit(`set a user's role to ${wanted}`);
             return json({ ok: true });
         }
 
         if (action === 'setActive') {
             if (!userId) return json({ ok: false, error: 'userId is required' }, 400);
+            const denied = await denyIfOutranked(userId);
+            if (denied) return denied;
             const { error } = await admin.from('profiles').update({ active: !!active }).eq('id', userId);
             if (error) throw error;
             // Banning disables the login; 'none' lifts it.
             await admin.auth.admin.updateUserById(userId, { ban_duration: active ? 'none' : '876000h' });
             await writeAudit(`${active ? 'activated' : 'deactivated'} a user`);
+            return json({ ok: true });
+        }
+
+        if (action === 'setTools') {
+            if (!userId) return json({ ok: false, error: 'userId is required' }, 400);
+            const denied = await denyIfOutranked(userId);
+            if (denied) return denied;
+            // `tools`: array of allowed tool ids, or null to clear the restriction (= all tools).
+            const value = Array.isArray(tools) ? tools.map(String) : null;
+            const { error } = await admin.from('profiles').update({ tools: value }).eq('id', userId);
+            if (error) throw error;
+            await writeAudit(value ? `restricted a user's tools to ${value.join(', ') || '(none)'}` : "cleared a user's tool restrictions");
             return json({ ok: true });
         }
 

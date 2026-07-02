@@ -54,6 +54,13 @@ const RequireManager = ({ children }) => {
     : <Navigate to="/dashboard" replace />;
 };
 
+// Gate a tool route by the user's tool allowlist (set by a manager/admin). Unrestricted
+// users pass; a restricted user hitting a disallowed tool is bounced to the dashboard.
+const RequireTool = ({ id, children }) => {
+  const { canUseTool } = useAuth();
+  return canUseTool(id) ? children : <Navigate to="/dashboard" replace />;
+};
+
 // Route table for an authenticated session. All routes nest under AppShell so
 // they share the nav + Outlet; unknown paths and the index redirect to /dashboard.
 const Routed = () => (
@@ -67,8 +74,8 @@ const Routed = () => (
       <Route path="/profile" element={<Profile />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/welcome" element={<Welcome />} />
-      <Route path="/tools/photo-report" element={<PhotoReportRoute />} />
-      <Route path="/tools/service-location" element={<ServiceLocaterRoute />} />
+      <Route path="/tools/photo-report" element={<RequireTool id="photo-report"><PhotoReportRoute /></RequireTool>} />
+      <Route path="/tools/service-location" element={<RequireTool id="service-location"><ServiceLocaterRoute /></RequireTool>} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Route>
   </Routes>

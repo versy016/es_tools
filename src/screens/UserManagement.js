@@ -4,21 +4,33 @@
 // re-fetch on success.
 import React, { useEffect, useState } from 'react';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../auth/AuthProvider';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { listUsers, setUserActive, setUserRole, inviteUser, isConfigured } from '../services/usersService';
+import ToolAccessDialog from '../components/ToolAccessDialog';
+import { TOOLS } from '../data/toolsRegistry';
+import { listUsers, setUserActive, setUserRole, setUserTools, inviteUser, isConfigured } from '../services/usersService';
 
 // Assignable roles for the per-user role <select>.
 const ROLES = ['Surveyor', 'Manager', 'Admin'];
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
+const toolName = (id) => (TOOLS.find((t) => t.id === id) || {}).name || id;
 
 const roleClass = (r) => `pill pill-role-${String(r || 'surveyor').toLowerCase()}`;
 const initials = (n) => (n || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
 const UserManagement = () => {
     const showToast = useToast();
+    const { role: myRole } = useAuth();
+    // A manager (top role) can manage anyone; an admin can manage anyone except a manager.
+    const canManage = (targetRole) => {
+        const me = String(myRole || '').toLowerCase();
+        const them = String(targetRole || '').toLowerCase();
+        return me === 'manager' || (me === 'admin' && them !== 'manager');
+    };
     const [data, setData] = useState(null); // null = loading; { users, audit } once loaded
     const [inviteOpen, setInviteOpen] = useState(false); // invite dialog visibility
+    const [toolUser, setToolUser] = useState(null);       // user whose tool access is being edited
     const configured = isConfigured(); // false => backend not wired; disables invite + shows hint
 
     // Re-fetch users + audit after any mutation so the UI reflects server state.
@@ -51,8 +63,18 @@ const UserManagement = () => {
     const changeRole = async (u, role) => {
         if (role === u.role) return;
         const ok = await setUserRole(u.username || u.email, role);
-        if (ok) { showToast(`${u.name || u.email} is now ${role}`); refresh(); }
-        else showToast('Could not change role');
+        if (ok) { showToast(`${u.name || u.email} is now ${role}`, 'success'); refresh(); }
+        else showToast('Could not change role', 'error');
+    };
+
+    // Save a user's tool restriction (array of ids, or null for all tools).
+    const saveTools = async (tools) => {
+        const u = toolUser;
+        setToolUser(null);
+        if (!u) return;
+        const ok = await setUserTools(u.username || u.email, tools);
+        if (ok) { showToast(`Tool access updated for ${u.name || u.email}`, 'success'); refresh(); }
+        else showToast('Could not update tool access', 'error');
     };
 
     return (
@@ -95,16 +117,26 @@ const UserManagement = () => {
                                 <div><div className="user-name">{u.name || u.email}</div><div className="user-email">{u.email}</div></div>
                             </div>
                             <select className={`role-select ${roleClass(u.role)}`} value={u.role || 'Surveyor'}
-                                onChange={(e) => changeRole(u, e.target.value)} aria-label="Change role">
+                                onChange={(e) => changeRole(u, e.target.value)} aria-label="Change role"
+                                disabled={!canManage(u.role)}>
                                 {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                             </select>
                             <div className="tool-chips">
-                                {(u.tools || []).map((t) => <span key={t} className="tool-chip">{t}</span>)}
+                                {u.tools === null
+                                    ? <span className="tool-chip">All tools</span>
+                                    : u.tools.length === 0
+                                        ? <span className="tool-chip muted">No tools</span>
+                                        : u.tools.map((id) => <span key={id} className="tool-chip">{toolName(id)}</span>)}
+                                {canManage(u.role) && (
+                                    <button type="button" className="tool-edit-btn" onClick={() => setToolUser(u)}
+                                        title="Edit tool access">Edit</button>
+                                )}
                             </div>
                             <span className={`status-dot ${u.active ? 'active' : 'inactive'}`}>
                                 <span className="dot" />{u.active ? 'Active' : 'Inactive'}
                             </span>
-                            <button type="button" className="btn-outline sm" onClick={() => toggle(u)}>
+                            <button type="button" className="btn-outline sm" onClick={() => toggle(u)}
+                                disabled={!canManage(u.role)}>
                                 {u.active ? 'Deactivate' : 'Activate'}
                             </button>
                         </div>
@@ -137,6 +169,13 @@ const UserManagement = () => {
                 confirmLabel="Send invite"
                 onConfirm={doInvite}
                 onCancel={() => setInviteOpen(false)}
+            />
+
+            <ToolAccessDialog
+                open={!!toolUser}
+                user={toolUser}
+                onSave={saveTools}
+                onCancel={() => setToolUser(null)}
             />
         </div>
     );

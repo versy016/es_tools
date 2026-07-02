@@ -23,7 +23,8 @@ export const listUsers = async () => {
                 name: p.full_name || p.email,
                 email: p.email,
                 role: (p.role || 'surveyor').replace(/^./, (c) => c.toUpperCase()),
-                tools: [],
+                // null/undefined = unrestricted (all tools); an array = the allowed tool ids.
+                tools: Array.isArray(p.tools) ? p.tools : null,
                 active: p.active !== false,
             })),
             audit: (audit || []).map((a) => ({
@@ -63,3 +64,8 @@ export const setUserRole = (userId, role) =>
 // Enable/disable a user — toggles profiles.active and bans/unbans the login server-side.
 export const setUserActive = (userId, active) =>
     adminAction('setActive', { userId, active: !!active });
+
+// Restrict a user to specific tools (array of tool ids), or pass null to clear the
+// restriction (all tools). Managers can set this for anyone; admins for non-managers.
+export const setUserTools = (userId, tools) =>
+    adminAction('setTools', { userId, tools: Array.isArray(tools) ? tools : null });

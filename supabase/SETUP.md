@@ -21,9 +21,11 @@ This creates the `profiles`, `reports`, `audit` tables, all RLS policies, the
 `reports` + `templates` storage buckets, and the new-user trigger. It is idempotent.
 
 **Option A — SQL editor (no CLI):** open the SQL editor in the dashboard, paste the
-contents of [`migrations/0001_init.sql`](migrations/0001_init.sql), and run.
+contents of [`migrations/0001_init.sql`](migrations/0001_init.sql), and run. Then do the
+same for [`migrations/0002_profile_tools.sql`](migrations/0002_profile_tools.sql) (adds the
+per-user tool allowlist). Both are idempotent.
 
-**Option B — CLI:** `supabase db push`
+**Option B — CLI:** `supabase db push` (applies every file in `migrations/`).
 
 ✅ Check: Table editor shows `profiles`, `reports`, `audit`; Storage shows the
 `reports` and `templates` buckets. This fixes the old `profiles 404` / `templates 400`.
@@ -37,9 +39,12 @@ exists, then in the SQL editor:
 update public.profiles set role = 'admin' where email = 'sverma@engsurveys.com.au';
 ```
 
-Roles are `admin` | `manager` | `surveyor`. Only `admin`/`manager` see the **Users**
-page and can invite/role/deactivate (enforced by the `admin-users` function); surveyors
-cannot. (Note: managers have full user-management rights, including making others admin.)
+Roles form a hierarchy: **`manager` (top) > `admin` > `surveyor`**. Managers and admins
+see the **Users** page and can invite / change roles / deactivate / restrict tools
+(enforced by the `admin-users` function); surveyors cannot. A **manager** can act on
+anyone (including admins) and is the only role that can create other managers or restrict
+an admin's tools; an **admin** can manage everyone **except** managers. Per-user tool
+access is stored in `profiles.tools` (NULL = all tools) — see migration `0002`.
 
 ## 3. Upload the report template (optional)
 

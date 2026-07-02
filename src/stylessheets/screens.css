@@ -814,6 +814,18 @@
 }
 .btn-danger:hover { background: #b91c1c; }
 
+/* ---- Tool-access dialog ---- */
+.tool-access-list { margin: 6px 0 2px; display: flex; flex-direction: column; }
+.tool-access-list.disabled { opacity: .45; }
+.tool-access-row { display: flex; align-items: center; gap: 10px; padding: 8px 2px; font-size: 14px; color: var(--ink); cursor: pointer; }
+.tool-access-row input { width: 16px; height: 16px; flex: none; }
+.tool-chip.muted { color: var(--muted); background: transparent; border: 1px dashed var(--line, #e5e1d8); }
+.tool-edit-btn {
+    background: none; border: none; color: var(--es-yellow, #F5A623);
+    font-size: 12px; font-weight: 700; cursor: pointer; padding: 2px 4px; margin-left: 2px;
+}
+.tool-edit-btn:hover { text-decoration: underline; }
+
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
     .tools-grid { grid-template-columns: 1fr 1fr; }

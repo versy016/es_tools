@@ -83,6 +83,21 @@ test.describe('as an admin', () => {
     });
 });
 
+test.describe('tool restrictions', () => {
+    test('a restricted user only sees allowed tools and is blocked from the rest', async ({ page }) => {
+        await authenticate(page, { role: 'admin', tools: ['service-location'] });
+        await page.goto('/dashboard');
+
+        await expect(page.getByText('Service Location Field Report')).toBeVisible();
+        await expect(page.getByText('Pothole Report Generator')).toHaveCount(0);
+
+        // Deep-linking a disallowed tool bounces back to the dashboard.
+        await page.goto('/tools/photo-report');
+        await expect(page).toHaveURL(/\/dashboard$/);
+        await expect(page.getByRole('heading', { name: /Your tools/i })).toBeVisible();
+    });
+});
+
 test.describe('RBAC — as a surveyor', () => {
     test.beforeEach(async ({ page }) => { await authenticate(page, { role: 'surveyor' }); });
 
