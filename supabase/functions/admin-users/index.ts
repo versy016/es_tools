@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
             return json({ ok: false, error: `Managers or admins only — your account role is "${callerRole}".` }, 403);
         }
 
-        const { action, email, role, userId, active, tools, redirectBase } = await req.json();
+        const { action, email, role, userId, active, tools, redirectBase, fullName } = await req.json();
         const writeAudit = (what: string) => admin.from('audit').insert({ who: caller.email, what });
 
         // Role hierarchy: manager (top) > admin > surveyor. Managers may act on anyone;
@@ -74,12 +74,19 @@ Deno.serve(async (req) => {
             // Prefer the SITE_URL secret; fall back to the inviting admin's origin. (Supabase
             // still validates redirect_to against the Redirect URLs allowlist.)
             const base = (Deno.env.get('SITE_URL') || redirectBase || '').replace(/\/$/, '');
-            const redirectTo = base ? `${base}/reset-password` : undefined;
-            const { data, error } = await admin.auth.admin.inviteUserByEmail(email, redirectTo ? { redirectTo } : undefined);
+            const name = String(fullName || '').trim();
+            const options: Record<string, unknown> = {};
+            if (base) options.redirectTo = `${base}/reset-password`;
+            if (name) options.data = { full_name: name };   // -> user metadata -> profiles via trigger
+            const { data, error } = await admin.auth.admin.inviteUserByEmail(email, Object.keys(options).length ? options : undefined);
             if (error) throw error;
             const newId = data?.user?.id;
-            if (newId && role) await admin.from('profiles').update({ role: wanted }).eq('id', newId);
-            await writeAudit(`invited ${email}${role ? ' as ' + wanted : ''}`);
+            // Set role (+ name, belt-and-braces alongside the trigger) on the new profile.
+            const patch: Record<string, unknown> = {};
+            if (role) patch.role = wanted;
+            if (name) patch.full_name = name;
+            if (newId && Object.keys(patch).length) await admin.from('profiles').update(patch).eq('id', newId);
+            await writeAudit(`invited ${name ? name + ' (' + email + ')' : email}${role ? ' as ' + wanted : ''}`);
             return json({ ok: true });
         }
 

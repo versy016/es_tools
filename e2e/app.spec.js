@@ -53,11 +53,12 @@ test.describe('as an admin', () => {
         await expect(dialog).toBeVisible();
 
         // A bad email is rejected inline (dialog stays open).
+        await page.getByPlaceholder('Dave Mitchell').fill('New Hire');
         await page.getByPlaceholder('name@engsurveys.com.au').fill('not-an-email');
         await dialog.getByRole('button', { name: /Send invite/i }).click();
         await expect(page.getByText(/valid email address/i)).toBeVisible();
 
-        // A valid email sends and surfaces a toast.
+        // Name + valid email sends and surfaces a toast.
         await page.getByPlaceholder('name@engsurveys.com.au').fill('newhire@engsurveys.com.au');
         await dialog.getByRole('button', { name: /Send invite/i }).click();
         await expect(page.getByText(/Invite sent/i)).toBeVisible();

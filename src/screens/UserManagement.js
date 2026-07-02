@@ -8,13 +8,13 @@ import { useAuth } from '../auth/AuthProvider';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ToolAccessDialog from '../components/ToolAccessDialog';
+import InviteDialog from '../components/InviteDialog';
 import LoadingOverlay from '../components/LoadingOverlay';
 import { TOOLS } from '../data/toolsRegistry';
 import { listUsers, setUserActive, setUserRole, setUserTools, deleteUser, inviteUser, isConfigured } from '../services/usersService';
 
 // Assignable roles for the per-user role <select>.
 const ROLES = ['Surveyor', 'Manager', 'Admin'];
-const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
 const toolName = (id) => (TOOLS.find((t) => t.id === id) || {}).name || id;
 
 const roleClass = (r) => `pill pill-role-${String(r || 'surveyor').toLowerCase()}`;
@@ -68,10 +68,15 @@ const UserManagement = () => {
         'Could not update user',
     );
 
-    // Send an invite for the entered email (defaults the new user to Surveyor).
-    const doInvite = (email) => {
+    // Roles the current user may assign when inviting (managers can create managers).
+    const inviteRoles = String(myRole || '').toLowerCase() === 'manager'
+        ? ['Surveyor', 'Manager', 'Admin']
+        : ['Surveyor', 'Admin'];
+
+    // Send an invite with the entered name, email and role.
+    const doInvite = ({ name, email, role }) => {
         setInviteOpen(false);
-        return withBusy('Sending invite…', () => inviteUser(email, 'Surveyor'), 'Invite sent', 'Could not send invite');
+        return withBusy('Sending invite…', () => inviteUser(email, role, name), 'Invite sent', 'Could not send invite');
     };
 
     // Change a user's role; no-op if unchanged.
@@ -188,14 +193,10 @@ const UserManagement = () => {
                 ))}
             </div>
 
-            <ConfirmDialog
+            <InviteDialog
                 open={inviteOpen}
-                title="Invite user"
-                message="Send a new team member an email invite. They'll join as a Surveyor."
-                input={{ type: 'email', label: 'Email address', placeholder: 'name@engsurveys.com.au' }}
-                validate={(v) => (isEmail(v) ? '' : 'Enter a valid email address.')}
-                confirmLabel="Send invite"
-                onConfirm={doInvite}
+                roles={inviteRoles}
+                onSubmit={doInvite}
                 onCancel={() => setInviteOpen(false)}
             />
 

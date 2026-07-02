@@ -53,13 +53,14 @@ const adminAction = async (action, payload) => {
     }
 };
 
-// Invite a brand-new user by email with an initial role (triggers the branded invite
-// email). redirectBase lets the function send them to <origin>/reset-password to set a
-// password, even when the SITE_URL secret isn't set.
-export const inviteUser = (email, role = 'surveyor') =>
+// Invite a brand-new user by email with a name + initial role (triggers the branded
+// invite email). redirectBase lets the function send them to <origin>/reset-password to
+// set a password, even when the SITE_URL secret isn't set.
+export const inviteUser = (email, role = 'surveyor', fullName = '') =>
     adminAction('invite', {
         email: String(email).trim(),
         role: String(role).toLowerCase(),
+        fullName: String(fullName || '').trim(),
         redirectBase: typeof window !== 'undefined' ? window.location.origin : undefined,
     });
 
