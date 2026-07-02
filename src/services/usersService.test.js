@@ -31,7 +31,7 @@ jest.mock('../lib/supabase', () => {
     };
 });
 
-import { isConfigured, listUsers, inviteUser, setUserRole, setUserActive } from './usersService';
+import { isConfigured, listUsers, inviteUser, setUserRole, setUserActive, deleteUser } from './usersService';
 import { __state } from '../lib/supabase';
 
 beforeEach(() => {
@@ -70,6 +70,11 @@ describe('admin actions route through the admin-users function', () => {
         __state.invokes.length = 0;
         await setUserActive('u2', 0);
         expect(__state.invokes[0].body).toEqual({ action: 'setActive', userId: 'u2', active: false });
+    });
+
+    test('deleteUser sends the deleteUser action with the user id', async () => {
+        await deleteUser('u-2');
+        expect(__state.invokes[0].body).toEqual({ action: 'deleteUser', userId: 'u-2' });
     });
 
     test('returns false (never throws) when the function errors', async () => {

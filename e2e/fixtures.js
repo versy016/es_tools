@@ -68,7 +68,7 @@ const profileRow = (role = 'admin', tools = null) => ({
 
 // Intercept every backend call. `role` sets the profile role (drives RBAC); `reports`
 // is the fake reports list returned to the dashboard/reports screen.
-async function installMocks(page, { role = 'admin', reports = [], tools = null } = {}) {
+async function installMocks(page, { role = 'admin', reports = [], tools = null, extraUsers = [] } = {}) {
     const prof = profileRow(role, tools);
 
     await page.route(/https?:\/\/[^/]*supabase\.[^/]*\/.*/i, (route) => {
@@ -86,7 +86,7 @@ async function installMocks(page, { role = 'admin', reports = [], tools = null }
         if (url.includes('/auth/v1/')) return json({});
 
         // REST tables
-        if (url.includes('/rest/v1/profiles')) return json(single ? prof : [prof]);
+        if (url.includes('/rest/v1/profiles')) return json(single ? prof : [prof, ...extraUsers]);
         if (url.includes('/rest/v1/reports')) return json(single ? (reports[0] || {}) : reports);
         if (url.includes('/rest/v1/audit')) return json([]);
         if (url.includes('/rest/v1/')) return json(single ? {} : []);

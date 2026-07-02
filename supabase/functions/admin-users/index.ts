@@ -7,6 +7,8 @@
 //   invite:    { email, role? }            -> emails an invite, sets the role on the new profile
 //   setRole:   { userId, role }            -> updates profiles.role
 //   setActive: { userId, active: boolean } -> updates profiles.active AND bans/unbans login
+//   setTools:  { userId, tools: string[]|null } -> per-user tool allowlist (null = all)
+//   deleteUser:{ userId }                  -> deletes the profile row AND the auth user
 //
 // Deploy:  supabase functions deploy admin-users         (keep JWT verification ON)
 // Secrets: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected automatically.
@@ -114,6 +116,19 @@ Deno.serve(async (req) => {
             const { error } = await admin.from('profiles').update({ tools: value }).eq('id', userId);
             if (error) throw error;
             await writeAudit(value ? `restricted a user's tools to ${value.join(', ') || '(none)'}` : "cleared a user's tool restrictions");
+            return json({ ok: true });
+        }
+
+        if (action === 'deleteUser') {
+            if (!userId) return json({ ok: false, error: 'userId is required' }, 400);
+            if (userId === caller.id) return json({ ok: false, error: 'You cannot delete your own account.' }, 400);
+            const denied = await denyIfOutranked(userId);
+            if (denied) return denied;
+            // Remove the profile row, then the auth user (deletes the login entirely).
+            await admin.from('profiles').delete().eq('id', userId);
+            const { error } = await admin.auth.admin.deleteUser(userId);
+            if (error) throw error;
+            await writeAudit('deleted a user');
             return json({ ok: true });
         }
 

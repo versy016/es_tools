@@ -826,6 +826,13 @@
 }
 .tool-edit-btn:hover { text-decoration: underline; }
 
+.user-row-actions { display: flex; align-items: center; gap: 10px; }
+.user-del-btn {
+    background: none; border: none; color: #dc2626;
+    font-size: 12px; font-weight: 700; cursor: pointer; padding: 2px 4px;
+}
+.user-del-btn:hover { text-decoration: underline; }
+
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
     .tools-grid { grid-template-columns: 1fr 1fr; }

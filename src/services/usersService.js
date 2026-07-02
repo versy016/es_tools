@@ -75,3 +75,7 @@ export const setUserActive = (userId, active) =>
 // restriction (all tools). Managers can set this for anyone; admins for non-managers.
 export const setUserTools = (userId, tools) =>
     adminAction('setTools', { userId, tools: Array.isArray(tools) ? tools : null });
+
+// Permanently delete a user — removes their profiles row AND their auth login. Cannot
+// delete your own account; admins cannot delete a manager.
+export const deleteUser = (userId) => adminAction('deleteUser', { userId });

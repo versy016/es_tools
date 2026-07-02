@@ -98,6 +98,22 @@ test.describe('tool restrictions', () => {
     });
 });
 
+test.describe('user deletion', () => {
+    test('an admin deletes another user via a branded confirm (not a native dialog)', async ({ page }) => {
+        await authenticate(page, {
+            role: 'admin',
+            extraUsers: [{ id: 'u-2', full_name: 'Old Teammate', email: 'old@engsurveys.com.au', role: 'surveyor', active: true, tools: null }],
+        });
+        await page.goto('/users');
+        await expect(page.getByText('Old Teammate')).toBeVisible();
+
+        await page.getByRole('button', { name: /^Delete$/ }).click();
+        await expect(page.getByRole('dialog')).toBeVisible();
+        await page.getByRole('button', { name: /Delete user/i }).click();
+        await expect(page.getByText(/deleted/i)).toBeVisible();
+    });
+});
+
 test.describe('RBAC — as a surveyor', () => {
     test.beforeEach(async ({ page }) => { await authenticate(page, { role: 'surveyor' }); });
 
