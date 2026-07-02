@@ -546,7 +546,7 @@ const PhotoReport = ({ goBack }) => {
                                 <FontAwesomeIcon icon={faDownload} /> PDF
                             </a>
                             <a className="btn-outline sm" href={pdfUrl} target="_blank" rel="noreferrer">
-                                <FontAwesomeIcon icon={faUpRightFromSquare} /> Open
+                                <FontAwesomeIcon icon={faUpRightFromSquare} /> Quick view
                             </a>
                         </>
                     )}

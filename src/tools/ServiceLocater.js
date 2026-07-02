@@ -9,7 +9,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../stylessheets/ServiceLocater.css';
 import '../stylessheets/PhotoReport.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faFilePdf, faPaperPlane, faDownload, faCheck, faCamera } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faFilePdf, faPaperPlane, faDownload, faCheck, faCamera, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { setupClientsSearch, setupProjectsSearch, setupContactsSearch, setupUsersSearch } from '../scripts/algoliaSearch';
 import { loadGoogleMapsScript, attachAddressAutocomplete } from '../scripts/googleMaps';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
@@ -812,9 +812,14 @@ const ServiceLocater = ({ goBack }) => {
                                     <FontAwesomeIcon icon={faDownload} /> Word
                                 </a>
                                 {pdfLink && (
-                                    <a className="btn-outline sm" href={pdfLink} download="Service Location Field Report.pdf">
-                                        <FontAwesomeIcon icon={faDownload} /> PDF
-                                    </a>
+                                    <>
+                                        <a className="btn-outline sm" href={pdfLink} download="Service Location Field Report.pdf">
+                                            <FontAwesomeIcon icon={faDownload} /> PDF
+                                        </a>
+                                        <a className="btn-outline sm" href={pdfLink} target="_blank" rel="noreferrer">
+                                            <FontAwesomeIcon icon={faUpRightFromSquare} /> Quick view
+                                        </a>
+                                    </>
                                 )}
                             </>
                         )}
@@ -845,9 +850,14 @@ const ServiceLocater = ({ goBack }) => {
                                     <FontAwesomeIcon icon={faDownload} /> Download Word
                                 </a>
                                 {pdfLink ? (
-                                    <a className="btn-outline" href={pdfLink} download="Service Location Field Report.pdf" onClick={() => setShowSuccess(false)}>
-                                        <FontAwesomeIcon icon={faFilePdf} /> Download PDF
-                                    </a>
+                                    <>
+                                        <a className="btn-outline" href={pdfLink} download="Service Location Field Report.pdf" onClick={() => setShowSuccess(false)}>
+                                            <FontAwesomeIcon icon={faFilePdf} /> Download PDF
+                                        </a>
+                                        <a className="btn-outline" href={pdfLink} target="_blank" rel="noreferrer" onClick={() => setShowSuccess(false)}>
+                                            <FontAwesomeIcon icon={faUpRightFromSquare} /> Quick view
+                                        </a>
+                                    </>
                                 ) : (
                                     <button type="button" className="btn-outline" disabled>
                                         <FontAwesomeIcon icon={faFilePdf} /> PDF unavailable
