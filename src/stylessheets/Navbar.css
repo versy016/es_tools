@@ -18,13 +18,6 @@
     cursor: pointer;
 }
 
-.nav-wordmark {
-    font-weight: 800;
-    font-size: 15px;
-    letter-spacing: -.01em;
-    color: var(--ink);
-}
-
 .nav-links {
     display: flex;
     gap: 4px;

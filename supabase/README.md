@@ -62,6 +62,7 @@ converter is configured" note.
 - Cognito login → Supabase Auth.
 - Amplify S3 (`reports/`, `profile/`) → Supabase Storage (`reports` bucket) + `reports`
   table; signature/profile in the `profiles` table.
-- `admin-service` Cognito Lambda → `profiles`/`audit` tables + RLS (no Lambda needed for
-  list/role/active; emailing invites still uses Supabase's invite or the dashboard).
-- `email-service` (SMTP) can stay as-is, or be replaced by a Supabase Edge Function later.
+- `admin-service` Cognito Lambda → the `admin-users` edge function + `profiles`/`audit`
+  tables & RLS (the old AWS Lambda dir has been removed).
+- `email-service` (SMTP) Lambda → the `send-report` edge function (the old AWS Lambda
+  dir has been removed).
