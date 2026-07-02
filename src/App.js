@@ -94,10 +94,13 @@ const ConfigureNotice = () => (
 // no env config -> setup notice; restoring session -> spinner; signed out -> Login;
 // authenticated -> the full routed app.
 const Gate = () => {
-  const { configured, loading, session } = useAuth();
+  const { configured, loading, session, mustSetPassword } = useAuth();
   if (!configured) return <ConfigureNotice />;
   if (loading) return <div className="boot-notice"><p>Loading…</p></div>;
   if (!session) return <Login />;
+  // Invite/recovery landing: force setting a password before anything else — rendered
+  // WITHOUT the nav shell so it can't be skipped by navigating away or refreshing.
+  if (mustSetPassword) return <ResetPassword />;
   return <NavGuardProvider><Routed /></NavGuardProvider>;
 };
 
