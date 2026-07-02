@@ -18,6 +18,7 @@ import { setupClientsSearch, setupContactsSearch, setupUsersSearch } from '../sc
 import { loadGoogleMapsScript, attachAddressAutocomplete } from '../scripts/googleMaps';
 import { UTILITIES, QUALITY_LEVELS } from '../report/legendColors';
 import AnnotatorSwitch from '../components/AnnotatorSwitch';
+import LoadingOverlay from '../components/LoadingOverlay';
 import CameraCapture from '../components/CameraCapture';
 import PotholePanel from '../components/PotholePanel';
 import Section from '../components/FormSection';
@@ -555,12 +556,8 @@ const PhotoReport = ({ goBack }) => {
                     </button>
                 </div>
 
-                {/* Full-screen working overlay while the Word/PDF are generated (matches the Service report) */}
-                {loading && (
-                    <div className="loading-overlay">
-                        <p><span className="spinner spinner-light" /> Working, please wait…</p>
-                    </div>
-                )}
+                {/* Full-screen working overlay while the Word/PDF are generated. */}
+                {loading && <LoadingOverlay message="Working, please wait…" />}
 
                 {/* Save-as-draft prompt when leaving with unsaved work */}
                 {showExitPrompt && (

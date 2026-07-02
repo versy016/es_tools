@@ -1,0 +1,38 @@
+/* Full-screen loading overlay (see LoadingOverlay.js). Self-contained: no dependency
+   on the tool stylesheets, so the component is portable. */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(27, 34, 48, .55);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    animation: lo-fade .15s ease;
+}
+
+@keyframes lo-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.loading-overlay-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.loading-overlay-box p { margin: 0; }
+
+.loading-overlay-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, .35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: lo-spin .7s linear infinite;
+    flex: none;
+}
+
+@keyframes lo-spin { to { transform: rotate(360deg); } }

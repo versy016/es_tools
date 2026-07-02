@@ -19,6 +19,7 @@ import { saveReport, saveDraft } from '../services/reportsService';
 import FormSection from '../components/FormSection';
 import SignOffSection from '../components/SignOffSection';
 import CameraCapture from '../components/CameraCapture';
+import LoadingOverlay from '../components/LoadingOverlay';
 import { useNavGuard } from '../components/NavGuard';
 import { useToast } from '../components/Toast';
 
@@ -826,11 +827,7 @@ const ServiceLocater = ({ goBack }) => {
                     </div>
                 </form>
                 
-                {loading && (
-                    <div className="loading-overlay">
-                        <p><span className="spinner spinner-light" /> Generating report, please wait…</p>
-                    </div>
-                )}
+                {loading && <LoadingOverlay message="Generating report, please wait…" />}
 
                 {showSuccess && (
                     <div className="success-overlay" onClick={() => setShowSuccess(false)}>

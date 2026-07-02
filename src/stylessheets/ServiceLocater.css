@@ -423,28 +423,7 @@ input {
     text-decoration: underline;
 }
 
-/* Loading overlay */
-.loading-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(27, 34, 48, .55);
-    backdrop-filter: blur(3px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 3000;
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-.loading-overlay p {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-}
-
-/* Spinner (photo upload + generating) */
+/* Spinner (photo upload) */
 .spinner {
     width: 18px;
     height: 18px;
@@ -453,13 +432,6 @@ input {
     border-radius: 50%;
     animation: es-spin .7s linear infinite;
     flex: none;
-}
-
-.spinner-light {
-    width: 22px;
-    height: 22px;
-    border-color: rgba(255, 255, 255, .35);
-    border-top-color: #fff;
 }
 
 @keyframes es-spin { to { transform: rotate(360deg); } }
