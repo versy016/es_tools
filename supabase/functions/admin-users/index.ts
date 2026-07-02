@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
             return json({ ok: false, error: `Managers or admins only — your account role is "${callerRole}".` }, 403);
         }
 
-        const { action, email, role, userId, active, tools } = await req.json();
+        const { action, email, role, userId, active, tools, redirectBase } = await req.json();
         const writeAudit = (what: string) => admin.from('audit').insert({ who: caller.email, what });
 
         // Role hierarchy: manager (top) > admin > surveyor. Managers may act on anyone;
@@ -69,8 +69,10 @@ Deno.serve(async (req) => {
             if (!isManager && wanted === 'manager') return json({ ok: false, error: 'Only a manager can create a manager.' }, 403);
             // Land invited users on the set-password screen. The branded invite email is
             // sent by the send-email-hook function (Supabase calls it instead of templating).
-            const siteUrl = (Deno.env.get('SITE_URL') || '').replace(/\/$/, '');
-            const redirectTo = siteUrl ? `${siteUrl}/reset-password` : undefined;
+            // Prefer the SITE_URL secret; fall back to the inviting admin's origin. (Supabase
+            // still validates redirect_to against the Redirect URLs allowlist.)
+            const base = (Deno.env.get('SITE_URL') || redirectBase || '').replace(/\/$/, '');
+            const redirectTo = base ? `${base}/reset-password` : undefined;
             const { data, error } = await admin.auth.admin.inviteUserByEmail(email, redirectTo ? { redirectTo } : undefined);
             if (error) throw error;
             const newId = data?.user?.id;

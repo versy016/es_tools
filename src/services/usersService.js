@@ -53,9 +53,15 @@ const adminAction = async (action, payload) => {
     }
 };
 
-// Invite a brand-new user by email with an initial role (sends the Supabase invite mail).
+// Invite a brand-new user by email with an initial role (triggers the branded invite
+// email). redirectBase lets the function send them to <origin>/reset-password to set a
+// password, even when the SITE_URL secret isn't set.
 export const inviteUser = (email, role = 'surveyor') =>
-    adminAction('invite', { email: String(email).trim(), role: String(role).toLowerCase() });
+    adminAction('invite', {
+        email: String(email).trim(),
+        role: String(role).toLowerCase(),
+        redirectBase: typeof window !== 'undefined' ? window.location.origin : undefined,
+    });
 
 // Change an existing user's role (admin | manager | surveyor).
 export const setUserRole = (userId, role) =>
