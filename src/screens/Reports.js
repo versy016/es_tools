@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
+import LoadingOverlay from '../components/LoadingOverlay';
 import { listReports, getReportUrl, getReportBlob, loadDraft, removeReport } from '../services/reportsService';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
 
@@ -20,6 +21,7 @@ const Reports = () => {
     const [filter, setFilter] = useState('All');
     const [reports, setReports] = useState(null); // null = loading, [] = loaded-but-empty
     const [pendingDelete, setPendingDelete] = useState(null); // report queued for deletion (drives the confirm dialog)
+    const [busy, setBusy] = useState(null);                   // message shown in the full-screen overlay during an action
 
     useEffect(() => { listReports().then(setReports); }, []);
 
@@ -29,17 +31,23 @@ const Reports = () => {
 
     // Open the report in a new tab via a signed URL.
     const download = async (r) => {
-        const url = await getReportUrl(r.id);
-        if (url) window.open(url, '_blank', 'noreferrer');
-        else showToast('Could not download this report');
+        setBusy('Opening report…');
+        try {
+            const url = await getReportUrl(r.id);
+            if (url) window.open(url, '_blank', 'noreferrer');
+            else showToast('Could not download this report', 'error');
+        } finally { setBusy(null); }
     };
 
     // Re-open a draft in its tool, pre-filled. The tool reads this handoff on mount.
     const cont = async (r) => {
-        const draft = await loadDraft(r.id);
-        if (!draft || !draft.tool) { showToast('Could not open this draft'); return; }
-        try { localStorage.setItem('es_tools_resume', JSON.stringify({ id: r.id, tool: draft.tool, state: draft.state })); } catch (e) { /* ignore */ }
-        navigate(draft.tool === 'service-location' ? '/tools/service-location' : '/tools/photo-report');
+        setBusy('Opening draft…');
+        try {
+            const draft = await loadDraft(r.id);
+            if (!draft || !draft.tool) { showToast('Could not open this draft', 'error'); return; }
+            try { localStorage.setItem('es_tools_resume', JSON.stringify({ id: r.id, tool: draft.tool, state: draft.state })); } catch (e) { /* ignore */ }
+            navigate(draft.tool === 'service-location' ? '/tools/service-location' : '/tools/photo-report');
+        } finally { setBusy(null); }
     };
 
     // Delete a draft (or report) row + its stored file (after confirming).
@@ -48,18 +56,22 @@ const Reports = () => {
         const r = pendingDelete;
         setPendingDelete(null);
         if (!r) return;
-        const ok = await removeReport(r.id);
-        if (ok) { setReports((prev) => (prev || []).filter((x) => x.id !== r.id)); showToast('Draft deleted', 'success'); }
-        else showToast('Could not delete this draft', 'error');
+        setBusy('Deleting…');
+        try {
+            const ok = await removeReport(r.id);
+            if (ok) { setReports((prev) => (prev || []).filter((x) => x.id !== r.id)); showToast('Draft deleted', 'success'); }
+            else showToast('Could not delete this draft', 'error');
+        } finally { setBusy(null); }
     };
 
     // Re-email a report: bail if email isn't configured, otherwise fetch the PDF
     // blob, base64-encode it, and hand it to the email service as an attachment.
     const resend = async (r) => {
-        if (!isEmailConfigured()) { showToast('Email is not configured yet'); return; }
-        const blob = await getReportBlob(r.id);
-        if (!blob) { showToast('Could not load this report'); return; }
+        if (!isEmailConfigured()) { showToast('Email is not configured yet', 'error'); return; }
+        setBusy('Sending email…');
         try {
+            const blob = await getReportBlob(r.id);
+            if (!blob) { showToast('Could not load this report', 'error'); return; }
             const contentBase64 = await blobToBase64(blob);
             await sendReportEmail({
                 to: [r.client].filter(Boolean),
@@ -68,11 +80,11 @@ const Reports = () => {
                 filename: `${r.title || 'Pothole Report'}.pdf`,
                 contentBase64,
             });
-            showToast(`Report ${r.id} re-sent`);
+            showToast('Report re-sent', 'success');
         } catch (err) {
             console.error(err);
-            showToast('Could not re-send the report');
-        }
+            showToast('Could not re-send the report', 'error');
+        } finally { setBusy(null); }
     };
 
     return (
@@ -139,6 +151,8 @@ const Reports = () => {
                 onConfirm={confirmDelete}
                 onCancel={() => setPendingDelete(null)}
             />
+
+            {busy && <LoadingOverlay message={busy} />}
         </div>
     );
 };

@@ -1,0 +1,19 @@
+/* Reusable spinner (see Spinner.js). Border width is set inline from the size prop. */
+.es-spinner {
+    display: inline-block;
+    box-sizing: border-box;
+    border-style: solid;
+    border-color: var(--border-strong, rgba(27, 34, 48, .2));
+    border-top-color: var(--es-yellow, #F5A623);
+    border-radius: 50%;
+    animation: es-spin .7s linear infinite;
+    flex: none;
+    vertical-align: middle;
+}
+
+.es-spinner-light {
+    border-color: rgba(255, 255, 255, .35);
+    border-top-color: #fff;
+}
+
+@keyframes es-spin { to { transform: rotate(360deg); } }

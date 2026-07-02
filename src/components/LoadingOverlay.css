@@ -24,15 +24,3 @@
 }
 
 .loading-overlay-box p { margin: 0; }
-
-.loading-overlay-spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid rgba(255, 255, 255, .35);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: lo-spin .7s linear infinite;
-    flex: none;
-}
-
-@keyframes lo-spin { to { transform: rotate(360deg); } }

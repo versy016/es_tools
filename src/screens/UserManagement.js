@@ -8,6 +8,7 @@ import { useAuth } from '../auth/AuthProvider';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ToolAccessDialog from '../components/ToolAccessDialog';
+import LoadingOverlay from '../components/LoadingOverlay';
 import { TOOLS } from '../data/toolsRegistry';
 import { listUsers, setUserActive, setUserRole, setUserTools, deleteUser, inviteUser, isConfigured } from '../services/usersService';
 
@@ -33,6 +34,7 @@ const UserManagement = () => {
     const [inviteOpen, setInviteOpen] = useState(false); // invite dialog visibility
     const [toolUser, setToolUser] = useState(null);       // user whose tool access is being edited
     const [delUser, setDelUser] = useState(null);         // user queued for deletion (drives the confirm dialog)
+    const [busy, setBusy] = useState(null);               // message shown in the full-screen overlay during a mutation
     const configured = isConfigured(); // false => backend not wired; disables invite + shows hint
 
     // Re-fetch users + audit after any mutation so the UI reflects server state.
@@ -46,47 +48,55 @@ const UserManagement = () => {
     const active = users.filter((u) => u.active).length;
     const pending = users.filter((u) => !u.active).length;
 
-    // Activate/deactivate a user; toast and refresh on success.
-    const toggle = async (u) => {
-        const ok = await setUserActive(u.username || u.email, !u.active);
-        if (ok) { showToast(`${u.name || u.email} ${u.active ? 'deactivated' : 'activated'}`); refresh(); }
-        else showToast('Could not update user');
+    // Run an async mutation with the full-screen overlay + a refresh on success.
+    const withBusy = async (message, fn, okToast, errToast) => {
+        setBusy(message);
+        try {
+            const ok = await fn();
+            if (ok) { showToast(okToast, 'success'); await refresh(); }
+            else showToast(errToast, 'error');
+        } finally {
+            setBusy(null);
+        }
     };
 
+    // Activate/deactivate a user.
+    const toggle = (u) => withBusy(
+        u.active ? 'Deactivating…' : 'Activating…',
+        () => setUserActive(u.username || u.email, !u.active),
+        `${u.name || u.email} ${u.active ? 'deactivated' : 'activated'}`,
+        'Could not update user',
+    );
+
     // Send an invite for the entered email (defaults the new user to Surveyor).
-    const doInvite = async (email) => {
+    const doInvite = (email) => {
         setInviteOpen(false);
-        const ok = await inviteUser(email, 'Surveyor');
-        if (ok) { showToast('Invite sent', 'success'); refresh(); }
-        else showToast('Could not send invite', 'error');
+        return withBusy('Sending invite…', () => inviteUser(email, 'Surveyor'), 'Invite sent', 'Could not send invite');
     };
 
     // Change a user's role; no-op if unchanged.
-    const changeRole = async (u, role) => {
-        if (role === u.role) return;
-        const ok = await setUserRole(u.username || u.email, role);
-        if (ok) { showToast(`${u.name || u.email} is now ${role}`, 'success'); refresh(); }
-        else showToast('Could not change role', 'error');
+    const changeRole = (u, role) => {
+        if (role === u.role) return undefined;
+        return withBusy('Updating role…', () => setUserRole(u.username || u.email, role),
+            `${u.name || u.email} is now ${role}`, 'Could not change role');
     };
 
     // Save a user's tool restriction (array of ids, or null for all tools).
-    const saveTools = async (tools) => {
+    const saveTools = (tools) => {
         const u = toolUser;
         setToolUser(null);
-        if (!u) return;
-        const ok = await setUserTools(u.username || u.email, tools);
-        if (ok) { showToast(`Tool access updated for ${u.name || u.email}`, 'success'); refresh(); }
-        else showToast('Could not update tool access', 'error');
+        if (!u) return undefined;
+        return withBusy('Updating tool access…', () => setUserTools(u.username || u.email, tools),
+            `Tool access updated for ${u.name || u.email}`, 'Could not update tool access');
     };
 
     // Permanently delete a user (profile row + auth login).
-    const doDeleteUser = async () => {
+    const doDeleteUser = () => {
         const u = delUser;
         setDelUser(null);
-        if (!u) return;
-        const ok = await deleteUser(u.username || u.email);
-        if (ok) { showToast(`${u.name || u.email} deleted`, 'success'); refresh(); }
-        else showToast('Could not delete this user', 'error');
+        if (!u) return undefined;
+        return withBusy('Deleting user…', () => deleteUser(u.username || u.email),
+            `${u.name || u.email} deleted`, 'Could not delete this user');
     };
 
     return (
@@ -207,6 +217,8 @@ const UserManagement = () => {
                 onConfirm={doDeleteUser}
                 onCancel={() => setDelUser(null)}
             />
+
+            {busy && <LoadingOverlay message={busy} />}
         </div>
     );
 };
