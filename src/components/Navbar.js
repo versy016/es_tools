@@ -6,15 +6,6 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useNavGuard } from './NavGuard';
 import '../stylessheets/Navbar.css';
 
-const Logo = () => (
-    <svg viewBox="0 0 40 40" width="28" height="28" aria-hidden="true">
-        <path d="M20 22 L11 36 M20 22 L29 36 M20 22 L20 33" stroke="#1B2230" strokeWidth="2.6" strokeLinecap="round" />
-        <rect x="17" y="15" width="6" height="9" rx="1.5" fill="#1B2230" />
-        <rect x="8" y="8" width="23" height="8" rx="4" fill="#F5A623" />
-        <circle cx="20" cy="12" r="2.4" fill="#1B2230" />
-    </svg>
-);
-
 // Derive up-to-two-letter avatar initials from a display name.
 const initials = (name) => (name || 'User').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
@@ -32,8 +23,8 @@ const NavBar = ({ userName, role = 'Surveyor', search, onSearch, onSignOut }) =>
     return (
         <nav className="nav">
             <div className="nav-brand" onClick={() => go('/dashboard')}>
-                <Logo />
-                <span className="nav-wordmark">ES Tools</span>
+                <img src="/images/ES_Logo_white_background.png" alt="Engineering Surveys"
+                    style={{ height: '30px', width: 'auto', display: 'block' }} />
             </div>
 
             <div className="nav-links">

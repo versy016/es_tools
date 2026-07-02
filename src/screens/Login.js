@@ -5,15 +5,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import '../stylessheets/Login.css';
 
-const Logo = ({ light }) => (
-    <svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true">
-        <path d="M20 22 L11 36 M20 22 L29 36 M20 22 L20 33" stroke={light ? '#fff' : '#1B2230'} strokeWidth="2.4" strokeLinecap="round" />
-        <rect x="17" y="15" width="6" height="9" rx="1.5" fill={light ? '#fff' : '#1B2230'} />
-        <rect x="8" y="8" width="23" height="8" rx="4" fill="#F5A623" />
-        <circle cx="20" cy="12" r="2.4" fill="#1B2230" />
-    </svg>
-);
-
 // Password resets are limited to the org domain (mirrors the send-email-hook guard).
 const ORG_DOMAIN = 'engsurveys.com.au';
 
@@ -63,8 +54,7 @@ const Login = () => {
                 <div className="login-circle a" />
                 <div className="login-circle b" />
                 <div className="login-brand">
-                    <Logo light />
-                    <div className="login-brand-text">ENGINEERING<br />SURVEYS</div>
+                    <img src="/images/logo.png" alt="Engineering Surveys" style={{ height: '52px', width: 'auto' }} />
                 </div>
                 <div className="login-hero">
                     <span className="login-pill">ES Tools platform</span>

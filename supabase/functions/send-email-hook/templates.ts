@@ -36,9 +36,7 @@ const layout = ({ preheader, heading, bodyHtml, fallbackUrl }: {
     <tr><td align="center">
       <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="width:480px;max-width:100%;">
         <tr><td style="padding:8px 4px 18px;">
-          <span style="font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:bold;color:${BRAND.ink};">
-            <span style="color:${BRAND.yellow};">■</span> ${BRAND.name}
-          </span>
+          <img src="https://estools.com.au/images/ES_Logo_white_background.png" alt="Engineering Surveys" width="200" style="display:block;border:0;height:auto;max-width:200px;">
         </td></tr>
         <tr><td style="background:${BRAND.card};border-radius:16px;padding:32px 30px;
                        box-shadow:0 8px 30px rgba(27,34,48,.08);font-family:Arial,Helvetica,sans-serif;">
