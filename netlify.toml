@@ -1,7 +1,11 @@
 # Netlify build + hosting config for the ES Tools React (CRA) PWA.
 
 [build]
-  command = "npm run build"
+  # Wipe CRA's webpack/babel cache before every build so REACT_APP_* env values (which are
+  # inlined at build time) are always recompiled fresh — never served stale from a cached
+  # bundle. node_modules itself stays cached, so installs remain fast. This overrides the
+  # UI "Build settings" (netlify.toml always wins).
+  command = "rm -rf node_modules/.cache && npm run build"
   publish = "build"
 
 [build.environment]
