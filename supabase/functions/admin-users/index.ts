@@ -1,6 +1,6 @@
 // Supabase Edge Function: privileged user administration.
-// Runs with the service-role key, but RE-CHECKS that the caller is an admin before
-// doing anything. The frontend calls this via supabase.functions.invoke('admin-users'),
+// Runs with the service-role key, but RE-CHECKS that the caller is an admin or manager
+// before doing anything. The frontend calls this via supabase.functions.invoke('admin-users'),
 // which attaches the caller's JWT automatically.
 //
 // Actions (JSON body): { action: 'invite'|'setRole'|'setActive', ... }
@@ -37,11 +37,11 @@ Deno.serve(async (req) => {
         if (userErr || !userData?.user) return json({ ok: false, error: 'Invalid session' }, 401);
         const caller = userData.user;
 
-        // Only admins may use this function (case-insensitive; report the seen role to aid setup).
+        // Admins and managers may use this function (case-insensitive; report the seen role to aid setup).
         const { data: callerProfile } = await admin.from('profiles').select('role').eq('id', caller.id).single();
         const callerRole = String(callerProfile?.role || 'surveyor').toLowerCase();
-        if (callerRole !== 'admin') {
-            return json({ ok: false, error: `Admins only — your account role is "${callerRole}". Ask an admin to set your role to 'admin'.` }, 403);
+        if (!['admin', 'manager'].includes(callerRole)) {
+            return json({ ok: false, error: `Managers or admins only — your account role is "${callerRole}".` }, 403);
         }
 
         const { action, email, role, userId, active } = await req.json();

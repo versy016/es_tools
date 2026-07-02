@@ -38,7 +38,8 @@ update public.profiles set role = 'admin' where email = 'sverma@engsurveys.com.a
 ```
 
 Roles are `admin` | `manager` | `surveyor`. Only `admin`/`manager` see the **Users**
-page; only `admin` can invite/role/deactivate (enforced by the `admin-users` function).
+page and can invite/role/deactivate (enforced by the `admin-users` function); surveyors
+cannot. (Note: managers have full user-management rights, including making others admin.)
 
 ## 3. Upload the report template (optional)
 
