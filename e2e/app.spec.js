@@ -64,6 +64,15 @@ test.describe('as an admin', () => {
         await expect(page.getByText(/Invite sent/i)).toBeVisible();
     });
 
+    test('opens the Shared Drive Manager and switches sub-nav views', async ({ page }) => {
+        await page.goto('/dashboard');
+        await page.getByText('Shared Drive Manager').click();
+        await expect(page).toHaveURL(/\/tools\/shared-drive-manager$/);
+        await expect(page.getByRole('heading', { name: /^Shared Drives$/i })).toBeVisible();
+        await page.getByRole('button', { name: /Members Directory/i }).click();
+        await expect(page.getByRole('heading', { name: /Members Directory/i })).toBeVisible();
+    });
+
     test('signs out back to the login screen', async ({ page }) => {
         await page.goto('/dashboard');
         await page.getByRole('button', { name: /Sign out/i }).click();
@@ -131,6 +140,12 @@ test.describe('RBAC — as a surveyor', () => {
         await page.goto('/dashboard');
         await expect(page.getByRole('heading', { name: /Your tools/i })).toBeVisible();
         await expect(page.getByRole('link', { name: /^Users$/i })).toHaveCount(0);
+    });
+
+    test('does not see the manager-only Shared Drive Manager tool', async ({ page }) => {
+        await page.goto('/dashboard');
+        await expect(page.getByRole('heading', { name: /Your tools/i })).toBeVisible();
+        await expect(page.getByText('Shared Drive Manager')).toHaveCount(0);
     });
 
     test('is redirected away from /users to the dashboard', async ({ page }) => {

@@ -36,6 +36,18 @@ export const TOOLS = [
         badgeFg: '#F5A623',
     },
     {
+        id: 'shared-drive-manager',
+        name: 'Shared Drive Manager',
+        desc: 'Create Google shared drives and manage who has access, individually or in bulk.',
+        mono: 'SD',
+        route: '/tools/shared-drive-manager',
+        live: true,
+        managerOnly: true,       // only admins/managers see + can open it
+        tag: 'Admin tool',
+        badgeBg: '#1B2230',
+        badgeFg: '#F5A623',
+    },
+    {
         id: 'site-survey',
         name: 'Site survey',
         desc: 'Record site measurements and produce a survey summary.',

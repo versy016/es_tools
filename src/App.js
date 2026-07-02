@@ -19,6 +19,7 @@ import Welcome from './screens/Welcome';
 import SetupSignature from './screens/SetupSignature';
 import ServiceLocater from './tools/ServiceLocater';
 import PhotoReport from './tools/PhotoReport';
+import SharedDriveManager from './tools/sharedDrive/SharedDriveManager';
 
 // Normalise a raw role string to a display label, defaulting to Surveyor.
 const roleLabel = (r) => (r || 'surveyor').replace(/^./, (c) => c.toUpperCase());
@@ -78,6 +79,7 @@ const Routed = () => (
       <Route path="/setup-signature" element={<SetupSignature />} />
       <Route path="/tools/photo-report" element={<RequireTool id="photo-report"><PhotoReportRoute /></RequireTool>} />
       <Route path="/tools/service-location" element={<RequireTool id="service-location"><ServiceLocaterRoute /></RequireTool>} />
+      <Route path="/tools/shared-drive-manager" element={<RequireManager><SharedDriveManager /></RequireManager>} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Route>
   </Routes>

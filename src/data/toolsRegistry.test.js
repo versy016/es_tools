@@ -2,10 +2,11 @@
 import { TOOLS } from './toolsRegistry';
 
 describe('toolsRegistry', () => {
-    test('exposes the four dashboard tools with unique ids', () => {
-        expect(TOOLS).toHaveLength(4);
+    test('exposes the dashboard tools with unique ids', () => {
+        expect(TOOLS.length).toBeGreaterThanOrEqual(4);
         const ids = TOOLS.map((t) => t.id);
         expect(new Set(ids).size).toBe(ids.length);
+        expect(ids).toContain('shared-drive-manager');
     });
 
     test('live tools have a route; "coming soon" tools do not', () => {
