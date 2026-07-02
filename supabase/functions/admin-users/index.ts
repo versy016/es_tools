@@ -69,6 +69,15 @@ Deno.serve(async (req) => {
             if (!email) return json({ ok: false, error: 'Email is required' }, 400);
             const wanted = String(role || 'surveyor').toLowerCase();
             if (!isManager && wanted === 'manager') return json({ ok: false, error: 'Only a manager can create a manager.' }, 403);
+            // Alias guard: don't create a second account for someone who already has one under
+            // an email alias (e.g. shivam.verma@ when sverma@ exists). Matched by canonical
+            // identity via the email_identity_lookup RPC. Fails soft if the RPC isn't deployed.
+            try {
+                const { data: match } = await admin.rpc('email_identity_lookup', { p_email: email });
+                if (match?.exists && String(match.email || '').toLowerCase() !== String(email).trim().toLowerCase()) {
+                    return json({ ok: false, error: `An account already exists for this person under ${match.email}. Invite cancelled to avoid a duplicate.` }, 409);
+                }
+            } catch { /* RPC missing / not deployed — fall through, the DB backstop still applies */ }
             // Land invited users on the set-password screen. The branded invite email is
             // sent by the send-email-hook function (Supabase calls it instead of templating).
             // Prefer the SITE_URL secret; fall back to the inviting admin's origin. (Supabase

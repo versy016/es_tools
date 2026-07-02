@@ -7,15 +7,16 @@ import {
 import { useAuth } from '../../auth/AuthProvider';
 import { useToast } from '../../components/Toast';
 import LoadingOverlay from '../../components/LoadingOverlay';
+import Spinner from '../../components/Spinner';
 import { Avatar, DriveMembersPanel, PersonDrivesPanel, CreateDriveModal, AddMemberModal, ConfirmModal, ResultsModal } from './overlays';
 import MemberWizard from './MemberWizard';
-import { resolvePerson, samePerson } from './data';
+import { resolvePerson, samePerson, personFromEmail } from './data';
 import * as svc from './service';
 import './SharedDriveManager.css';
 
-const PAGE = 12;
-const paginate = (arr, page) => arr.slice((page - 1) * PAGE, page * PAGE);
-const pageCount = (n) => Math.max(1, Math.ceil(n / PAGE));
+const PAGE_OPTIONS = [12, 25, 'All'];
+const paginate = (arr, page, size) => (size === 'All' ? arr : arr.slice((page - 1) * size, page * size));
+const pageCount = (n, size) => (size === 'All' ? 1 : Math.max(1, Math.ceil(n / size)));
 
 const SharedDriveManager = () => {
     const { userName } = useAuth();
@@ -27,6 +28,7 @@ const SharedDriveManager = () => {
     const [log, setLog] = useState([]);                // activity (Supabase)
     const [connected, setConnected] = useState(svc.isConnected());
     const [connecting, setConnecting] = useState(false);
+    const [reconnecting, setReconnecting] = useState(svc.isConfigured()); // silent re-auth on load
 
     const [view, setView] = useState('drives');
     const [search, setSearch] = useState('');
@@ -36,6 +38,7 @@ const SharedDriveManager = () => {
     const [memberFilter, setMemberFilter] = useState('All');
     const [drivePage, setDrivePage] = useState(1);
     const [memberPage, setMemberPage] = useState(1);
+    const [pageSize, setPageSize] = useState(12);      // 12 | 25 | 'All'
     const [logFilter, setLogFilter] = useState('All');
     const [selected, setSelected] = useState([]);
 
@@ -51,7 +54,19 @@ const SharedDriveManager = () => {
     const driveById = (id) => drives.find((d) => d.id === id);
     const memberCount = (p) => drives.filter((d) => (d.members || []).some((m) => samePerson(p.email, m.email))).length;
     const resolve = (email) => resolvePerson(email, people);
-    const emailsFor = (ids) => ids.map((id) => people.find((p) => p.id === id)?.email).filter(Boolean);
+
+    // Members Directory = the Supabase directory PLUS anyone actually on a Google drive
+    // (pulled live via listMembers) who isn't in the directory yet, tagged fromDrive so
+    // the UI can distinguish them. This is what the user sees on the Members tab.
+    const allPeople = (() => {
+        const extra = [];
+        const known = (email) => people.some((p) => samePerson(p.email, email)) || extra.some((p) => samePerson(p.email, email));
+        drives.forEach((d) => (d.members || []).forEach((m) => {
+            if (m.email && !known(m.email)) extra.push({ ...personFromEmail(m.email), fromDrive: true });
+        }));
+        return [...people, ...extra];
+    })();
+    const personById = (id) => allPeople.find((p) => p.id === id);
 
     const refreshDirectory = useCallback(() => svc.listDirectory().then(setPeople).catch(() => {}), []);
     const refreshActivity = useCallback(() => svc.listActivity().then(setLog).catch(() => {}), []);
@@ -59,6 +74,22 @@ const SharedDriveManager = () => {
 
     // Load directory + activity on mount (these don't need Google).
     useEffect(() => { refreshDirectory(); refreshActivity(); }, [refreshDirectory, refreshActivity]);
+
+    // Silently restore the Google session on load (no popup) — if it works, load drives +
+    // members automatically so a refresh doesn't force reconnecting. Falls back to the
+    // Connect button when the session can't be restored without a prompt.
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            if (!svc.isConfigured()) { setReconnecting(false); return; }
+            const ok = await svc.connectSilent();
+            if (cancelled) return;
+            if (ok) { setConnected(true); await loadDrives(); }
+            setReconnecting(false);
+        })();
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Fetch every drive + its members from Google (after the user connects).
     const loadDrives = async () => {
@@ -89,16 +120,16 @@ const SharedDriveManager = () => {
     };
 
     // ---------- mutations ----------
-    const createDrive = async (name, memberIds) => {
+    const createDrive = async (name, emails) => {
         setCreateOpen(false);
         setLoadingMsg(`Creating “${name}”…`);
         try {
             const d = await svc.createDrive(name);
-            const emails = emailsFor(memberIds);
-            for (let i = 0; i < emails.length; i++) {
-                setLoadingMsg(`Adding members ${i + 1} of ${emails.length}…`);
+            const list = Array.isArray(emails) ? emails : [];
+            for (let i = 0; i < list.length; i++) {
+                setLoadingMsg(`Adding members ${i + 1} of ${list.length}…`);
                 // eslint-disable-next-line no-await-in-loop
-                await svc.addMember(d.id, emails[i]).catch(() => {});
+                await svc.addMember(d.id, list[i]).catch(() => {});
             }
             const members = await svc.listMembers(d.id).catch(() => []);
             setDrives((ds) => [{ id: d.id, name: d.name, excluded: svc.isProtected(d.name), members }, ...ds]);
@@ -139,6 +170,25 @@ const SharedDriveManager = () => {
         finally { setLoadingMsg(null); }
     };
 
+    // Remove a person (typically one discovered on Drive but not in the directory) from
+    // every non-protected drive they're currently on.
+    const removeFromAllDrives = async (person) => {
+        setConfirm(null);
+        setLoadingMsg('Removing from drives…');
+        try {
+            let removed = 0;
+            for (const d of drives) {
+                if (d.excluded) continue;
+                const m = (d.members || []).find((x) => samePerson(person.email, x.email));
+                // eslint-disable-next-line no-await-in-loop
+                if (m) { await svc.removeMember(d.id, m.permissionId).catch(() => {}); await refreshDrive(d.id); removed++; }
+            }
+            await pushLog('remove', 'Members removed', `${actor} · ${resolve(person.email).name} removed from ${removed} drive${removed === 1 ? '' : 's'}`, 'bad');
+            showToast(`Removed from ${removed} drive${removed === 1 ? '' : 's'}`, removed > 0 ? 'success' : undefined);
+        } catch (e) { showToast(e.message || 'Could not remove', 'error'); }
+        finally { setLoadingMsg(null); }
+    };
+
     const removeMemberFromDrive = async (driveId, email) => {
         const d = driveById(driveId);
         const m = (d?.members || []).find((x) => samePerson(email, x.email));
@@ -154,9 +204,10 @@ const SharedDriveManager = () => {
     };
 
     // ---------- bulk ----------
-    const runBulk = async (mode, personIds, driveIds) => {
+    // `emails` is a list of member addresses (the wizard resolves picked people + any typed
+    // emails to addresses before calling this).
+    const runBulk = async (mode, emails, driveIds) => {
         setWizard(null);
-        const emails = emailsFor(personIds);
         const targets = driveIds.map(driveById).filter(Boolean);
         if (!emails.length || !targets.length) return;
         const skipped = []; const failed = []; let applied = 0;
@@ -209,8 +260,8 @@ const SharedDriveManager = () => {
         if (sortKey === 'members') return ((a.members || []).length - (b.members || []).length) * dir;
         return a.name.localeCompare(b.name) * dir;
     });
-    const drivePages = pageCount(drivesFiltered.length);
-    const driveRows = paginate(drivesFiltered, Math.min(drivePage, drivePages));
+    const drivePages = pageCount(drivesFiltered.length, pageSize);
+    const driveRows = paginate(drivesFiltered, Math.min(drivePage, drivePages), pageSize);
     const selectableShown = drivesFiltered.filter((d) => !d.excluded);
     const allShownSelected = selectableShown.length > 0 && selectableShown.every((d) => selected.includes(d.id));
 
@@ -221,9 +272,9 @@ const SharedDriveManager = () => {
         if (memberFilter === 'No access') return c === 0;
         return true;
     };
-    const membersFiltered = people.filter(memberMatches);
-    const memberPages = pageCount(membersFiltered.length);
-    const memberRows = paginate(membersFiltered, Math.min(memberPage, memberPages));
+    const membersFiltered = allPeople.filter(memberMatches);
+    const memberPages = pageCount(membersFiltered.length, pageSize);
+    const memberRows = paginate(membersFiltered, Math.min(memberPage, memberPages), pageSize);
 
     const logMap = { Created: 'create', Added: 'add', Removed: 'remove', Directory: 'directory' };
     const logRows = log.filter((e) => logFilter === 'All' || e.type === logMap[logFilter]);
@@ -231,16 +282,28 @@ const SharedDriveManager = () => {
     const resetPage = () => { setDrivePage(1); setMemberPage(1); };
     const go = (v) => { setView(v); setSearch(''); resetPage(); };
 
-    const Pager = ({ total, pages, page, setPage }) => (total <= PAGE ? null : (
-        <div className="sdm-pager">
-            <span>{(page - 1) * PAGE + 1}–{Math.min(page * PAGE, total)} of {total}</span>
-            <div className="sdm-pager-btns">
-                <button className="sdm-pgbtn" disabled={page <= 1} onClick={() => setPage(page - 1)}><FontAwesomeIcon icon={faChevronLeft} /></button>
-                {Array.from({ length: pages }, (_, i) => i + 1).map((n) => <button key={n} className={`sdm-pgbtn${n === page ? ' on' : ''}`} onClick={() => setPage(n)}>{n}</button>)}
-                <button className="sdm-pgbtn" disabled={page >= pages} onClick={() => setPage(page + 1)}><FontAwesomeIcon icon={faChevronRight} /></button>
+    const Pager = ({ total, pages, page, setPage }) => {
+        if (total <= 12) return null; // fits on one page at the smallest size — nothing to page
+        const from = pageSize === 'All' ? 1 : (page - 1) * pageSize + 1;
+        const to = pageSize === 'All' ? total : Math.min(page * pageSize, total);
+        return (
+            <div className="sdm-pager">
+                <span>{from}–{to} of {total}</span>
+                <div className="sdm-pager-right">
+                    <span className="sdm-perpage"><span className="sdm-perpage-label">Per page</span>
+                        <span className="sdm-seg">{PAGE_OPTIONS.map((o) => <button key={o} className={pageSize === o ? 'on' : ''} onClick={() => { setPageSize(o); resetPage(); }}>{o}</button>)}</span>
+                    </span>
+                    {pageSize !== 'All' && pages > 1 && (
+                        <div className="sdm-pager-btns">
+                            <button className="sdm-pgbtn" disabled={page <= 1} onClick={() => setPage(page - 1)}><FontAwesomeIcon icon={faChevronLeft} /></button>
+                            {Array.from({ length: pages }, (_, i) => i + 1).map((n) => <button key={n} className={`sdm-pgbtn${n === page ? ' on' : ''}`} onClick={() => setPage(n)}>{n}</button>)}
+                            <button className="sdm-pgbtn" disabled={page >= pages} onClick={() => setPage(page + 1)}><FontAwesomeIcon icon={faChevronRight} /></button>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    ));
+        );
+    };
     const SortBtn = ({ k, label }) => (
         <button className={sortKey === k ? 'on' : ''} onClick={() => { if (sortKey === k) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc')); else { setSortKey(k); setSortDir('asc'); } resetPage(); }}>
             {label}{sortKey === k && <FontAwesomeIcon icon={sortDir === 'asc' ? faArrowUp : faArrowDown} style={{ marginLeft: 6 }} />}
@@ -251,7 +314,7 @@ const SharedDriveManager = () => {
             <nav className="sdm-nav">
                 <div className="sdm-nav-label">SHARED DRIVE MANAGER</div>
                 {[['drives', faFolder, 'Shared Drives', drives.length],
-                  ['members', faUsers, 'Members Directory', people.length],
+                  ['members', faUsers, 'Members Directory', allPeople.length],
                   ['activity', faClockRotateLeft, 'Activity Log', log.length]].map(([v, ic, label, ct]) => (
                     <button key={v} className={`sdm-nav-item${view === v ? ' active' : ''}`} onClick={() => go(v)}>
                         <FontAwesomeIcon icon={ic} /> <span>{label}</span> <span className="sdm-nav-ct">{ct}</span>
@@ -278,6 +341,8 @@ const SharedDriveManager = () => {
 
                         {!configured ? (
                             <div className="sdm-empty"><FontAwesomeIcon icon={faRightToBracket} size="2x" /><h3>Google Drive isn’t configured</h3><p>Set <code>REACT_APP_GOOGLE_CLIENT_ID</code> (see supabase/SETUP.md) and reload.</p></div>
+                        ) : reconnecting ? (
+                            <div className="sdm-empty"><Spinner size={26} /><h3 style={{ marginTop: 14 }}>Reconnecting to Google…</h3></div>
                         ) : !connected ? (
                             <div className="sdm-empty">
                                 <FontAwesomeIcon icon={faRightToBracket} size="2x" />
@@ -332,7 +397,7 @@ const SharedDriveManager = () => {
 
                 {view === 'members' && (
                     <>
-                        <div className="sdm-head"><div><h1>Members Directory</h1><p>The reusable people list — separate from who’s on each drive.</p></div><div className="sdm-head-actions"><button className="sdm-btn sdm-btn-yellow" onClick={() => setAddPersonOpen(true)}><FontAwesomeIcon icon={faUserPlus} /> Add member</button></div></div>
+                        <div className="sdm-head"><div><h1>Members Directory</h1><p>Your reusable people list plus everyone currently on a Google shared drive.</p></div><div className="sdm-head-actions"><button className="sdm-btn sdm-btn-yellow" onClick={() => setAddPersonOpen(true)}><FontAwesomeIcon icon={faUserPlus} /> Add member</button></div></div>
                         <div className="sdm-toolbar"><div className="sdm-search" style={{ width: 340 }}><FontAwesomeIcon icon={faMagnifyingGlass} /><input placeholder="Search people by name or email" value={search} onChange={(e) => { setSearch(e.target.value); resetPage(); }} /></div><div><span className="sdm-filterlabel">Filter</span><span className="sdm-seg">{['All', 'On drives', 'No access'].map((f) => <button key={f} className={memberFilter === f ? 'on' : ''} onClick={() => { setMemberFilter(f); resetPage(); }}>{f}</button>)}</span></div></div>
                         {membersFiltered.length === 0 ? (
                             <div className="sdm-empty"><FontAwesomeIcon icon={faUser} size="2x" /><h3>No people found</h3><p>{search || memberFilter !== 'All' ? 'Try a different search or filter.' : 'Add your first team member.'}</p></div>
@@ -341,13 +406,17 @@ const SharedDriveManager = () => {
                                 <div className="sdm-row sdm-members-grid sdm-thead"><span>PERSON</span><span>EMAIL</span><span>ROLE</span><span>ON DRIVES</span><span>ACTIONS</span></div>
                                 {memberRows.map((p) => (
                                     <div className="sdm-row sdm-members-grid sdm-trow" key={p.id}>
-                                        <div className="sdm-cell"><Avatar person={p} lg /><span className="sdm-name">{p.name}</span></div>
+                                        <div className="sdm-cell"><Avatar person={p} lg /><span className="sdm-name">{p.name}</span>{p.fromDrive && <span className="sdm-chip sdm-chip-drive" title="On a Google drive but not in your directory">On Drive</span>}</div>
                                         <span className="sdm-sub">{p.email}</span>
                                         <span><span className="sdm-chip sdm-chip-role">Content Manager</span></span>
                                         <span className="sdm-sub">{connected ? `in ${memberCount(p)} drive${memberCount(p) === 1 ? '' : 's'}` : '—'}</span>
                                         <div className="sdm-cell">
                                             <button className="sdm-btn sdm-btn-outline sm" disabled={!connected} onClick={() => setPanel({ type: 'person', id: p.id })}>View drives</button>
-                                            <button className="sdm-iconbtn del" title="Remove from directory" onClick={() => setConfirm({ title: 'Remove from directory?', message: `Remove ${p.name} from the members directory?`, confirmLabel: 'Remove', destructive: true, option: connected ? 'Also remove from all shared drives' : null, onConfirm: (also) => removePersonFromDirectory(p, also) })}><FontAwesomeIcon icon={faTrash} /></button>
+                                            {p.fromDrive ? (
+                                                <button className="sdm-iconbtn del" title="Remove from all drives" onClick={() => setConfirm({ title: 'Remove from all drives?', message: `Remove ${p.email} from every shared drive they’re on?`, confirmLabel: 'Remove', destructive: true, onConfirm: () => removeFromAllDrives(p) })}><FontAwesomeIcon icon={faTrash} /></button>
+                                            ) : (
+                                                <button className="sdm-iconbtn del" title="Remove from directory" onClick={() => setConfirm({ title: 'Remove from directory?', message: `Remove ${p.name} from the members directory?`, confirmLabel: 'Remove', destructive: true, option: connected ? 'Also remove from all shared drives' : null, onConfirm: (also) => removePersonFromDirectory(p, also) })}><FontAwesomeIcon icon={faTrash} /></button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -379,16 +448,16 @@ const SharedDriveManager = () => {
                     onAdd={() => { const id = panel.id; setPanel(null); setWizard({ mode: 'add', contextDriveId: id }); }}
                     onRemove={(m) => removeMemberFromDrive(panel.id, m.email)} />
             )}
-            {panel?.type === 'person' && people.find((p) => p.id === panel.id) && (
-                <PersonDrivesPanel person={people.find((p) => p.id === panel.id)} drives={drives} onClose={() => setPanel(null)}
+            {panel?.type === 'person' && personById(panel.id) && (
+                <PersonDrivesPanel person={personById(panel.id)} drives={drives} onClose={() => setPanel(null)}
                     onAddToDrives={() => { const id = panel.id; setPanel(null); setWizard({ mode: 'add', lockPeople: [id] }); }}
-                    onRemoveFromDrive={(d) => removeMemberFromDrive(d.id, people.find((p) => p.id === panel.id).email)} />
+                    onRemoveFromDrive={(d) => removeMemberFromDrive(d.id, personById(panel.id).email)} />
             )}
             {wizard && (
-                <MemberWizard mode={wizard.mode} people={people} drives={drives} contextDriveId={wizard.contextDriveId} contextDriveIds={wizard.contextDriveIds} lockPeople={wizard.lockPeople}
-                    onCancel={() => setWizard(null)} onConfirm={(pids, dids) => runBulk(wizard.mode, pids, dids)} />
+                <MemberWizard mode={wizard.mode} people={allPeople} drives={drives} contextDriveId={wizard.contextDriveId} contextDriveIds={wizard.contextDriveIds} lockPeople={wizard.lockPeople}
+                    onCancel={() => setWizard(null)} onConfirm={(emails, dids) => runBulk(wizard.mode, emails, dids)} />
             )}
-            {createOpen && <CreateDriveModal existingNames={drives.map((d) => d.name)} people={people} defaultMemberIds={[]} onCancel={() => setCreateOpen(false)} onCreate={createDrive} />}
+            {createOpen && <CreateDriveModal existingNames={drives.map((d) => d.name)} people={allPeople} onCancel={() => setCreateOpen(false)} onCreate={createDrive} />}
             {addPersonOpen && <AddMemberModal existingEmails={people.map((p) => p.email)} onCancel={() => setAddPersonOpen(false)} onAdd={addPerson} />}
             {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
             {results && <ResultsModal results={results} onClose={() => setResults(null)} />}

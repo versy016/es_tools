@@ -3,6 +3,8 @@
 // post-signup "confirm your email" notice. Rendered by the Gate when signed out.
 import React, { useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
+import { lookupIdentity, resolveLoginEmail } from '../services/identityService';
+import { normalizeEmail } from '../lib/emailIdentity';
 import '../stylessheets/Login.css';
 
 // Password resets are limited to the org domain (mirrors the send-email-hook guard).
@@ -33,10 +35,28 @@ const Login = () => {
                 // Generic message — never reveal whether the account exists.
                 setInfo('If an account exists for that email, a password reset link is on its way.');
             } else if (mode === 'signin') {
-                const { error: err } = await signIn(email, password);
+                let { error: err } = await signIn(email, password);
+                // The user may have signed in with an email alias (e.g. shivam.verma@ when
+                // their account is sverma@). If the first attempt fails, resolve the alias to
+                // the real account and retry once so aliases land on the same login.
+                if (err) {
+                    const resolved = await resolveLoginEmail(email);
+                    if (normalizeEmail(resolved) !== normalizeEmail(email)) {
+                        const retry = await signIn(resolved, password);
+                        err = retry.error;
+                    }
+                }
                 if (err) setError(err.message);
             } else {
-                const { error: err } = await signUp(email, password, fullName);
+                // Guard against a duplicate account under an email alias: if a person already
+                // has an account under a different form of this address, send them to it.
+                const typed = email.trim();
+                const match = await lookupIdentity(typed);
+                if (match.exists && match.email && normalizeEmail(match.email) !== normalizeEmail(typed)) {
+                    setError(`An account already exists for you under ${match.email}. Please sign in with that address (both go to the same inbox).`);
+                    return;
+                }
+                const { error: err } = await signUp(typed, password, fullName);
                 if (err) setError(err.message);
                 else setInfo('Account created. Check your email to confirm, then sign in.');
             }

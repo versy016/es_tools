@@ -21,11 +21,22 @@ This creates the `profiles`, `reports`, `audit` tables, all RLS policies, the
 `reports` + `templates` storage buckets, and the new-user trigger. It is idempotent.
 
 **Option A — SQL editor (no CLI):** open the SQL editor in the dashboard, paste the
-contents of [`migrations/0001_init.sql`](migrations/0001_init.sql), and run. Then do the
-same for [`migrations/0002_profile_tools.sql`](migrations/0002_profile_tools.sql) (adds the
-per-user tool allowlist). Both are idempotent.
+contents of [`migrations/0001_init.sql`](migrations/0001_init.sql), and run. Then run, in
+order: [`migrations/0002_profile_tools.sql`](migrations/0002_profile_tools.sql) (per-user
+tool allowlist), [`migrations/0003_shared_drive.sql`](migrations/0003_shared_drive.sql)
+(Shared Drive Manager tables), and
+[`migrations/0004_email_identity.sql`](migrations/0004_email_identity.sql) (email-alias
+guard — see below). All are idempotent.
 
 **Option B — CLI:** `supabase db push` (applies every file in `migrations/`).
+
+**Email aliases (0004):** Workspace gives everyone two working addresses — the primary
+`finitiallastname` (sverma@) and an alias `firstname.lastname` (shivam.verma@). Migration
+`0004` adds a `canonical_email` key so both collapse to one identity, a `email_identity_lookup`
+RPC the sign-in / sign-up screens call, and a best-effort unique index. Effect: you can't
+create two accounts for the same person, and signing in with an alias lands on the existing
+account. If the unique index is skipped (a NOTICE says duplicates exist), merge/remove the
+duplicate profiles and re-run `0004`.
 
 ✅ Check: Table editor shows `profiles`, `reports`, `audit`; Storage shows the
 `reports` and `templates` buckets. This fixes the old `profiles 404` / `templates 400`.

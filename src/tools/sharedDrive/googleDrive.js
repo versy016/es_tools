@@ -10,7 +10,14 @@ const SCOPE = 'https://www.googleapis.com/auth/drive';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const API = 'https://www.googleapis.com/drive/v3';
 
-let _token = null;          // { access_token, expiresAt }
+const STORE_KEY = 'es_sdm_gtoken';
+const loadStored = () => {
+    try { const t = JSON.parse(sessionStorage.getItem(STORE_KEY) || 'null'); return t && t.expiresAt > Date.now() + 5000 ? t : null; }
+    catch { return null; }
+};
+const saveToken = (t) => { try { sessionStorage.setItem(STORE_KEY, JSON.stringify(t)); } catch { /* ignore */ } };
+
+let _token = loadStored();  // { access_token, expiresAt } — restored per-tab so a refresh keeps the session
 let _tokenClient = null;
 let _gisPromise = null;
 
@@ -43,6 +50,7 @@ export const connect = async () => {
                 callback: (resp) => {
                     if (resp.error) { reject(new Error(resp.error_description || resp.error)); return; }
                     _token = { access_token: resp.access_token, expiresAt: Date.now() + (resp.expires_in || 3600) * 1000 };
+                    saveToken(_token);
                     resolve(true);
                 },
             });
@@ -51,11 +59,37 @@ export const connect = async () => {
     });
 };
 
+// Try to get a token WITHOUT any UI (works if the user still has a Google session and has
+// consented before). Resolves true on success, false if interaction would be required —
+// used to auto-reconnect on page load. Never throws.
+export const connectSilent = async () => {
+    if (isConnected()) return true;
+    if (!GOOGLE_CLIENT_ID) return false;
+    try { await loadGis(); } catch { return false; }
+    return new Promise((resolve) => {
+        try {
+            const client = window.google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: SCOPE,
+                callback: (resp) => {
+                    if (resp && resp.access_token) {
+                        _token = { access_token: resp.access_token, expiresAt: Date.now() + (resp.expires_in || 3600) * 1000 };
+                        saveToken(_token); resolve(true);
+                    } else resolve(false);
+                },
+                error_callback: () => resolve(false),
+            });
+            client.requestAccessToken({ prompt: '' });
+        } catch { resolve(false); }
+    });
+};
+
 export const disconnect = () => {
     if (_token && window.google?.accounts?.oauth2) {
         try { window.google.accounts.oauth2.revoke(_token.access_token); } catch { /* ignore */ }
     }
     _token = null;
+    try { sessionStorage.removeItem(STORE_KEY); } catch { /* ignore */ }
 };
 
 const token = async () => {

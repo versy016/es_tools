@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#F3EFE7;color:#1B2230;-webkit-font-smoothing:antialiased}
+  input,button{font-family:inherit}
+  input:focus{outline:none}
+  @keyframes sdm-spin{to{transform:rotate(360deg)}}
+  @keyframes sdm-panelIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+  @keyframes sdm-fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes sdm-pop{from{transform:translateY(12px) scale(.98);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+  @keyframes sdm-toastIn{from{transform:translate(-50%,20px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#d8cfbe;border-radius:8px;border:2px solid #F3EFE7}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#F3EFE7;color:#1B2230;padding-bottom:80px;zoom:0.9">
+
+  <!-- ===== TOOL BODY: sidebar + main. NOTE: the global ES Tools top navbar is intentionally omitted — this tool renders inside the existing app shell. ===== -->
+  <div style="display:flex;align-items:flex-start;gap:0;max-width:1440px;margin:0 auto">
+
+    <!-- Sidebar -->
+    <div style="width:246px;flex:none;padding:26px 18px 26px 24px;position:sticky;top:0;align-self:flex-start">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.8px;color:#9a9182;padding:0 12px 10px">SHARED DRIVE MANAGER</div>
+
+      <sc-if value="{{ viewDrives }}" hint-placeholder-val="{{ true }}">
+        <div onClick="{{ goDrives }}" style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;background:#1B2230;color:#fff;cursor:pointer;margin-bottom:4px">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg>
+          <span style="font-weight:700;font-size:14px;flex:1">Shared Drives</span>
+          <span style="font-size:12px;font-weight:700;color:#F5A623">{{ totalDrives }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ notDrives }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ goDrives }}" style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;color:#6b6357;cursor:pointer;margin-bottom:4px" style-hover="background:#EFEADF">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg>
+          <span style="font-weight:600;font-size:14px;flex:1">Shared Drives</span>
+          <span style="font-size:12px;font-weight:700;color:#a99f8d">{{ totalDrives }}</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ viewMembers }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ goMembers }}" style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;background:#1B2230;color:#fff;cursor:pointer">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.4M20.5 19a5 5 0 0 0-3.2-4.7"/></svg>
+          <span style="font-weight:700;font-size:14px;flex:1">Members Directory</span>
+          <span style="font-size:12px;font-weight:700;color:#F5A623">{{ totalMembers }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ notMembers }}" hint-placeholder-val="{{ true }}">
+        <div onClick="{{ goMembers }}" style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;color:#6b6357;cursor:pointer" style-hover="background:#EFEADF">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.4M20.5 19a5 5 0 0 0-3.2-4.7"/></svg>
+          <span style="font-weight:600;font-size:14px;flex:1">Members Directory</span>
+          <span style="font-size:12px;font-weight:700;color:#a99f8d">{{ totalMembers }}</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ viewActivity }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ goActivity }}" style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;background:#1B2230;color:#fff;cursor:pointer;margin-top:4px">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>
+          <span style="font-weight:700;font-size:14px;flex:1">Activity Log</span>
+          <span style="font-size:12px;font-weight:700;color:#F5A623">{{ totalActivity }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ notActivity }}" hint-placeholder-val="{{ true }}">
+        <div onClick="{{ goActivity }}" style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;color:#6b6357;cursor:pointer;margin-top:4px" style-hover="background:#EFEADF">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>
+          <span style="font-weight:600;font-size:14px;flex:1">Activity Log</span>
+          <span style="font-size:12px;font-weight:700;color:#a99f8d">{{ totalActivity }}</span>
+        </div>
+      </sc-if>
+
+      <div style="margin-top:20px;padding:14px;border-radius:12px;background:#FBEFD6;border:1px solid #F3E0B8">
+        <div style="display:flex;align-items:center;gap:7px;font-weight:700;font-size:12.5px;color:#8a6a1a">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          Manager level access only
+        </div>
+        <div style="font-size:11.5px;color:#a07f2e;line-height:1.4;margin-top:5px">Bulk changes here affect real Google Workspace access.</div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div style="flex:1;min-width:0;padding:26px 32px 26px 8px">
+
+      <!-- ============ DRIVES VIEW ============ -->
+      <sc-if value="{{ viewDrives }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px">
+          <div>
+            <h1 style="margin:0;font-size:25px;font-weight:800;letter-spacing:-.5px">Shared Drives</h1>
+            <p style="margin:6px 0 0;color:#8A8172;font-size:14px;font-weight:500">Create drives and control who has access — one at a time or in bulk.</p>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ openAddGlobal }}" style="display:inline-flex;align-items:center;gap:8px;background:#1B2230;color:#fff;border:none;border-radius:999px;padding:11px 18px;font-weight:700;font-size:14px;cursor:pointer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 10 0M18 8v6M15 11h6"/></svg>
+              Add members
+            </button>
+            <button onClick="{{ openCreate }}" style="display:inline-flex;align-items:center;gap:8px;background:#F5A623;color:#1B2230;border:none;border-radius:999px;padding:11px 18px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(245,166,35,.35)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              Create drive
+            </button>
+          </div>
+        </div>
+
+        <!-- toolbar -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #ECE5D8;border-radius:999px;padding:10px 16px;width:320px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a9182" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+            <input value="{{ search }}" onInput="{{ onSearch }}" placeholder="Search drives by name" style="border:none;background:transparent;font-size:14px;width:100%;color:#1B2230">
+          </div>
+          <div style="flex:1"></div>
+          <span style="font-size:12.5px;color:#9a9182;font-weight:600">Sort</span>
+          <button onClick="{{ sortByName }}" style="display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #ECE5D8;border-radius:999px;padding:9px 14px;font-weight:600;font-size:13px;color:#1B2230;cursor:pointer">Name {{ sortNameArrow }}</button>
+          <button onClick="{{ sortByMembers }}" style="display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #ECE5D8;border-radius:999px;padding:9px 14px;font-weight:600;font-size:13px;color:#1B2230;cursor:pointer">Members {{ sortMembersArrow }}</button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <span style="font-size:12.5px;color:#9a9182;font-weight:700;margin-right:2px">Filter</span>
+          <sc-for list="{{ driveFilters }}" as="f" hint-placeholder-count="4">
+            <button onClick="{{ f.onClick }}" style="border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.color }}">{{ f.label }}</button>
+          </sc-for>
+        </div>
+
+        <!-- bulk action bar -->
+        <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:12px;background:#1B2230;border-radius:14px;padding:12px 16px;margin-bottom:14px;animation:sdm-pop .2s ease;box-shadow:0 8px 24px rgba(19,12,14,.18)">
+            <span style="font-weight:700;font-size:14px;color:#fff">{{ selectedLabel }}</span>
+            <div style="flex:1"></div>
+            <button onClick="{{ bulkAdd }}" style="display:inline-flex;align-items:center;gap:7px;background:#F5A623;color:#1B2230;border:none;border-radius:999px;padding:9px 16px;font-weight:700;font-size:13.5px;cursor:pointer">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add members
+            </button>
+            <button onClick="{{ bulkRemove }}" style="display:inline-flex;align-items:center;gap:7px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:9px 16px;font-weight:600;font-size:13.5px;cursor:pointer">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg>Remove members
+            </button>
+            <button onClick="{{ clearSelection }}" style="background:transparent;color:#b8bdc7;border:none;font-weight:600;font-size:13px;cursor:pointer;padding:8px">Clear</button>
+          </div>
+        </sc-if>
+
+        <!-- table -->
+        <sc-if value="{{ hasDriveRows }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#fff;border:1px solid #ECE5D8;border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(19,12,14,.05)">
+          <div style="display:grid;grid-template-columns:40px minmax(180px,2.2fr) minmax(150px,1.4fr) minmax(120px,1.1fr) minmax(150px,1.1fr);column-gap:18px;align-items:center;padding:0 18px;height:46px;background:#FAF7F0;border-bottom:1px solid #ECE5D8;font-size:11.5px;font-weight:700;letter-spacing:.4px;color:#9a9182">
+            <div><input type="checkbox" checked="{{ allSelected }}" onChange="{{ toggleSelectAll }}" style="width:16px;height:16px;accent-color:#F5A623;cursor:pointer"></div>
+            <div>DRIVE</div><div>MEMBERS</div><div>LAST ACTIVITY</div><div style="text-align:right">ACTIONS</div>
+          </div>
+          <sc-for list="{{ driveRows }}" as="row" hint-placeholder-count="8">
+            <div style="display:grid;grid-template-columns:40px minmax(180px,2.2fr) minmax(150px,1.4fr) minmax(120px,1.1fr) minmax(150px,1.1fr);column-gap:18px;align-items:center;padding:0 18px;height:64px;border-bottom:1px solid #F3EEE4" style-hover="background:#FCFAF5">
+              <div>
+                <sc-if value="{{ row.notExcluded }}" hint-placeholder-val="{{ true }}">
+                  <input type="checkbox" checked="{{ row.selected }}" onChange="{{ row.onToggle }}" style="width:16px;height:16px;accent-color:#F5A623;cursor:pointer">
+                </sc-if>
+                <sc-if value="{{ row.excluded }}" hint-placeholder-val="{{ false }}">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b8ae99" stroke-width="2.2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                </sc-if>
+              </div>
+              <div style="min-width:0;display:flex;align-items:center;gap:10px">
+                <div style="width:34px;height:34px;flex:none;border-radius:9px;background:#F3EEE4;display:flex;align-items:center;justify-content:center;color:#8A8172">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>
+                </div>
+                <div style="min-width:0">
+                  <div style="font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.name }}</div>
+                  <sc-if value="{{ row.excluded }}" hint-placeholder-val="{{ false }}">
+                    <span style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;background:#F1ECE1;color:#8a6a1a;border:1px solid #E4D8BE;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Protected
+                    </span>
+                  </sc-if>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="display:flex">
+                  <sc-for list="{{ row.avatars }}" as="a" hint-placeholder-count="3">
+                    <div style="width:28px;height:28px;border-radius:50%;background:#1B2230;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;border:2px solid #fff;margin-left:-8px">{{ a.initials }}</div>
+                  </sc-for>
+                </div>
+                <span style="font-size:13.5px;font-weight:600;color:#54607080">{{ row.memberLabel }}</span>
+              </div>
+              <div style="font-size:13px;color:#9a9182;font-weight:500">{{ row.activity }}</div>
+              <div style="display:flex;justify-content:flex-end;gap:8px">
+                <button onClick="{{ row.onView }}" style="background:#fff;border:1px solid #E2DACC;border-radius:999px;padding:7px 13px;font-weight:600;font-size:13px;color:#1B2230;cursor:pointer">View members</button>
+                <button onClick="{{ row.onAdd }}" title="Add member" style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;background:#FBEFD6;border:1px solid #F3E0B8;border-radius:999px;color:#8a6a1a;cursor:pointer">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ drivePg.show }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:#FAF7F0;border-top:1px solid #ECE5D8">
+              <span style="font-size:12.5px;color:#8A8172;font-weight:600">{{ drivePg.label }}</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <button onClick="{{ drivePg.onPrev }}" style="width:32px;height:32px;border-radius:9px;border:1px solid #E2DACC;background:#fff;color:#1B2230;cursor:pointer;font-size:17px;line-height:1;opacity:{{ drivePg.prevOpacity }};display:flex;align-items:center;justify-content:center">‹</button>
+                <sc-for list="{{ drivePg.pages }}" as="pg" hint-placeholder-count="3">
+                  <button onClick="{{ pg.onClick }}" style="min-width:32px;height:32px;padding:0 6px;border-radius:9px;border:1px solid {{ pg.border }};background:{{ pg.bg }};color:{{ pg.color }};cursor:pointer;font-weight:700;font-size:13px">{{ pg.n }}</button>
+                </sc-for>
+                <button onClick="{{ drivePg.onNext }}" style="width:32px;height:32px;border-radius:9px;border:1px solid #E2DACC;background:#fff;color:#1B2230;cursor:pointer;font-size:17px;line-height:1;opacity:{{ drivePg.nextOpacity }};display:flex;align-items:center;justify-content:center">›</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+        <!-- empty (drives) -->
+        <sc-if value="{{ noDriveRows }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff;border:1px dashed #E2DACC;border-radius:16px;padding:56px 24px;text-align:center">
+            <div style="width:60px;height:60px;border-radius:16px;background:#F3EEE4;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#b8ae99">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>
+            </div>
+            <div style="font-weight:800;font-size:17px">{{ emptyDrivesTitle }}</div>
+            <div style="color:#8A8172;font-size:14px;margin-top:6px">{{ emptyDrivesText }}</div>
+            <button onClick="{{ openCreate }}" style="margin-top:18px;background:#F5A623;color:#1B2230;border:none;border-radius:999px;padding:11px 20px;font-weight:700;font-size:14px;cursor:pointer">Create drive</button>
+          </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ============ MEMBERS DIRECTORY VIEW ============ -->
+      <sc-if value="{{ viewMembers }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px">
+          <div>
+            <h1 style="margin:0;font-size:25px;font-weight:800;letter-spacing:-.5px">Members Directory</h1>
+            <p style="margin:6px 0 0;color:#8A8172;font-size:14px;font-weight:500">Your reusable people list. Add people here, then assign them to drives.</p>
+          </div>
+          <button onClick="{{ openAddPerson }}" style="display:inline-flex;align-items:center;gap:8px;background:#F5A623;color:#1B2230;border:none;border-radius:999px;padding:11px 18px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(245,166,35,.35)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add member
+          </button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #ECE5D8;border-radius:999px;padding:10px 16px;width:340px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a9182" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+            <input value="{{ search }}" onInput="{{ onSearch }}" placeholder="Search people by name or email" style="border:none;background:transparent;font-size:14px;width:100%;color:#1B2230">
+          </div>
+          <div style="flex:1"></div>
+          <span style="font-size:12.5px;color:#9a9182;font-weight:700">Filter</span>
+          <sc-for list="{{ memberFilters }}" as="f" hint-placeholder-count="3">
+            <button onClick="{{ f.onClick }}" style="border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.color }}">{{ f.label }}</button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ hasMemberRows }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#fff;border:1px solid #ECE5D8;border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(19,12,14,.05)">
+          <div style="display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(150px,1.5fr) 140px 100px 140px;align-items:center;padding:0 18px;height:46px;background:#FAF7F0;border-bottom:1px solid #ECE5D8;font-size:11.5px;font-weight:700;letter-spacing:.4px;color:#9a9182">
+            <div>PERSON</div><div>EMAIL</div><div>ROLE</div><div>ON DRIVES</div><div style="text-align:right">ACTIONS</div>
+          </div>
+          <sc-for list="{{ memberRows }}" as="m" hint-placeholder-count="10">
+            <div style="display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(150px,1.5fr) 140px 100px 140px;align-items:center;padding:0 18px;height:62px;border-bottom:1px solid #F3EEE4" style-hover="background:#FCFAF5">
+              <div style="display:flex;align-items:center;gap:11px;min-width:0">
+                <div style="width:34px;height:34px;flex:none;border-radius:50%;background:#1B2230;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">{{ m.initials }}</div>
+                <div style="font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.name }}</div>
+              </div>
+              <div style="font-size:13.5px;color:#6b6357;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.email }}</div>
+              <div><span style="background:#EEF1F6;color:#3A4557;border-radius:999px;padding:4px 11px;font-size:12px;font-weight:700">Content Manager</span></div>
+              <div style="font-size:13.5px;color:#54607080;font-weight:600">{{ m.driveLabel }}</div>
+              <div style="display:flex;justify-content:flex-end;gap:8px">
+                <button onClick="{{ m.onView }}" style="background:#fff;border:1px solid #E2DACC;border-radius:999px;padding:7px 12px;font-weight:600;font-size:13px;color:#1B2230;cursor:pointer">View drives</button>
+                <button onClick="{{ m.onRemove }}" title="Remove from directory" style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid #F1D6D6;border-radius:999px;color:#D0454A;cursor:pointer">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M7 7l1 12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-12"/></svg>
+                </button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ memberPg.show }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:#FAF7F0;border-top:1px solid #ECE5D8">
+              <span style="font-size:12.5px;color:#8A8172;font-weight:600">{{ memberPg.label }}</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <button onClick="{{ memberPg.onPrev }}" style="width:32px;height:32px;border-radius:9px;border:1px solid #E2DACC;background:#fff;color:#1B2230;cursor:pointer;font-size:17px;line-height:1;opacity:{{ memberPg.prevOpacity }};display:flex;align-items:center;justify-content:center">‹</button>
+                <sc-for list="{{ memberPg.pages }}" as="pg" hint-placeholder-count="4">
+                  <button onClick="{{ pg.onClick }}" style="min-width:32px;height:32px;padding:0 6px;border-radius:9px;border:1px solid {{ pg.border }};background:{{ pg.bg }};color:{{ pg.color }};cursor:pointer;font-weight:700;font-size:13px">{{ pg.n }}</button>
+                </sc-for>
+                <button onClick="{{ memberPg.onNext }}" style="width:32px;height:32px;border-radius:9px;border:1px solid #E2DACC;background:#fff;color:#1B2230;cursor:pointer;font-size:17px;line-height:1;opacity:{{ memberPg.nextOpacity }};display:flex;align-items:center;justify-content:center">›</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ noMemberRows }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff;border:1px dashed #E2DACC;border-radius:16px;padding:56px 24px;text-align:center">
+            <div style="width:60px;height:60px;border-radius:16px;background:#F3EEE4;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#b8ae99">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/></svg>
+            </div>
+            <div style="font-weight:800;font-size:17px">{{ emptyMembersTitle }}</div>
+            <div style="color:#8A8172;font-size:14px;margin-top:6px">{{ emptyMembersText }}</div>
+            <button onClick="{{ openAddPerson }}" style="margin-top:18px;background:#F5A623;color:#1B2230;border:none;border-radius:999px;padding:11px 20px;font-weight:700;font-size:14px;cursor:pointer">Add member</button>
+          </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ============ ACTIVITY LOG VIEW ============ -->
+      <sc-if value="{{ viewActivity }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="margin-bottom:18px">
+          <h1 style="margin:0;font-size:25px;font-weight:800;letter-spacing:-.5px">Activity Log</h1>
+          <p style="margin:6px 0 0;color:#8A8172;font-size:14px;font-weight:500">Every change to drives and members — who did what, and when.</p>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <sc-for list="{{ logChips }}" as="c" hint-placeholder-count="5">
+            <button onClick="{{ c.onClick }}" style="border-radius:999px;padding:8px 15px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }}">{{ c.label }}</button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ hasActivity }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#fff;border:1px solid #ECE5D8;border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(19,12,14,.05)">
+          <sc-for list="{{ activityRows }}" as="e" hint-placeholder-count="8">
+            <div style="display:flex;align-items:flex-start;gap:14px;padding:15px 20px;border-bottom:1px solid #F3EEE4">
+              <div style="width:38px;height:38px;flex:none;border-radius:11px;background:{{ e.iconBg }};color:{{ e.iconColor }};display:flex;align-items:center;justify-content:center">
+                <sc-if value="{{ e.isCreate }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M12 11.5v4M10 13.5h4"/></svg></sc-if>
+                <sc-if value="{{ e.isAdd }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 10 0M18 8v6M15 11h6"/></svg></sc-if>
+                <sc-if value="{{ e.isRemove }}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 10 0M15 11h6"/></svg></sc-if>
+                <sc-if value="{{ e.isDirectory }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.4"/></svg></sc-if>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:14.5px;line-height:1.35">{{ e.title }}</div>
+                <div style="font-size:13px;margin-top:3px;color:{{ e.detailColor }}">{{ e.detailLine }}</div>
+              </div>
+              <div style="font-size:12.5px;color:#a99f8d;font-weight:600;white-space:nowrap;flex:none;padding-top:2px">{{ e.time }}</div>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+        <sc-if value="{{ noActivity }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff;border:1px dashed #E2DACC;border-radius:16px;padding:56px 24px;text-align:center">
+            <div style="width:60px;height:60px;border-radius:16px;background:#F3EEE4;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#b8ae99"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></div>
+            <div style="font-weight:800;font-size:17px">No activity here</div>
+            <div style="color:#8A8172;font-size:14px;margin-top:6px">No entries match this filter yet.</div>
+          </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <!-- ============ DRIVE MEMBERS SLIDE-OVER ============ -->
+  <sc-if value="{{ drivePanelOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrivePanel }}" style="position:fixed;inset:0;z-index:40;background:rgba(19,12,14,.38);animation:sdm-fadeIn .2s ease"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;z-index:41;width:480px;max-width:94vw;background:#fff;box-shadow:-8px 0 40px rgba(19,12,14,.16);display:flex;flex-direction:column;animation:sdm-panelIn .28s cubic-bezier(.2,.8,.2,1)">
+      <div style="padding:22px 24px 18px;border-bottom:1px solid #F0EADF">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+          <div style="min-width:0">
+            <div style="display:flex;align-items:center;gap:9px">
+              <h2 style="margin:0;font-size:20px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ panel.name }}</h2>
+              <sc-if value="{{ panel.excluded }}" hint-placeholder-val="{{ false }}">
+                <span style="display:inline-flex;align-items:center;gap:4px;background:#F1ECE1;color:#8a6a1a;border:1px solid #E4D8BE;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Protected</span>
+              </sc-if>
+            </div>
+            <div style="color:#8A8172;font-size:13.5px;font-weight:600;margin-top:5px">{{ panel.memberLabel }}</div>
+          </div>
+          <button onClick="{{ closeDrivePanel }}" style="width:34px;height:34px;flex:none;border-radius:50%;background:#F3EEE4;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#6b6357"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <button onClick="{{ panelAdd }}" style="margin-top:16px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#F5A623;color:#1B2230;border:none;border-radius:999px;padding:11px;font-weight:700;font-size:14px;cursor:pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add member
+        </button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:10px 16px 20px">
+        <sc-if value="{{ panel.hasMembers }}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{ panel.members }}" as="pm" hint-placeholder-count="6">
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 8px;border-bottom:1px solid #F5F0E7" style-hover="background:#FCFAF5">
+              <div style="width:38px;height:38px;flex:none;border-radius:50%;background:#1B2230;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">{{ pm.initials }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pm.name }}</div>
+                <div style="font-size:12.5px;color:#8A8172;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pm.email }} · Content Manager</div>
+              </div>
+              <button onClick="{{ pm.onRemove }}" style="flex:none;background:#fff;border:1px solid #F1D6D6;border-radius:999px;padding:7px 13px;font-weight:600;font-size:12.5px;color:#D0454A;cursor:pointer">Remove</button>
+            </div>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{ panel.empty }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center;padding:48px 20px;color:#8A8172">
+            <div style="width:52px;height:52px;border-radius:14px;background:#F3EEE4;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:#b8ae99"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/></svg></div>
+            <div style="font-weight:700;font-size:15px;color:#1B2230">No members yet</div>
+            <div style="font-size:13px;margin-top:5px">Add people from your directory to grant access.</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ PERSON DRIVES SLIDE-OVER ============ -->
+  <sc-if value="{{ personPanelOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closePersonPanel }}" style="position:fixed;inset:0;z-index:40;background:rgba(19,12,14,.38);animation:sdm-fadeIn .2s ease"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;z-index:41;width:480px;max-width:94vw;background:#fff;box-shadow:-8px 0 40px rgba(19,12,14,.16);display:flex;flex-direction:column;animation:sdm-panelIn .28s cubic-bezier(.2,.8,.2,1)">
+      <div style="padding:22px 24px 18px;border-bottom:1px solid #F0EADF">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+          <div style="display:flex;align-items:center;gap:13px;min-width:0">
+            <div style="width:46px;height:46px;flex:none;border-radius:50%;background:#1B2230;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">{{ person.initials }}</div>
+            <div style="min-width:0">
+              <h2 style="margin:0;font-size:19px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ person.name }}</h2>
+              <div style="color:#8A8172;font-size:13px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ person.email }}</div>
+            </div>
+          </div>
+          <button onClick="{{ closePersonPanel }}" style="width:34px;height:34px;flex:none;border-radius:50%;background:#F3EEE4;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#6b6357"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:16px">
+          <span style="font-size:13.5px;font-weight:700;color:#546070">{{ person.driveLabel }}</span>
+          <div style="flex:1"></div>
+          <button onClick="{{ person.onAddToDrives }}" style="display:inline-flex;align-items:center;gap:7px;background:#1B2230;color:#fff;border:none;border-radius:999px;padding:9px 15px;font-weight:700;font-size:13px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add to drives</button>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:10px 16px 20px">
+        <sc-if value="{{ person.hasDrives }}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{ person.drives }}" as="pd" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 8px;border-bottom:1px solid #F5F0E7" style-hover="background:#FCFAF5">
+              <div style="width:36px;height:36px;flex:none;border-radius:9px;background:#F3EEE4;display:flex;align-items:center;justify-content:center;color:#8A8172"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pd.name }}</div>
+                <div style="font-size:12.5px;color:#8A8172">{{ pd.memberLabel }}</div>
+              </div>
+              <button onClick="{{ pd.onRemove }}" style="flex:none;background:#fff;border:1px solid #F1D6D6;border-radius:999px;padding:7px 13px;font-weight:600;font-size:12.5px;color:#D0454A;cursor:pointer">Remove</button>
+            </div>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{ person.empty }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center;padding:48px 20px;color:#8A8172">
+            <div style="font-weight:700;font-size:15px;color:#1B2230">Not on any drives</div>
+            <div style="font-size:13px;margin-top:5px">This person is in the directory but has no drive access yet.</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ ADD / REMOVE WIZARD SLIDE-OVER ============ -->
+  <sc-if value="{{ flowOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ flowCancel }}" style="position:fixed;inset:0;z-index:50;background:rgba(19,12,14,.42);animation:sdm-fadeIn .2s ease"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;z-index:51;width:520px;max-width:96vw;background:#fff;box-shadow:-8px 0 40px rgba(19,12,14,.18);display:flex;flex-direction:column;animation:sdm-panelIn .28s cubic-bezier(.2,.8,.2,1)">
+      <!-- header -->
+      <div style="padding:22px 24px 16px;border-bottom:1px solid #F0EADF">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <h2 style="margin:0;font-size:20px;font-weight:800">{{ flow.title }}</h2>
+          <button onClick="{{ flowCancel }}" style="width:34px;height:34px;border-radius:50%;background:#F3EEE4;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#6b6357"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:14px">
+          <sc-for list="{{ flow.bars }}" as="b" hint-placeholder-count="3">
+            <div style="flex:1;height:5px;border-radius:3px;background:{{ b.color }}"></div>
+          </sc-for>
+        </div>
+        <div style="font-size:12.5px;font-weight:700;color:#9a9182;margin-top:9px">{{ flow.stepLabel }}</div>
+      </div>
+
+      <!-- body -->
+      <div style="flex:1;overflow-y:auto;padding:16px 20px 20px">
+        <!-- step 1: people -->
+        <sc-if value="{{ flowStep1 }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:9px;background:#F5F1E9;border:1px solid #ECE5D8;border-radius:999px;padding:9px 14px;margin-bottom:12px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9a9182" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+            <input value="{{ flowSearch }}" onInput="{{ onFlowSearch }}" placeholder="Search directory" style="border:none;background:transparent;font-size:14px;width:100%">
+          </div>
+          <sc-for list="{{ flowPeople }}" as="fp" hint-placeholder-count="8">
+            <div onClick="{{ fp.onToggle }}" style="display:flex;align-items:center;gap:12px;padding:10px 10px;border-radius:11px;cursor:pointer" style-hover="background:#FAF7F0">
+              <input type="checkbox" checked="{{ fp.picked }}" readonly="{{ true }}" style="width:17px;height:17px;accent-color:#F5A623;cursor:pointer;pointer-events:none">
+              <div style="width:34px;height:34px;flex:none;border-radius:50%;background:#1B2230;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">{{ fp.initials }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ fp.name }}</div>
+                <div style="font-size:12.5px;color:#8A8172;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ fp.email }}</div>
+              </div>
+              <span style="font-size:12px;color:#a99f8d;font-weight:600">{{ fp.driveLabel }}</span>
+            </div>
+          </sc-for>
+        </sc-if>
+
+        <!-- step 2: drives -->
+        <sc-if value="{{ flowStep2 }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ flow.lockPeople }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:9px;background:#EEF1F6;border:1px solid #DDE3EC;border-radius:11px;padding:10px 13px;margin-bottom:12px;font-size:13px;color:#3A4557;font-weight:600">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="flex:none"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 10 0M18 8v6M15 11h6"/></svg>{{ flow.lockBanner }}
+            </div>
+          </sc-if>
+          <sc-if value="{{ flow.showScope }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+            <sc-if value="{{ flow.hasThis }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ setScopeThis }}" style="border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid {{ flow.thisBorder }};background:{{ flow.thisBg }};color:{{ flow.thisColor }}">This drive</button>
+            </sc-if>
+            <sc-if value="{{ flow.hasSelected }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ setScopeSelected }}" style="border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid {{ flow.selBorder }};background:{{ flow.selBg }};color:{{ flow.selColor }}">Selected drives</button>
+            </sc-if>
+            <button onClick="{{ setScopeAll }}" style="border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid {{ flow.allBorder }};background:{{ flow.allBg }};color:{{ flow.allColor }}">All drives</button>
+          </div>
+          </sc-if>
+          <sc-if value="{{ flow.hasExcludedNote }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:8px;background:#FBEFD6;border:1px solid #F3E0B8;border-radius:11px;padding:10px 13px;margin-bottom:12px;font-size:12.5px;color:#8a6a1a;font-weight:600">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>{{ flow.excludedNote }}
+            </div>
+          </sc-if>
+          <sc-for list="{{ flowTargetDrives }}" as="ft" hint-placeholder-count="8">
+            <div onClick="{{ ft.onToggle }}" style="display:flex;align-items:center;gap:12px;padding:10px 10px;border-radius:11px;cursor:{{ ft.cursor }};opacity:{{ ft.opacity }}" style-hover="background:#FAF7F0">
+              <input type="checkbox" checked="{{ ft.checked }}" disabled="{{ ft.disabled }}" readonly="{{ true }}" style="width:17px;height:17px;accent-color:#F5A623;cursor:pointer;pointer-events:none">
+              <div style="width:32px;height:32px;flex:none;border-radius:8px;background:#F3EEE4;display:flex;align-items:center;justify-content:center;color:#8A8172"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ft.name }}</div>
+                <div style="font-size:12px;color:#8A8172">{{ ft.memberLabel }}</div>
+              </div>
+              <sc-if value="{{ ft.excluded }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:11px;font-weight:700;color:#8a6a1a;background:#F1ECE1;border-radius:999px;padding:3px 9px">Protected</span>
+              </sc-if>
+              <sc-if value="{{ ft.showAlready }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:11px;font-weight:700;color:#7a8296;background:#EEF1F6;border-radius:999px;padding:3px 9px">Already a member</span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </sc-if>
+
+        <!-- step 3: review -->
+        <sc-if value="{{ flowStep3 }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:18px;font-weight:800;line-height:1.3;margin-bottom:8px">{{ flow.confirmTitle }}</div>
+          <div style="font-size:14px;color:#6b6357;line-height:1.5;margin-bottom:18px">{{ flow.confirmSummary }}</div>
+          <sc-if value="{{ flow.isRemove }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:flex-start;gap:9px;background:#FCEBEC;border:1px solid #F3CFD1;border-radius:12px;padding:12px 14px;margin-bottom:18px">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#D0454A" stroke-width="2.2" style="flex:none;margin-top:1px"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+              <div style="font-size:13px;color:#a13539;font-weight:600;line-height:1.45">This immediately revokes Google Workspace access. People on protected drives will need a Workspace admin.</div>
+            </div>
+          </sc-if>
+          <div style="font-size:12px;font-weight:700;letter-spacing:.4px;color:#9a9182;margin-bottom:9px">PEOPLE</div>
+          <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px">
+            <sc-for list="{{ flow.pickedPeople }}" as="pp" hint-placeholder-count="3">
+              <span style="display:inline-flex;align-items:center;gap:7px;background:#F5F1E9;border:1px solid #ECE5D8;border-radius:999px;padding:5px 12px 5px 5px;font-size:13px;font-weight:600"><span style="width:24px;height:24px;border-radius:50%;background:#1B2230;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">{{ pp.initials }}</span>{{ pp.name }}</span>
+            </sc-for>
+          </div>
+          <div style="font-size:12px;font-weight:700;letter-spacing:.4px;color:#9a9182;margin-bottom:9px">TARGET DRIVES</div>
+          <div style="display:flex;flex-wrap:wrap;gap:7px">
+            <sc-for list="{{ flow.targetNames }}" as="tn" hint-placeholder-count="4">
+              <span style="background:#EEF1F6;color:#3A4557;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600">{{ tn.name }}</span>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- footer -->
+      <div style="padding:16px 20px;border-top:1px solid #F0EADF;display:flex;align-items:center;gap:10px">
+        <sc-if value="{{ flow.canBack }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ flowBack }}" style="background:#fff;border:1px solid #E2DACC;border-radius:999px;padding:11px 18px;font-weight:700;font-size:14px;color:#1B2230;cursor:pointer">Back</button>
+        </sc-if>
+        <div style="flex:1"></div>
+        <button onClick="{{ flowCancel }}" style="background:transparent;border:none;font-weight:600;font-size:14px;color:#8A8172;cursor:pointer;padding:10px">Cancel</button>
+        <sc-if value="{{ flow.nextContinue }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ flowNext }}" style="background:#1B2230;color:#fff;border:none;border-radius:999px;padding:11px 22px;font-weight:700;font-size:14px;cursor:pointer">{{ flow.nextLabel }}</button>
+        </sc-if>
+        <sc-if value="{{ flow.nextPrimary }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ flowNext }}" style="background:#F5A623;color:#1B2230;border:none;border-radius:999px;padding:11px 22px;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(245,166,35,.35)">{{ flow.nextLabel }}</button>
+        </sc-if>
+        <sc-if value="{{ flow.nextDanger }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ flowNext }}" style="background:#E5484D;color:#fff;border:none;border-radius:999px;padding:11px 22px;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(229,72,77,.35)">{{ flow.nextLabel }}</button>
+        </sc-if>
+        <sc-if value="{{ flow.nextDisabled }}" hint-placeholder-val="{{ false }}">
+          <button style="background:#EFEADF;color:#b8ae99;border:none;border-radius:999px;padding:11px 22px;font-weight:700;font-size:14px;cursor:not-allowed">{{ flow.nextLabel }}</button>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ CREATE DRIVE MODAL ============ -->
+  <sc-if value="{{ createOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeCreate }}" style="position:fixed;inset:0;z-index:60;background:rgba(19,12,14,.42);display:flex;align-items:center;justify-content:center;padding:24px;animation:sdm-fadeIn .18s ease">
+      <div onClick="{{ stop }}" style="width:480px;max-width:100%;max-height:88vh;overflow-y:auto;background:#fff;border-radius:20px;padding:26px;box-shadow:0 24px 64px rgba(19,12,14,.28);animation:sdm-pop .24s cubic-bezier(.2,.8,.2,1)">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <div style="width:42px;height:42px;border-radius:12px;background:#FBEFD6;display:flex;align-items:center;justify-content:center;color:#8a6a1a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg></div>
+          <h2 style="margin:0;font-size:20px;font-weight:800">Create shared drive</h2>
+        </div>
+        <p style="margin:0 0 18px;color:#8A8172;font-size:13.5px;line-height:1.5">Name the drive and choose who should have access. The default member set is pre-selected — adjust as needed.</p>
+        <label style="font-size:12.5px;font-weight:700;color:#546070">Drive name</label>
+        <input value="{{ createName }}" onInput="{{ onCreateName }}" placeholder="e.g. Client Drive – Harbour Co" style="margin-top:7px;width:100%;border:1px solid {{ createBorder }};border-radius:12px;padding:12px 14px;font-size:14.5px;color:#1B2230;background:#FCFAF5">
+        <sc-if value="{{ createError }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:6px;margin-top:9px;color:#D0454A;font-size:12.5px;font-weight:600"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>{{ createErrorText }}</div>
+        </sc-if>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
+          <label style="font-size:12.5px;font-weight:700;color:#546070">Members to add</label>
+          <span style="font-size:12px;font-weight:700;color:#8A8172">{{ createMemberLabel }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#F5F1E9;border:1px solid #ECE5D8;border-radius:10px;padding:8px 12px;margin-top:8px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a9182" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+          <input value="{{ createMemberSearch }}" onInput="{{ onCreateMemberSearch }}" placeholder="Search directory" style="border:none;background:transparent;font-size:13.5px;width:100%">
+        </div>
+        <div style="max-height:210px;overflow-y:auto;margin-top:8px;border:1px solid #F0EADF;border-radius:12px">
+          <div onClick="{{ toggleCreateAll }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-bottom:1px solid #ECE5D8;background:#FAF7F0;cursor:pointer;position:sticky;top:0;z-index:1">
+            <input type="checkbox" checked="{{ createAllSelected }}" readonly="{{ true }}" style="width:16px;height:16px;accent-color:#F5A623;pointer-events:none">
+            <span style="font-weight:700;font-size:13px;color:#546070">Select all</span>
+          </div>
+          <sc-for list="{{ createPeople }}" as="cp" hint-placeholder-count="5">
+            <div onClick="{{ cp.onToggle }}" style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-bottom:1px solid #F5F0E7;cursor:pointer" style-hover="background:#FAF7F0">
+              <input type="checkbox" checked="{{ cp.picked }}" readonly="{{ true }}" style="width:16px;height:16px;accent-color:#F5A623;pointer-events:none">
+              <div style="width:30px;height:30px;flex:none;border-radius:50%;background:#1B2230;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">{{ cp.initials }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cp.name }}</div>
+                <div style="font-size:12px;color:#8A8172;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cp.email }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:22px">
+          <button onClick="{{ closeCreate }}" style="flex:1;background:#fff;border:1px solid #E2DACC;border-radius:999px;padding:12px;font-weight:700;font-size:14px;color:#1B2230;cursor:pointer">Cancel</button>
+          <button onClick="{{ submitCreate }}" style="flex:1;background:#F5A623;border:none;border-radius:999px;padding:12px;font-weight:800;font-size:14px;color:#1B2230;cursor:pointer">Create drive</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ ADD PERSON MODAL ============ -->
+  <sc-if value="{{ addPersonOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeAddPerson }}" style="position:fixed;inset:0;z-index:60;background:rgba(19,12,14,.42);display:flex;align-items:center;justify-content:center;padding:24px;animation:sdm-fadeIn .18s ease">
+      <div onClick="{{ stop }}" style="width:440px;max-width:100%;background:#fff;border-radius:20px;padding:26px;box-shadow:0 24px 64px rgba(19,12,14,.28);animation:sdm-pop .24s cubic-bezier(.2,.8,.2,1)">
+        <h2 style="margin:0 0 6px;font-size:20px;font-weight:800">Add member to directory</h2>
+        <p style="margin:0 0 18px;color:#8A8172;font-size:13.5px;line-height:1.5">Adds a person to your reusable list. Assign them to drives afterward.</p>
+        <label style="font-size:12.5px;font-weight:700;color:#546070">Full name</label>
+        <input value="{{ apName }}" onInput="{{ onApName }}" placeholder="e.g. Harper Quinn" style="margin-top:7px;margin-bottom:14px;width:100%;border:1px solid #E2DACC;border-radius:12px;padding:12px 14px;font-size:14.5px;background:#FCFAF5">
+        <label style="font-size:12.5px;font-weight:700;color:#546070">Email</label>
+        <input value="{{ apEmail }}" onInput="{{ onApEmail }}" placeholder="harper.quinn@engsurveys.com.au" style="margin-top:7px;width:100%;border:1px solid {{ apBorder }};border-radius:12px;padding:12px 14px;font-size:14.5px;background:#FCFAF5">
+        <sc-if value="{{ apError }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:6px;margin-top:9px;color:#D0454A;font-size:12.5px;font-weight:600"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>{{ apErrorText }}</div>
+        </sc-if>
+        <div style="display:flex;gap:10px;margin-top:22px">
+          <button onClick="{{ closeAddPerson }}" style="flex:1;background:#fff;border:1px solid #E2DACC;border-radius:999px;padding:12px;font-weight:700;font-size:14px;color:#1B2230;cursor:pointer">Cancel</button>
+          <button onClick="{{ submitAddPerson }}" style="flex:1;background:#F5A623;border:none;border-radius:999px;padding:12px;font-weight:800;font-size:14px;color:#1B2230;cursor:pointer">Add member</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ CONFIRM MODAL ============ -->
+  <sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ confirmNo }}" style="position:fixed;inset:0;z-index:62;background:rgba(19,12,14,.42);display:flex;align-items:center;justify-content:center;padding:24px;animation:sdm-fadeIn .18s ease">
+      <div onClick="{{ stop }}" style="width:430px;max-width:100%;background:#fff;border-radius:20px;padding:26px;box-shadow:0 24px 64px rgba(19,12,14,.28);animation:sdm-pop .24s cubic-bezier(.2,.8,.2,1)">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="width:42px;height:42px;flex:none;border-radius:12px;background:#FCEBEC;display:flex;align-items:center;justify-content:center;color:#D0454A"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></div>
+          <h2 style="margin:0;font-size:19px;font-weight:800">{{ confirm.title }}</h2>
+        </div>
+        <p style="margin:0;color:#6b6357;font-size:14px;line-height:1.5">{{ confirm.message }}</p>
+        <sc-if value="{{ confirm.hasExtra }}" hint-placeholder-val="{{ false }}">
+          <label style="display:flex;align-items:center;gap:10px;margin-top:16px;padding:12px 14px;background:#FCEBEC;border:1px solid #F3CFD1;border-radius:12px;cursor:pointer">
+            <input type="checkbox" checked="{{ confirmExtra }}" onChange="{{ toggleConfirmExtra }}" style="width:17px;height:17px;accent-color:#E5484D;cursor:pointer">
+            <span style="font-size:13.5px;font-weight:700;color:#a13539">{{ confirm.extraLabel }}</span>
+          </label>
+        </sc-if>
+        <div style="display:flex;gap:10px;margin-top:22px">
+          <button onClick="{{ confirmNo }}" style="flex:1;background:#fff;border:1px solid #E2DACC;border-radius:999px;padding:12px;font-weight:700;font-size:14px;color:#1B2230;cursor:pointer">Cancel</button>
+          <sc-if value="{{ confirm.danger }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ confirmYes }}" style="flex:1;background:#E5484D;border:none;border-radius:999px;padding:12px;font-weight:800;font-size:14px;color:#fff;cursor:pointer">{{ confirm.confirmLabel }}</button>
+          </sc-if>
+          <sc-if value="{{ confirm.notDanger }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ confirmYes }}" style="flex:1;background:#F5A623;border:none;border-radius:999px;padding:12px;font-weight:800;font-size:14px;color:#1B2230;cursor:pointer">{{ confirm.confirmLabel }}</button>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ RESULTS MODAL ============ -->
+  <sc-if value="{{ resultsOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeResults }}" style="position:fixed;inset:0;z-index:62;background:rgba(19,12,14,.42);display:flex;align-items:center;justify-content:center;padding:24px;animation:sdm-fadeIn .18s ease">
+      <div onClick="{{ stop }}" style="width:500px;max-width:100%;max-height:82vh;background:#fff;border-radius:20px;box-shadow:0 24px 64px rgba(19,12,14,.28);animation:sdm-pop .24s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:24px 24px 16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:44px;height:44px;flex:none;border-radius:12px;background:{{ results.iconBg }};display:flex;align-items:center;justify-content:center;color:{{ results.iconColor }}">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <div>
+              <h2 style="margin:0;font-size:20px;font-weight:800">{{ results.title }}</h2>
+              <div style="color:#8A8172;font-size:13.5px;font-weight:600;margin-top:3px">{{ results.summary }}</div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:0 24px 8px">
+          <sc-if value="{{ results.hasSkipped }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:8px;margin-bottom:6px;font-size:12px;font-weight:700;letter-spacing:.4px;color:#9a9182">SKIPPED — {{ results.skippedLabel }}</div>
+            <sc-for list="{{ results.skipped }}" as="s" hint-placeholder-count="2">
+              <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:11px;background:#FAF7F0;margin-bottom:6px">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a99f8d" stroke-width="2.4" style="flex:none;margin-top:2px"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                <div><div style="font-weight:700;font-size:13.5px">{{ s.who }} · {{ s.where }}</div><div style="font-size:12.5px;color:#8A8172">{{ s.note }}</div></div>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ results.hasFailed }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:12px;margin-bottom:6px;font-size:12px;font-weight:700;letter-spacing:.4px;color:#D0454A">FAILED — {{ results.failedLabel }}</div>
+            <sc-for list="{{ results.failed }}" as="f" hint-placeholder-count="1">
+              <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:11px;background:#FCEBEC;border:1px solid #F3CFD1;margin-bottom:6px">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D0454A" stroke-width="2.4" style="flex:none;margin-top:2px"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+                <div><div style="font-weight:700;font-size:13.5px;color:#a13539">{{ f.who }} · {{ f.where }}</div><div style="font-size:12.5px;color:#b45459">{{ f.note }}</div></div>
+              </div>
+            </sc-for>
+          </sc-if>
+        </div>
+        <div style="padding:16px 24px;border-top:1px solid #F0EADF;display:flex;justify-content:flex-end">
+          <button onClick="{{ closeResults }}" style="background:#1B2230;color:#fff;border:none;border-radius:999px;padding:11px 24px;font-weight:700;font-size:14px;cursor:pointer">Done</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ LOADING OVERLAY ============ -->
+  <sc-if value="{{ loadingOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:80;background:rgba(19,12,14,.5);display:flex;align-items:center;justify-content:center;padding:24px;animation:sdm-fadeIn .18s ease">
+      <div style="width:400px;max-width:100%;background:#fff;border-radius:20px;padding:32px 28px;box-shadow:0 24px 64px rgba(19,12,14,.34);text-align:center">
+        <div style="width:48px;height:48px;margin:0 auto 18px;border:4px solid #F3EEE4;border-top-color:#F5A623;border-radius:50%;animation:sdm-spin .8s linear infinite"></div>
+        <div style="font-weight:800;font-size:16px">{{ loading.text }}</div>
+        <div style="font-size:13px;color:#8A8172;margin-top:5px">Please keep this tab open until it finishes.</div>
+        <div style="margin-top:18px;height:8px;border-radius:5px;background:#F3EEE4;overflow:hidden">
+          <div style="height:100%;background:#F5A623;border-radius:5px;transition:width .28s ease;width:{{ loading.pct }}"></div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ TOAST ============ -->
+  <sc-if value="{{ toastOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;z-index:90;transform:translateX(-50%);animation:sdm-toastIn .28s cubic-bezier(.2,.8,.2,1)">
+      <sc-if value="{{ toast.success }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:11px;background:#1B2230;color:#fff;border-radius:14px;padding:13px 20px;box-shadow:0 12px 32px rgba(19,12,14,.3);max-width:520px">
+          <span style="width:24px;height:24px;flex:none;border-radius:50%;background:#2E9E5B;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span style="font-weight:600;font-size:14px">{{ toast.text }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ toast.error }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:11px;background:#1B2230;color:#fff;border-radius:14px;padding:13px 20px;box-shadow:0 12px 32px rgba(19,12,14,.3);max-width:520px">
+          <span style="width:24px;height:24px;flex:none;border-radius:50%;background:#E5484D;display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+          <span style="font-weight:600;font-size:14px">{{ toast.text }}</span>
+          <button onClick="{{ dismissToast }}" style="margin-left:6px;background:transparent;border:none;color:#b8bdc7;font-weight:700;font-size:13px;cursor:pointer">Dismiss</button>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;orgName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Engineering Surveys&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Branding&quot;},&quot;defaultView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;drives&quot;,&quot;options&quot;:[&quot;drives&quot;,&quot;members&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;simulateErrors&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  state = this.buildInitial();
+
+  buildInitial() {
+    const P = [
+      ['John','Smith'],['Sarah','Chen'],['Michael','OBrien'],['Emma','Wilson'],['David','Nguyen'],
+      ['Olivia','Brown'],['James','Taylor'],['Sophie','Martin'],['Liam','Anderson'],['Grace','Lee'],
+      ['Noah','Thompson'],['Ava','White'],['William','Harris'],['Mia','Clark'],['Ethan','Lewis'],
+      ['Charlotte','Walker'],['Ben','Hall'],['Amelia','Young'],['Lucas','King'],['Isla','Wright'],
+      ['Henry','Scott'],['Zoe','Green'],['Jack','Adams'],['Chloe','Baker'],['Oscar','Nelson'],
+      ['Ruby','Carter'],['Leo','Mitchell'],['Ella','Perez'],['Max','Roberts'],['Lily','Turner'],
+      ['Aiden','Phillips'],['Freya','Campbell'],['Harry','Evans'],['Scarlett','Edwards'],['George','Collins'],
+      ['Poppy','Stewart'],['Samuel','Morris'],['Daisy','Rogers'],['Thomas','Reed'],['Evie','Cook']
+    ];
+    const emailLast = { OBrien:'obrien' };
+    const people = P.map((n, i) => {
+      const first = n[0], last = n[1] === 'OBrien' ? "O'Brien" : n[1];
+      const name = first + ' ' + last;
+      const el = emailLast[n[1]] || n[1].toLowerCase();
+      const email = first.toLowerCase() + '.' + el + '@engsurveys.com.au';
+      const initials = (first[0] + last.replace(/[^a-zA-Z]/g,'')[0]).toUpperCase();
+      return { id: 'p' + (i + 1), first, last, name, email, initials };
+    });
+
+    const dnames = [
+      ['_A', true], ['_B', true], ['Client Drive – Smith', false], ['Client Drive – Nguyen', false],
+      ['Accounts QT', false], ['Survey Data 2025', false], ['Field Ops', false], ['CAD Library', false],
+      ['Drone Imagery', false], ['Cadastral – North', false], ['Cadastral – South', false],
+      ['Project Archive', false], ['Templates & Forms', false], ['HR Confidential', true],
+      ['Board & Finance', true], ['Marketing Assets', false], ['Tender Submissions', false],
+      ['Safety & Compliance', false], ['Fleet & Equipment', false], ['IT & Systems', false],
+      ['Client Drive – Harbour Co', false], ['Client Drive – Metro Rail', false], ['GIS Datasets', false],
+      ['Photogrammetry', false], ['Legacy Archive 2019', false], ['Training & Onboarding', false]
+    ];
+    const acts = ['2h ago','Yesterday','3d ago','1w ago','2w ago','Today','5d ago','Just now'];
+    const drives = dnames.map((d, i) => {
+      let memberIds = [];
+      if (d[0] === 'Project Archive') {
+        memberIds = [];
+      } else {
+        const size = 4 + ((i * 3) % 13);
+        const start = (i * 5) % people.length;
+        const set = new Set();
+        for (let k = 0; k < size; k++) set.add(people[(start + k) % people.length].id);
+        set.add('p1'); // john.smith on many drives (fuzzy demo)
+        memberIds = [...set];
+      }
+      return { id: 'd' + (i + 1), name: d[0], excluded: d[1], memberIds, activity: acts[i % acts.length] };
+    });
+
+    const now = Date.now(), MIN = 60000, HR = 3600000, DAY = 86400000;
+    const activityLog = [
+      { id: 's1', ts: now - 8 * MIN, actor: 'Alex Morgan', type: 'add', title: 'Added 4 members to Field Ops', detail: '4 added' },
+      { id: 's2', ts: now - 42 * MIN, actor: 'Alex Morgan', type: 'create', title: 'Created “Client Drive – Metro Rail”', detail: '3 default members added' },
+      { id: 's3', ts: now - 3 * HR, actor: 'Alex Morgan', type: 'remove', title: 'Removed 2 members from Legacy Archive 2019', detail: '2 removed', tone: 'red' },
+      { id: 's4', ts: now - 5 * HR, actor: 'Alex Morgan', type: 'add', title: 'Added 12 people to 5 drives', detail: '57 added · 3 skipped' },
+      { id: 's5', ts: now - DAY, actor: 'Alex Morgan', type: 'remove_person', title: 'Removed Oscar Nelson from directory', detail: 'Also removed from 6 drives', tone: 'red' },
+      { id: 's6', ts: now - DAY - 2 * HR, actor: 'Alex Morgan', type: 'add_person', title: 'Added Ruby Carter to directory', detail: 'ruby.carter@engsurveys.com.au' },
+      { id: 's7', ts: now - 2 * DAY, actor: 'Alex Morgan', type: 'remove', title: 'Removed 1 member from Accounts QT', detail: '1 failed · needs Workspace admin', tone: 'red' },
+      { id: 's8', ts: now - 3 * DAY, actor: 'Alex Morgan', type: 'create', title: 'Created “Tender Submissions”', detail: '3 default members added' },
+      { id: 's9', ts: now - 4 * DAY, actor: 'Alex Morgan', type: 'add', title: 'Added 8 members to CAD Library', detail: '8 added' },
+      { id: 's10', ts: now - 6 * DAY, actor: 'Alex Morgan', type: 'add_person', title: 'Added Freya Campbell to directory', detail: 'freya.campbell@engsurveys.com.au' }
+    ];
+    return {
+      view: this.props.defaultView === 'members' ? 'members' : 'drives',
+      search: '', sortKey: 'name', sortDir: 1,
+      drives, people, selected: [], activityLog, logFilter: 'all', drivePage: 1, memberPage: 1, driveFilter: 'all', memberFilter: 'all', createMembers: [], createMemberSearch: '',
+      panelId: null, personId: null,
+      flowOpen: false, flow: null, flowSearch: '',
+      createOpen: false, createName: '', createError: '',
+      addPersonOpen: false, apName: '', apEmail: '', apError: '',
+      confirmOpen: false, confirm: null, confirmExtra: false,
+      resultsOpen: false, results: null,
+      loading: null, toast: null
+    };
+  }
+
+  componentWillUnmount() { clearTimeout(this._timer); clearTimeout(this._toastTimer); }
+
+  getDrive(id) { return this.state.drives.find(d => d.id === id); }
+  getPerson(id) { return this.state.people.find(p => p.id === id); }
+  stop = (e) => { e.stopPropagation(); };
+  logEntry(e) { return { id: 'a' + Date.now() + Math.floor(Math.random() * 1000), ts: Date.now(), actor: 'Alex Morgan', ...e }; }
+  relTime(ts) { const d = Date.now() - ts, m = 60000, h = 3600000, day = 86400000; if (d < m) return 'Just now'; if (d < h) return Math.floor(d / m) + 'm ago'; if (d < day) return Math.floor(d / h) + 'h ago'; if (d < 2 * day) return 'Yesterday'; return Math.floor(d / day) + 'd ago'; }
+  goActivity = () => this.setState({ view: 'activity' });
+  setLogFilter = (k) => this.setState({ logFilter: k });
+
+  showToast(t) {
+    clearTimeout(this._toastTimer);
+    this.setState({ toast: t });
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), 3600);
+  }
+  dismissToast = () => { clearTimeout(this._toastTimer); this.setState({ toast: null }); };
+
+  // ---- nav ----
+  goDrives = () => this.setState({ view: 'drives', search: '' });
+  goMembers = () => this.setState({ view: 'members', search: '' });
+  onSearch = (e) => this.setState({ search: e.target.value, drivePage: 1, memberPage: 1 });
+
+  // ---- sort ----
+  sortByName = () => this.setState(s => ({ sortKey: 'name', sortDir: s.sortKey === 'name' ? -s.sortDir : 1, drivePage: 1 }));
+  sortByMembers = () => this.setState(s => ({ sortKey: 'members', sortDir: s.sortKey === 'members' ? -s.sortDir : 1, drivePage: 1 }));
+
+  // ---- selection ----
+  toggleSelectDrive(id) {
+    this.setState(s => ({ selected: s.selected.includes(id) ? s.selected.filter(x => x !== id) : [...s.selected, id] }));
+  }
+  toggleSelectAll = () => {
+    const s = this.state;
+    const q = (s.search || '').toLowerCase();
+    const vis = s.drives.filter(d => !d.excluded && d.name.toLowerCase().includes(q)).map(d => d.id);
+    const all = vis.length > 0 && vis.every(id => s.selected.includes(id));
+    this.setState({ selected: all ? [] : vis });
+  };
+  clearSelection = () => this.setState({ selected: [] });
+  setDrivePage = (n) => this.setState({ drivePage: Math.max(1, n) });
+  setMemberPage = (n) => this.setState({ memberPage: Math.max(1, n) });
+  setDriveFilter = (k) => this.setState({ driveFilter: k, drivePage: 1 });
+  setMemberFilter = (k) => this.setState({ memberFilter: k, memberPage: 1 });
+  pageInfo(total, pages, cur, start, size, setter) {
+    return {
+      show: total > size,
+      label: (total ? start + 1 : 0) + '–' + Math.min(start + size, total) + ' of ' + total,
+      prevOpacity: cur > 1 ? '1' : '.35', nextOpacity: cur < pages ? '1' : '.35',
+      onPrev: () => setter(cur - 1), onNext: () => setter(cur + 1),
+      pages: Array.from({ length: pages }, (_, i) => { const n = i + 1, on = n === cur; return { n, onClick: () => setter(n), bg: on ? '#1B2230' : '#fff', color: on ? '#fff' : '#1B2230', border: on ? '#1B2230' : '#E2DACC' }; })
+    };
+  }
+
+  // ---- panels ----
+  closeDrivePanel = () => this.setState({ panelId: null });
+  closePersonPanel = () => this.setState({ personId: null });
+  panelAdd = () => this.openFlow('add', { scope: 'this', driveId: this.state.panelId });
+
+  removeOne(driveId, pid) {
+    const d = this.getDrive(driveId), p = this.getPerson(pid);
+    this.setState(s => ({ drives: s.drives.map(dr => dr.id === driveId ? { ...dr, memberIds: dr.memberIds.filter(x => x !== pid) } : dr), activityLog: [this.logEntry({ type: 'remove', title: 'Removed ' + (p ? p.name : 'member') + ' from ' + (d ? d.name : 'drive'), detail: '1 removed', tone: 'red' }), ...s.activityLog] }));
+    this.showToast({ text: 'Member removed', success: true });
+  }
+
+  // ---- create drive ----
+  openCreate = () => this.setState({ createOpen: true, createName: '', createError: '', createMembers: ['p1', 'p2', 'p3'], createMemberSearch: '' });
+  closeCreate = () => this.setState({ createOpen: false });
+  onCreateName = (e) => this.setState({ createName: e.target.value, createError: '' });
+  toggleCreateMember(id) { this.setState(s => ({ createMembers: s.createMembers.includes(id) ? s.createMembers.filter(x => x !== id) : [...s.createMembers, id] })); }
+  onCreateMemberSearch = (e) => this.setState({ createMemberSearch: e.target.value });
+  toggleCreateAll = () => {
+    const s = this.state, cq = (s.createMemberSearch || '').toLowerCase();
+    const vis = s.people.filter(p => p.name.toLowerCase().includes(cq) || p.email.toLowerCase().includes(cq)).map(p => p.id);
+    const cur = s.createMembers || [];
+    const all = vis.length > 0 && vis.every(id => cur.includes(id));
+    this.setState({ createMembers: all ? cur.filter(id => !vis.includes(id)) : [...new Set([...cur, ...vis])] });
+  };
+  submitCreate = () => {
+    const name = (this.state.createName || '').trim();
+    if (!name) { this.setState({ createError: 'Please enter a drive name.' }); return; }
+    if (this.state.drives.some(d => d.name.toLowerCase() === name.toLowerCase())) {
+      this.setState({ createError: 'A shared drive with this name already exists.' }); return;
+    }
+    const id = 'd' + Date.now();
+    const memberIds = (this.state.createMembers || []).slice();
+    const n = memberIds.length;
+    const drive = { id, name, excluded: false, memberIds, activity: 'Just now' };
+    this.setState(s => ({ drives: [drive, ...s.drives], createOpen: false, createName: '', createError: '', activityLog: [this.logEntry({ type: 'create', title: 'Created “' + name + '”', detail: n + (n === 1 ? ' member added' : ' members added') }), ...s.activityLog] }));
+    this.showToast({ text: '“' + name + '” created with ' + n + (n === 1 ? ' member' : ' members'), success: true });
+    setTimeout(() => this.setState({ panelId: id }), 320);
+  };
+
+  // ---- add person ----
+  openAddPerson = () => this.setState({ addPersonOpen: true, apName: '', apEmail: '', apError: '' });
+  closeAddPerson = () => this.setState({ addPersonOpen: false });
+  onApName = (e) => this.setState({ apName: e.target.value, apError: '' });
+  onApEmail = (e) => this.setState({ apEmail: e.target.value, apError: '' });
+  submitAddPerson = () => {
+    const name = (this.state.apName || '').trim();
+    const email = (this.state.apEmail || '').trim().toLowerCase();
+    if (!name || !email) { this.setState({ apError: 'Enter a name and an email.' }); return; }
+    if (!email.endsWith('@engsurveys.com.au')) { this.setState({ apError: 'Email must be @engsurveys.com.au.' }); return; }
+    if (this.state.people.some(p => p.email === email)) { this.setState({ apError: 'Someone with this email is already in the directory.' }); return; }
+    const parts = name.split(/\s+/);
+    const first = parts[0] || name, last = parts.slice(1).join(' ') || '';
+    const initials = ((first[0] || '') + (last[0] || first[1] || '')).toUpperCase();
+    const id = 'p' + Date.now();
+    this.setState(s => ({ people: [{ id, first, last, name, email, initials }, ...s.people], addPersonOpen: false, apName: '', apEmail: '', apError: '', activityLog: [this.logEntry({ type: 'add_person', title: 'Added ' + name + ' to directory', detail: email }), ...s.activityLog] }));
+    this.showToast({ text: name + ' added to directory', success: true });
+  };
+
+  // ---- remove person from directory (confirm) ----
+  askRemovePerson(id) {
+    const p = this.getPerson(id); if (!p) return;
+    this.setState({
+      confirmOpen: true, confirmExtra: false,
+      confirm: {
+        title: 'Remove ' + p.name + '?',
+        message: 'This removes ' + p.name + ' from the Members directory. They stay on any shared drives they belong to unless you remove them there too.',
+        confirmLabel: 'Remove from directory', danger: true, hasExtra: true,
+        extraLabel: 'Also remove from all shared drives',
+        onConfirm: (extra) => this.doRemovePerson(id, extra)
+      }
+    });
+  }
+  doRemovePerson(id, extra) {
+    const p = this.getPerson(id);
+    this.setState(s => ({
+      people: s.people.filter(x => x.id !== id),
+      drives: extra ? s.drives.map(d => ({ ...d, memberIds: d.memberIds.filter(x => x !== id) })) : s.drives,
+      confirmOpen: false, confirm: null, personId: null,
+      activityLog: [this.logEntry({ type: 'remove_person', title: 'Removed ' + (p ? p.name : 'person') + ' from directory', detail: extra ? 'Also removed from all drives' : 'Kept on existing drives', tone: 'red' }), ...s.activityLog]
+    }));
+    this.showToast({ text: 'Removed ' + (p ? p.name : 'person') + ' from directory' + (extra ? ' and all drives' : ''), success: true });
+  }
+
+  // ---- confirm generic ----
+  toggleConfirmExtra = () => this.setState(s => ({ confirmExtra: !s.confirmExtra }));
+  confirmNo = () => this.setState({ confirmOpen: false, confirm: null });
+  confirmYes = () => { const c = this.state.confirm; if (c && c.onConfirm) c.onConfirm(this.state.confirmExtra); };
+
+  closeResults = () => this.setState({ resultsOpen: false, results: null });
+
+  // ---- flow ----
+  openFlow(mode, ctx) {
+    ctx = ctx || {};
+    const drives = this.state.drives;
+    const personIds = ctx.personIds ? ctx.personIds.slice() : [];
+    const lockPerson = !!ctx.lockPerson && personIds.length === 1;
+    const lockPeople = lockPerson || (!!ctx.lockPeople && personIds.length >= 1);
+    let scope = ctx.scope || 'all';
+    let targetIds = [];
+    if (lockPerson) {
+      const pid = personIds[0];
+      scope = 'all';
+      targetIds = drives.filter(d => !d.excluded && !d.memberIds.includes(pid)).map(d => d.id);
+    } else if (lockPeople) {
+      scope = 'all';
+      targetIds = drives.filter(d => !d.excluded).map(d => d.id);
+    } else if (scope === 'this' && ctx.driveId) targetIds = [ctx.driveId];
+    else if (scope === 'selected') targetIds = this.state.selected.slice();
+    else targetIds = drives.filter(d => !d.excluded).map(d => d.id);
+    if (!lockPeople && scope === 'selected' && targetIds.length === 0) { scope = 'all'; targetIds = drives.filter(d => !d.excluded).map(d => d.id); }
+    this.setState({
+      flowOpen: true, panelId: null, personId: null, flowSearch: '',
+      flow: { mode, step: lockPeople ? 2 : 1, scope, personIds, targetIds, contextDriveId: ctx.driveId || null, lockPerson, lockPeople }
+    });
+  }
+  openAddGlobal = () => this.openFlow('add', { scope: this.state.selected.length ? 'selected' : 'all' });
+  bulkAdd = () => this.openFlow('add', { scope: 'selected' });
+  bulkRemove = () => this.openFlow('remove', { scope: 'selected' });
+  flowCancel = () => { clearTimeout(this._timer); this.setState({ flowOpen: false, flow: null }); };
+  onFlowSearch = (e) => this.setState({ flowSearch: e.target.value });
+  toggleFlowPerson(pid) {
+    this.setState(s => { const f = s.flow; if (!f) return {}; const has = f.personIds.includes(pid); return { flow: { ...f, personIds: has ? f.personIds.filter(x => x !== pid) : [...f.personIds, pid] } }; });
+  }
+  setFlowScope(scope) {
+    this.setState(s => {
+      const f = s.flow; if (!f) return {};
+      let targetIds = [];
+      if (scope === 'this' && f.contextDriveId) targetIds = [f.contextDriveId];
+      else if (scope === 'selected') targetIds = s.selected.filter(id => { const d = this.getDrive(id); return d && !d.excluded; });
+      else targetIds = s.drives.filter(d => !d.excluded).map(d => d.id);
+      return { flow: { ...f, scope, targetIds } };
+    });
+  }
+  toggleFlowTarget(id) {
+    const d = this.getDrive(id); if (!d || d.excluded) return;
+    const cur = this.state.flow;
+    if (cur && cur.lockPerson && d.memberIds.includes(cur.personIds[0])) return;
+    this.setState(s => { const f = s.flow; if (!f) return {}; const has = f.targetIds.includes(id); return { flow: { ...f, scope: 'custom', targetIds: has ? f.targetIds.filter(x => x !== id) : [...f.targetIds, id] } }; });
+  }
+  flowBack = () => this.setState(s => { const f = s.flow; if (!f) return null; const floor = f.lockPeople ? 2 : 1; return { flow: { ...f, step: Math.max(floor, f.step - 1) } }; });
+  flowNext = () => {
+    const f = this.state.flow; if (!f) return;
+    if (f.step < 3) this.setState({ flow: { ...f, step: f.step + 1 } });
+    else this.runBulk();
+  };
+
+  runBulk() {
+    const f = this.state.flow; if (!f) return;
+    const personIds = f.personIds.slice();
+    const targets = f.targetIds.filter(id => { const d = this.getDrive(id); return d && !d.excluded; });
+    const total = targets.length;
+    const mode = f.mode;
+    if (personIds.length === 0 || total === 0) { this.setState({ flowOpen: false, flow: null }); this.showToast({ text: 'Nothing to update', error: true }); return; }
+    this.setState({ flowOpen: false, loading: { text: 'Preparing…', pct: '0%', current: 0, total, mode } });
+    const skipped = [], failed = [], done = [];
+    const simErr = this.props.simulateErrors !== false;
+    let i = 0;
+    const tick = () => {
+      if (i >= total) { this.finishBulk(mode, { skipped, failed, done }); return; }
+      const drive = this.getDrive(targets[i]);
+      if (drive) personIds.forEach((pid, pIdx) => {
+        const person = this.getPerson(pid); if (!person) return;
+        if (mode === 'add') {
+          if (drive.memberIds.includes(pid)) {
+            skipped.push({ who: person.name, where: drive.name, note: pid === 'p1' ? 'Already a member — matched jsmith ↔ john.smith' : 'Already a member' });
+          } else { drive.memberIds.push(pid); done.push({ who: person.name, where: drive.name }); }
+        } else {
+          if (!drive.memberIds.includes(pid)) { /* not present */ }
+          else if (simErr && ((i + pIdx) % 9 === 0)) { failed.push({ who: person.name, where: drive.name, note: 'Permission denied — needs Workspace admin' }); }
+          else { drive.memberIds = drive.memberIds.filter(x => x !== pid); done.push({ who: person.name, where: drive.name }); }
+        }
+      });
+      i++;
+      this.setState(s => ({ loading: { text: 'Updating drive ' + i + ' of ' + total + '…', pct: Math.round(i / total * 100) + '%', current: i, total, mode }, drives: [...s.drives] }));
+      this._timer = setTimeout(tick, Math.max(160, 820 - total * 22));
+    };
+    this._timer = setTimeout(tick, 520);
+  }
+
+  finishBulk(mode, r) {
+    clearTimeout(this._timer);
+    const skipped = r.skipped, failed = r.failed, done = r.done;
+    if (mode === 'remove' && (this.props.simulateErrors !== false) && failed.length === 0 && done.length > 1) {
+      const f = done.pop(); f.note = 'Permission denied — needs Workspace admin'; failed.push(f);
+    }
+    const dc = done.length, sc = skipped.length, fc = failed.length;
+    const verb = mode === 'add' ? 'Added' : 'Removed';
+    const summary = verb + ' ' + dc + ' membership' + (dc === 1 ? '' : 's')
+      + (sc ? ' · ' + sc + ' skipped' : '') + (fc ? ' · ' + fc + ' failed' : '');
+    const results = {
+      title: mode === 'add' ? 'Members added' : 'Members removed',
+      summary,
+      hasSkipped: sc > 0, hasFailed: fc > 0,
+      skipped, failed,
+      skippedLabel: sc + (sc === 1 ? ' membership' : ' memberships'),
+      failedLabel: fc + (fc === 1 ? ' membership' : ' memberships'),
+      iconBg: fc > 0 ? '#FCEBEC' : '#E4F3E9', iconColor: fc > 0 ? '#D0454A' : '#2E9E5B'
+    };
+    const toast = fc > 0 ? { text: 'Completed with ' + fc + ' error' + (fc === 1 ? '' : 's') + ' — see summary', error: true } : { text: summary, success: true };
+    const le = this.logEntry({ type: mode, title: (mode === 'add' ? 'Added ' : 'Removed ') + dc + ' membership' + (dc === 1 ? '' : 's'), detail: ((sc ? sc + ' skipped' : '') + (sc && fc ? ' · ' : '') + (fc ? fc + ' failed' : '')) || (mode === 'add' ? 'All added' : 'All removed'), tone: fc > 0 ? 'red' : null });
+    this.setState(s => ({ loading: null, resultsOpen: true, results, selected: [], flow: null, drives: [...s.drives], activityLog: [le, ...s.activityLog] }));
+    this.showToast(toast);
+  }
+
+  renderVals() {
+    const s = this.state, V = {};
+    const yellow = '#F5A623', ink = '#1B2230';
+    V.orgName = this.props.orgName || 'Engineering Surveys';
+    V.stop = this.stop;
+    V.viewDrives = s.view === 'drives'; V.notDrives = s.view !== 'drives';
+    V.viewMembers = s.view === 'members'; V.notMembers = s.view !== 'members';
+    V.totalDrives = s.drives.length; V.totalMembers = s.people.length;
+    V.viewActivity = s.view === 'activity'; V.notActivity = s.view !== 'activity';
+    V.totalActivity = s.activityLog.length; V.goActivity = this.goActivity;
+    const cats = [['all', 'All'], ['create', 'Created'], ['add', 'Added'], ['remove', 'Removed'], ['directory', 'Directory']];
+    V.logChips = cats.map(c => { const on = s.logFilter === c[0]; return { key: c[0], label: c[1], onClick: () => this.setLogFilter(c[0]), bg: on ? '#1B2230' : '#fff', color: on ? '#fff' : '#1B2230', border: on ? '#1B2230' : '#E2DACC' }; });
+    const catOf = (t) => t === 'create' ? 'create' : t === 'add' ? 'add' : t === 'remove' ? 'remove' : 'directory';
+    const cmap = { create: { bg: '#FBEFD6', c: '#8a6a1a' }, add: { bg: '#E4F3E9', c: '#2E9E5B' }, remove: { bg: '#FCEBEC', c: '#D0454A' }, directory: { bg: '#EEF1F6', c: '#3A4557' } };
+    V.activityRows = s.activityLog.filter(e => s.logFilter === 'all' || catOf(e.type) === s.logFilter).map(e => {
+      const cat = catOf(e.type), cm = cmap[cat];
+      return { id: e.id, title: e.title, time: this.relTime(e.ts), iconBg: cm.bg, iconColor: cm.c, isCreate: cat === 'create', isAdd: cat === 'add', isRemove: cat === 'remove', isDirectory: cat === 'directory', detailLine: e.actor + (e.detail ? ' · ' + e.detail : ''), detailColor: e.tone === 'red' ? '#b45459' : '#8A8172' };
+    });
+    V.hasActivity = V.activityRows.length > 0; V.noActivity = V.activityRows.length === 0;
+    V.search = s.search; V.onSearch = this.onSearch;
+    V.goDrives = this.goDrives; V.goMembers = this.goMembers;
+    V.openCreate = this.openCreate; V.openAddGlobal = this.openAddGlobal; V.openAddPerson = this.openAddPerson;
+    V.sortByName = this.sortByName; V.sortByMembers = this.sortByMembers;
+    V.sortNameArrow = s.sortKey === 'name' ? (s.sortDir > 0 ? '↑' : '↓') : '';
+    V.sortMembersArrow = s.sortKey === 'members' ? (s.sortDir > 0 ? '↑' : '↓') : '';
+
+    // ---- drive rows ----
+    const q = (s.search || '').toLowerCase();
+    let drives = s.drives.slice();
+    const dir = s.sortDir || 1;
+    if (s.sortKey === 'members') drives.sort((a, b) => (a.memberIds.length - b.memberIds.length) * dir);
+    else drives.sort((a, b) => a.name.localeCompare(b.name) * dir);
+    const df = s.driveFilter || 'all';
+    const visDrives = drives.filter(d => d.name.toLowerCase().includes(q) && (df === 'all' || (df === 'standard' && !d.excluded) || (df === 'protected' && d.excluded) || (df === 'empty' && d.memberIds.length === 0)));
+    const DPAGE = 12;
+    const dTotal = visDrives.length, dPages = Math.max(1, Math.ceil(dTotal / DPAGE)), dCur = Math.min(Math.max(1, s.drivePage), dPages), dStart = (dCur - 1) * DPAGE;
+    V.drivePg = this.pageInfo(dTotal, dPages, dCur, dStart, DPAGE, this.setDrivePage);
+    V.driveRows = visDrives.slice(dStart, dStart + DPAGE).map(d => {
+      const av = d.memberIds.slice(0, 3).map(pid => ({ initials: (this.getPerson(pid) || {}).initials || '?' }));
+      return {
+        id: d.id, name: d.name, excluded: d.excluded, notExcluded: !d.excluded,
+        memberCount: d.memberIds.length, memberLabel: d.memberIds.length + (d.memberIds.length === 1 ? ' member' : ' members'),
+        avatars: av, activity: d.activity || '—',
+        selected: s.selected.includes(d.id),
+        onToggle: () => this.toggleSelectDrive(d.id),
+        onView: () => this.setState({ panelId: d.id }),
+        onAdd: () => this.openFlow('add', { scope: 'this', driveId: d.id })
+      };
+    });
+    V.hasDriveRows = dTotal > 0; V.noDriveRows = dTotal === 0;
+    const selVis = visDrives.filter(d => !d.excluded);
+    V.allSelected = selVis.length > 0 && selVis.every(d => s.selected.includes(d.id));
+    V.toggleSelectAll = this.toggleSelectAll;
+    V.hasSelection = s.selected.length > 0;
+    V.selectedLabel = s.selected.length + (s.selected.length === 1 ? ' drive selected' : ' drives selected');
+    V.bulkAdd = this.bulkAdd; V.bulkRemove = this.bulkRemove; V.clearSelection = this.clearSelection;
+    const dFiltered = q || (s.driveFilter && s.driveFilter !== 'all');
+    V.emptyDrivesTitle = dFiltered ? 'No matching drives' : 'No shared drives yet';
+    V.emptyDrivesText = dFiltered ? 'No drives match your search or filter. Try clearing them.' : 'Create your first shared drive to get started.';
+    V.driveFilters = [['all', 'All'], ['standard', 'Standard'], ['protected', 'Protected'], ['empty', 'Empty']].map(c => { const on = (s.driveFilter || 'all') === c[0]; return { key: c[0], label: c[1], onClick: () => this.setDriveFilter(c[0]), bg: on ? '#1B2230' : '#fff', color: on ? '#fff' : '#1B2230', border: on ? '#1B2230' : '#E2DACC' }; });
+
+    // ---- member rows ----
+    const mf = s.memberFilter || 'all';
+    const ppl = s.people.filter(p => {
+      if (!(p.name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q))) return false;
+      if (mf === 'all') return true;
+      const cnt = s.drives.filter(d => d.memberIds.includes(p.id)).length;
+      return mf === 'on' ? cnt > 0 : cnt === 0;
+    });
+    const MPAGE = 12;
+    const mTotal = ppl.length, mPages = Math.max(1, Math.ceil(mTotal / MPAGE)), mCur = Math.min(Math.max(1, s.memberPage), mPages), mStart = (mCur - 1) * MPAGE;
+    V.memberPg = this.pageInfo(mTotal, mPages, mCur, mStart, MPAGE, this.setMemberPage);
+    V.memberRows = ppl.slice(mStart, mStart + MPAGE).map(p => {
+      const cnt = s.drives.filter(d => d.memberIds.includes(p.id)).length;
+      return {
+        id: p.id, initials: p.initials, name: p.name, email: p.email,
+        driveLabel: cnt + (cnt === 1 ? ' drive' : ' drives'),
+        onView: () => this.setState({ personId: p.id }),
+        onRemove: () => this.askRemovePerson(p.id)
+      };
+    });
+    V.hasMemberRows = mTotal > 0; V.noMemberRows = mTotal === 0;
+    const mFiltered = q || (s.memberFilter && s.memberFilter !== 'all');
+    V.emptyMembersTitle = mFiltered ? 'No matching people' : 'Directory is empty';
+    V.emptyMembersText = mFiltered ? 'No people match your search or filter.' : 'Add people to build your reusable members list.';
+    V.memberFilters = [['all', 'All'], ['on', 'On drives'], ['none', 'No access']].map(c => { const on = (s.memberFilter || 'all') === c[0]; return { key: c[0], label: c[1], onClick: () => this.setMemberFilter(c[0]), bg: on ? '#1B2230' : '#fff', color: on ? '#fff' : '#1B2230', border: on ? '#1B2230' : '#E2DACC' }; });
+
+    // ---- drive panel ----
+    V.drivePanelOpen = !!s.panelId && !!this.getDrive(s.panelId);
+    if (V.drivePanelOpen) {
+      const d = this.getDrive(s.panelId);
+      V.panel = {
+        name: d.name, excluded: d.excluded,
+        memberLabel: d.memberIds.length + (d.memberIds.length === 1 ? ' member' : ' members'),
+        hasMembers: d.memberIds.length > 0, empty: d.memberIds.length === 0,
+        members: d.memberIds.map(pid => { const p = this.getPerson(pid) || {}; return { initials: p.initials || '?', name: p.name || 'Unknown', email: p.email || '', onRemove: () => this.removeOne(d.id, pid) }; })
+      };
+    } else { V.panel = {}; }
+    V.closeDrivePanel = this.closeDrivePanel; V.panelAdd = this.panelAdd;
+
+    // ---- person panel ----
+    V.personPanelOpen = !!s.personId && !!this.getPerson(s.personId);
+    if (V.personPanelOpen) {
+      const p = this.getPerson(s.personId);
+      const on = s.drives.filter(d => d.memberIds.includes(p.id));
+      V.person = {
+        name: p.name, email: p.email, initials: p.initials,
+        driveLabel: 'On ' + on.length + (on.length === 1 ? ' drive' : ' drives'),
+        hasDrives: on.length > 0, empty: on.length === 0,
+        drives: on.map(d => ({ name: d.name, excluded: d.excluded, memberLabel: d.memberIds.length + ' members', onRemove: () => this.removeOne(d.id, p.id) })),
+        onAddToDrives: () => this.openFlow('add', { lockPerson: true, personIds: [p.id] })
+      };
+    } else { V.person = {}; }
+    V.closePersonPanel = this.closePersonPanel;
+
+    // ---- flow ----
+    V.flowOpen = !!s.flowOpen && !!s.flow;
+    V.flowSearch = s.flowSearch; V.onFlowSearch = this.onFlowSearch;
+    V.flowCancel = this.flowCancel; V.flowBack = this.flowBack; V.flowNext = this.flowNext;
+    V.setScopeThis = () => this.setFlowScope('this');
+    V.setScopeSelected = () => this.setFlowScope('selected');
+    V.setScopeAll = () => this.setFlowScope('all');
+    const f = s.flow;
+    if (f) {
+      const fq = (s.flowSearch || '').toLowerCase();
+      V.flowStep1 = f.step === 1; V.flowStep2 = f.step === 2; V.flowStep3 = f.step === 3;
+      V.flowPeople = s.people.filter(p => p.name.toLowerCase().includes(fq) || p.email.toLowerCase().includes(fq)).map(p => {
+        const cnt = s.drives.filter(d => d.memberIds.includes(p.id)).length;
+        return { id: p.id, initials: p.initials, name: p.name, email: p.email, picked: f.personIds.includes(p.id), driveLabel: cnt + ' drives', onToggle: () => this.toggleFlowPerson(p.id) };
+      });
+      const lp = f.lockPerson ? f.personIds[0] : null;
+      let tdrives = s.drives.map(d => { const already = lp ? d.memberIds.includes(lp) : false; return { d, already, disabled: d.excluded || already }; });
+      if (lp) { const rank = x => x.d.excluded ? 2 : (x.already ? 1 : 0); tdrives = tdrives.slice().sort((a, b) => rank(a) - rank(b) || a.d.name.localeCompare(b.d.name)); }
+      V.flowTargetDrives = tdrives.map(({ d, already, disabled }) => ({
+        id: d.id, name: d.name, excluded: d.excluded, already, showAlready: already && !d.excluded,
+        disabled, checked: f.targetIds.includes(d.id) && !disabled,
+        memberLabel: d.memberIds.length + ' members',
+        cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? '.5' : '1',
+        onToggle: () => this.toggleFlowTarget(d.id)
+      }));
+      const nP = f.personIds.length;
+      const active = f.targetIds.filter(id => { const d = this.getDrive(id); return d && !d.excluded; });
+      const nD = active.length;
+      const totalExcluded = s.drives.filter(d => d.excluded).length;
+      const isAdd = f.mode === 'add', isRemove = f.mode === 'remove';
+      const canNext = (f.step === 1 && nP > 0) || (f.step === 2 && nD > 0) || f.step === 3;
+      const pick = (on) => on ? { bg: '#1B2230', bd: '#1B2230', c: '#fff' } : { bg: '#fff', bd: '#E2DACC', c: '#1B2230' };
+      const th = pick(f.scope === 'this'), sel = pick(f.scope === 'selected'), al = pick(f.scope === 'all');
+      const barActive = '#F5A623', barIdle = '#EFE7D6';
+      V.flow = {
+        mode: f.mode, isAdd, isRemove, step: f.step,
+        title: f.lockPeople ? 'Add to drives' : (isAdd ? 'Add members' : 'Remove members'),
+        stepLabel: f.lockPeople ? ('Step ' + (f.step - 1) + ' of 2 · ' + (f.step === 2 ? 'Choose drives' : 'Review & confirm')) : ('Step ' + f.step + ' of 3 · ' + (f.step === 1 ? 'Choose people' : f.step === 2 ? 'Choose drives' : 'Review & confirm')),
+        bars: f.lockPeople ? [{ color: barActive }, { color: f.step >= 3 ? barActive : barIdle }] : [{ color: barActive }, { color: f.step >= 2 ? barActive : barIdle }, { color: f.step >= 3 ? barActive : barIdle }],
+        showScope: !f.lockPeople, lockPerson: !!f.lockPerson, lockPeople: !!f.lockPeople,
+        lockBanner: lp ? ('Adding ' + ((this.getPerson(lp) || {}).name) + ' — drives they already belong to are greyed out.') : (f.lockPeople ? ('Adding ' + nP + ' people to the drives you select below.') : ''),
+        pickedLabel: nP + (nP === 1 ? ' person selected' : ' people selected'),
+        hasThis: !!f.contextDriveId, hasSelected: s.selected.length > 0,
+        thisBg: th.bg, thisBorder: th.bd, thisColor: th.c,
+        selBg: sel.bg, selBorder: sel.bd, selColor: sel.c,
+        allBg: al.bg, allBorder: al.bd, allColor: al.c,
+        hasExcludedNote: totalExcluded > 0,
+        excludedNote: totalExcluded + ' protected drive' + (totalExcluded === 1 ? ' is' : 's are') + ' excluded from bulk changes.',
+        confirmTitle: (isAdd ? 'Add ' : 'Remove ') + nP + (nP === 1 ? ' person ' : ' people ') + (isAdd ? 'to ' : 'from ') + nD + (nD === 1 ? ' drive?' : ' drives?'),
+        confirmSummary: (isAdd ? 'This grants Content Manager access to ' : 'This revokes access for ') + nP + ' member' + (nP === 1 ? '' : 's') + ' across ' + nD + ' shared drive' + (nD === 1 ? '' : 's') + '.',
+        pickedPeople: f.personIds.map(pid => { const p = this.getPerson(pid) || {}; return { name: p.name || '?', initials: p.initials || '?' }; }),
+        targetNames: active.map(id => ({ name: this.getDrive(id).name })),
+        canBack: f.lockPeople ? f.step > 2 : f.step > 1,
+        nextLabel: f.step < 3 ? 'Continue' : (isAdd ? ('Add ' + nP + ' member' + (nP === 1 ? '' : 's')) : ('Remove ' + nP + ' member' + (nP === 1 ? '' : 's'))),
+        nextContinue: canNext && f.step < 3,
+        nextPrimary: canNext && f.step === 3 && isAdd,
+        nextDanger: canNext && f.step === 3 && isRemove,
+        nextDisabled: !canNext
+      };
+    } else { V.flow = {}; V.flowStep1 = V.flowStep2 = V.flowStep3 = false; V.flowPeople = []; V.flowTargetDrives = []; }
+
+    // ---- create / add person ----
+    V.createOpen = s.createOpen; V.closeCreate = this.closeCreate; V.onCreateName = this.onCreateName;
+    V.submitCreate = this.submitCreate; V.createName = s.createName;
+    V.createError = !!s.createError; V.createErrorText = s.createError;
+    V.createBorder = s.createError ? '#E5484D' : '#E2DACC';
+    V.createMemberSearch = s.createMemberSearch || ''; V.onCreateMemberSearch = this.onCreateMemberSearch;
+    const cms = s.createMembers || [];
+    V.createMemberLabel = cms.length + ' selected';
+    const cq = (s.createMemberSearch || '').toLowerCase();
+    V.createPeople = s.people.filter(p => p.name.toLowerCase().includes(cq) || p.email.toLowerCase().includes(cq)).map(p => ({ id: p.id, initials: p.initials, name: p.name, email: p.email, picked: cms.includes(p.id), onToggle: () => this.toggleCreateMember(p.id) }));
+    const cvis = V.createPeople.map(p => p.id);
+    V.createAllSelected = cvis.length > 0 && cvis.every(id => cms.includes(id));
+    V.toggleCreateAll = this.toggleCreateAll;
+    V.addPersonOpen = s.addPersonOpen; V.closeAddPerson = this.closeAddPerson;
+    V.onApName = this.onApName; V.onApEmail = this.onApEmail; V.submitAddPerson = this.submitAddPerson;
+    V.apName = s.apName; V.apEmail = s.apEmail; V.apError = !!s.apError; V.apErrorText = s.apError;
+    V.apBorder = s.apError ? '#E5484D' : '#E2DACC';
+
+    // ---- confirm ----
+    V.confirmOpen = s.confirmOpen;
+    V.confirm = s.confirm ? { ...s.confirm, notDanger: !s.confirm.danger } : {};
+    V.confirmExtra = s.confirmExtra; V.toggleConfirmExtra = this.toggleConfirmExtra;
+    V.confirmNo = this.confirmNo; V.confirmYes = this.confirmYes;
+
+    // ---- results ----
+    V.resultsOpen = s.resultsOpen; V.results = s.results || {}; V.closeResults = this.closeResults;
+
+    // ---- loading / toast ----
+    V.loadingOpen = !!s.loading; V.loading = s.loading || {};
+    V.toastOpen = !!s.toast; V.toast = s.toast || {}; V.dismissToast = this.dismissToast;
+
+    return V;
+  }
+}
+</script>
+</body>
+</html>

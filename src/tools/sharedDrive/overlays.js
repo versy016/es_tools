@@ -4,15 +4,13 @@ import {
     faXmark, faUserPlus, faFolderPlus, faTriangleExclamation, faCheck, faCircleCheck,
 } from '@fortawesome/free-solid-svg-icons';
 import { resolvePerson, samePerson } from './data';
+import { ORG_DOMAIN, isValidOrgEmail as validOrgEmail, normalizeEmail, sameIdentity } from '../../lib/emailIdentity';
 
 export const Avatar = ({ person, lg }) => (
     <span className={`sdm-av${lg ? ' lg' : ''}`}>{person?.initials || '?'}</span>
 );
 
 const Backdrop = ({ onClick }) => <div className="sdm-backdrop" onClick={onClick} />;
-
-const ORG_DOMAIN = 'engsurveys.com.au';
-const isOrgEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim()) && (s || '').toLowerCase().trim().endsWith(`@${ORG_DOMAIN}`);
 
 // ---- Drive members slide-over ----
 export const DriveMembersPanel = ({ drive, directory, onClose, onAdd, onRemove }) => {
@@ -80,16 +78,33 @@ export const PersonDrivesPanel = ({ person, drives, onClose, onAddToDrives, onRe
 };
 
 // ---- Create drive modal ----
-export const CreateDriveModal = ({ existingNames, people, defaultMemberIds, onCancel, onCreate }) => {
+// Members are collected as EMAILS: tick anyone already known (directory + people already on
+// drives), and/or type any @engsurveys.com.au address to add someone who isn't listed yet.
+export const CreateDriveModal = ({ existingNames, people, onCancel, onCreate }) => {
     const [name, setName] = useState('');
     const [err, setErr] = useState('');
     const [search, setSearch] = useState('');
-    const [selected, setSelected] = useState(defaultMemberIds || []);
+    const [selected, setSelected] = useState([]);   // normalised emails
 
-    const filtered = people.filter((p) => (p.name + ' ' + p.email).toLowerCase().includes(search.toLowerCase()));
-    const allShown = filtered.length > 0 && filtered.every((p) => selected.includes(p.id));
-    const toggle = (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-    const toggleAll = () => setSelected((s) => (allShown ? s.filter((id) => !filtered.some((p) => p.id === id)) : [...new Set([...s, ...filtered.map((p) => p.id)])]));
+    const has = (email) => selected.some((e) => sameIdentity(e, email));
+    const addEmail = (raw) => {
+        const e = normalizeEmail(raw);
+        if (!validOrgEmail(e)) { setErr(`Enter a valid @${ORG_DOMAIN} email.`); return false; }
+        if (has(e)) { setErr('That person is already selected.'); return false; }
+        setSelected((s) => [...s, e]); setErr('');
+        return true;
+    };
+    const removeEmail = (email) => setSelected((s) => s.filter((e) => e !== email));
+    const togglePerson = (p) => setSelected((s) => (has(p.email) ? s.filter((e) => !sameIdentity(e, p.email)) : [...s, normalizeEmail(p.email)]));
+
+    const filtered = people.filter((p) => (p.name + ' ' + p.email).toLowerCase().includes(search.toLowerCase().trim()));
+    const typedIsEmail = validOrgEmail(search) && !has(search);
+    const nameFor = (email) => { const p = people.find((x) => sameIdentity(x.email, email)); return p ? p.name : email; };
+    const onKeyDown = (e) => { if (e.key === 'Enter' && typedIsEmail) { e.preventDefault(); if (addEmail(search)) setSearch(''); } };
+    const allShownSelected = filtered.length > 0 && filtered.every((p) => has(p.email));
+    const toggleAllShown = () => setSelected((s) => (allShownSelected
+        ? s.filter((e) => !filtered.some((p) => sameIdentity(p.email, e)))
+        : [...s, ...filtered.map((p) => normalizeEmail(p.email)).filter((e) => !s.some((x) => sameIdentity(x, e)))]));
 
     const submit = () => {
         const n = name.trim();
@@ -110,16 +125,41 @@ export const CreateDriveModal = ({ existingNames, people, defaultMemberIds, onCa
                     {err && <div className="sdm-field-err">{err}</div>}
                     <div className="sdm-field" style={{ marginBottom: 6 }}>Members to add <span style={{ fontWeight: 500, color: 'var(--sdm-muted2)' }}>({selected.length} selected)</span></div>
                     <div className="sdm-search" style={{ width: '100%', marginBottom: 8 }}>
-                        <input placeholder="Search people" value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <input placeholder="Search people or type an email to add…" value={search}
+                            onChange={(e) => { setSearch(e.target.value); if (err) setErr(''); }} onKeyDown={onKeyDown} />
                     </div>
-                    <div className="sdm-picklist">
-                        <label className="sdm-pick sdm-pick-sticky"><input type="checkbox" className="sdm-check" checked={allShown} onChange={toggleAll} /> Select all</label>
-                        {filtered.map((p) => (
-                            <label className="sdm-pick" key={p.id}>
-                                <input type="checkbox" className="sdm-check" checked={selected.includes(p.id)} onChange={() => toggle(p.id)} />
-                                <Avatar person={p} /> <span>{p.name}</span> <span className="meta">{p.email}</span>
-                            </label>
-                        ))}
+                    {typedIsEmail && (
+                        <button className="sdm-btn sdm-btn-outline sm" style={{ marginBottom: 10 }} onClick={() => { if (addEmail(search)) setSearch(''); }}>
+                            <FontAwesomeIcon icon={faUserPlus} /> Add “{search.trim().toLowerCase()}”
+                        </button>
+                    )}
+                    {selected.length > 0 && (
+                        <div className="sdm-tagrow" style={{ marginBottom: 10 }}>
+                            {selected.map((email) => (
+                                <span className="sdm-tag sdm-tag-rm" key={email} title={email}>{nameFor(email)}
+                                    <button className="sdm-tag-x" onClick={() => removeEmail(email)} aria-label={`Remove ${email}`}><FontAwesomeIcon icon={faXmark} /></button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                    <div className="sdm-picklist sdm-picklist-tall">
+                        {filtered.length === 0 ? (
+                            <div className="sdm-note" style={{ padding: '12px 14px' }}>
+                                {people.length === 0
+                                    ? 'No saved people yet — type any @engsurveys.com.au email above to add someone, or build a reusable list under Members Directory.'
+                                    : 'No people match your search. Type a full email above to add someone new.'}
+                            </div>
+                        ) : (
+                            <>
+                                <label className="sdm-pick sdm-pick-sticky"><input type="checkbox" className="sdm-check" checked={allShownSelected} onChange={toggleAllShown} /> Select all</label>
+                                {filtered.map((p) => (
+                                    <label className="sdm-pick" key={p.id}>
+                                        <input type="checkbox" className="sdm-check" checked={has(p.email)} onChange={() => togglePerson(p)} />
+                                        <Avatar person={p} /> <span className="sdm-pick-name">{p.name}</span> <span className="meta">{p.email}</span>
+                                    </label>
+                                ))}
+                            </>
+                        )}
                     </div>
                 </div>
                 <div className="sdm-modal-foot">
@@ -138,7 +178,7 @@ export const AddMemberModal = ({ existingEmails, onCancel, onAdd }) => {
     const [err, setErr] = useState('');
     const submit = () => {
         if (!name.trim()) { setErr('Enter the person’s full name.'); return; }
-        if (!isOrgEmail(email)) { setErr(`Enter a valid @${ORG_DOMAIN} email.`); return; }
+        if (!validOrgEmail(email)) { setErr(`Enter a valid @${ORG_DOMAIN} email.`); return; }
         if ((existingEmails || []).some((e) => e.toLowerCase() === email.trim().toLowerCase())) { setErr('That person is already in the directory.'); return; }
         onAdd(name.trim(), email.trim().toLowerCase());
     };

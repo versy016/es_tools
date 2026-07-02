@@ -11,6 +11,13 @@ export * from './googleDrive';
 export const PROTECTED_DRIVES = ['Backups', 'Management'];
 export const isProtected = (name) => PROTECTED_DRIVES.includes(name);
 
+// Drives a brand-new member should NOT get by default. The "New member" quick-pick in the
+// add-members wizard selects every (non-protected) drive except these. Matched by name,
+// case-insensitive + trimmed. Edit this list to change the default.
+export const NEW_MEMBER_EXCLUDED_DRIVES = ['Accounts QT'];
+export const isNewMemberExcluded = (name) =>
+    NEW_MEMBER_EXCLUDED_DRIVES.some((n) => n.toLowerCase() === String(name || '').trim().toLowerCase());
+
 const rowToPerson = (r) => {
     const name = r.full_name || r.email;
     const [first, ...rest] = name.split(' ');
