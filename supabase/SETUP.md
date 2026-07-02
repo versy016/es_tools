@@ -175,6 +175,33 @@ Once the hook is enabled, Supabase **stops** sending its default templated email
 own `SMTP_*` secrets. Verify: **Users → Invite** (branded invite arrives) and **Login → Forgot
 password** (branded reset link arrives, only for `@engsurveys.com.au`).
 
+### 5c. Shared Drive Manager (Google Drive)
+
+The Shared Drive Manager (admin/manager-only tool) manages Google shared drives + access.
+Drives + membership are read/written **directly from the browser** using the signed-in
+manager's Google token (per-user OAuth — no service account). The reusable **Members
+Directory** and the **Activity Log** are Supabase tables.
+
+1. **Database:** run migration [`0003_shared_drive.sql`](migrations/0003_shared_drive.sql)
+   (SQL editor or `supabase db push`) — creates `shared_drive_directory` +
+   `shared_drive_activity` with admin/manager RLS.
+2. **Google Cloud Console** (same project is fine):
+   - **APIs & Services → Enable APIs → Google Drive API.**
+   - **OAuth consent screen** → User type **Internal** (engsurveys.com.au) → add scope
+     `https://www.googleapis.com/auth/drive`.
+   - **Credentials → Create credentials → OAuth client ID → Web application.** Under
+     **Authorized JavaScript origins** add `https://estools.com.au` and
+     `http://localhost:3000`. Copy the **Client ID** (it ends `.apps.googleusercontent.com`).
+3. **Frontend env:** set `REACT_APP_GOOGLE_CLIENT_ID=<that client id>` in `.env` / `.env.local`
+   and rebuild. (Public value, baked into the bundle — fine; it's not a secret.)
+4. **Who can use it:** the tool is restricted to ES Tools **admins/managers**, and the
+   Google account they connect must be allowed to manage shared drives. A **Workspace
+   admin** sees/edits every shared drive (via domain-admin access); a non-admin only sees
+   drives they belong to. Members are added as **Content Manager** (no notification email).
+
+> No service-account key or domain-wide delegation needed — each manager authorises their
+> own Google account when they open the tool (token is in-memory, re-prompted each session).
+
 ## 6. Frontend environment
 
 Create `.env` (or `.env.local`) in the repo root — these are public/publishable keys:
@@ -189,6 +216,9 @@ REACT_APP_DOCX_PDF_ENDPOINT=https://<project-ref>.supabase.co/functions/v1/docx-
 
 # Internal archive copy of every report (flip to bgosling@ after testing)
 REACT_APP_REPORT_ARCHIVE_EMAIL=sverma@engsurveys.com.au
+
+# Shared Drive Manager — Google OAuth client id (step 5c)
+REACT_APP_GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
 ```
 
 Restart `npm start` after editing env files.

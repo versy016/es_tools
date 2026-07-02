@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { Avatar } from './overlays';
+import { samePerson } from './data';
 
 // Add/Remove members wizard (right slide-over). Self-contained: manages its own step +
 // selection state and calls onConfirm(personIds, driveIds). When lockPeople is provided
@@ -11,6 +12,8 @@ const MemberWizard = ({ mode, people, drives, contextDriveId, contextDriveIds, l
     const selectable = drives.filter((d) => !d.excluded);
     const protectedCount = drives.length - selectable.length;
     const singlePerson = locked && lockPeople.length === 1 ? lockPeople[0] : null;
+    const singleEmail = singlePerson ? (people.find((p) => p.id === singlePerson) || {}).email : null;
+    const inDrive = (d) => (d.members || []).some((m) => samePerson(singleEmail, m.email));
 
     const [personIds, setPersonIds] = useState(locked ? lockPeople.slice() : []);
     const [targetIds, setTargetIds] = useState(() => {
@@ -36,9 +39,10 @@ const MemberWizard = ({ mode, people, drives, contextDriveId, contextDriveIds, l
     // For a single locked person in ADD mode, sort drives they're already in to the bottom.
     const driveList = useMemo(() => {
         const list = selectable.slice();
-        if (mode === 'add' && singlePerson) list.sort((a, b) => Number(a.memberIds.includes(singlePerson)) - Number(b.memberIds.includes(singlePerson)));
+        if (mode === 'add' && singleEmail) list.sort((a, b) => Number(inDrive(a)) - Number(inDrive(b)));
         return list;
-    }, [selectable, mode, singlePerson]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectable, mode, singleEmail]);
 
     const canNext = key === 'people' ? personIds.length > 0 : key === 'drives' ? targetIds.length > 0 : true;
     const isLast = stepIdx === stepKeys.length - 1;
@@ -91,7 +95,7 @@ const MemberWizard = ({ mode, people, drives, contextDriveId, contextDriveIds, l
                             <div className="sdm-steplabel">{targetIds.length} drive{targetIds.length === 1 ? '' : 's'} selected</div>
                             <div className="sdm-picklist">
                                 {driveList.map((d) => {
-                                    const already = mode === 'add' && singlePerson && d.memberIds.includes(singlePerson);
+                                    const already = mode === 'add' && singleEmail && inDrive(d);
                                     return (
                                         <label className={`sdm-pick${already ? ' disabled' : ''}`} key={d.id}>
                                             <input type="checkbox" className="sdm-check" disabled={already} checked={targetIds.includes(d.id)} onChange={() => toggleDrive(d.id)} />

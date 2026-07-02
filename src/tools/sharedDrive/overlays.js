@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faXmark, faUserPlus, faFolderPlus, faTriangleExclamation, faCheck, faCircleCheck,
 } from '@fortawesome/free-solid-svg-icons';
+import { resolvePerson, samePerson } from './data';
 
 export const Avatar = ({ person, lg }) => (
     <span className={`sdm-av${lg ? ' lg' : ''}`}>{person?.initials || '?'}</span>
@@ -14,8 +15,8 @@ const ORG_DOMAIN = 'engsurveys.com.au';
 const isOrgEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim()) && (s || '').toLowerCase().trim().endsWith(`@${ORG_DOMAIN}`);
 
 // ---- Drive members slide-over ----
-export const DriveMembersPanel = ({ drive, people, onClose, onAdd, onRemove }) => {
-    const members = drive.memberIds.map((id) => people.find((p) => p.id === id)).filter(Boolean);
+export const DriveMembersPanel = ({ drive, directory, onClose, onAdd, onRemove }) => {
+    const members = drive.members || [];
     return (
         <>
             <Backdrop onClick={onClose} />
@@ -30,16 +31,19 @@ export const DriveMembersPanel = ({ drive, people, onClose, onAdd, onRemove }) =
                         onClick={onAdd}><FontAwesomeIcon icon={faUserPlus} /> Add member</button>
                     {members.length === 0 ? (
                         <p className="sdm-note">No members in this drive yet.</p>
-                    ) : members.map((m) => (
-                        <div className="sdm-list-row" key={m.id}>
-                            <Avatar person={m} lg />
-                            <div style={{ minWidth: 0 }}>
-                                <div className="sdm-name">{m.name}</div>
-                                <div className="sdm-sub">{m.email} · Content Manager</div>
+                    ) : members.map((m) => {
+                        const p = resolvePerson(m.email, directory);
+                        return (
+                            <div className="sdm-list-row" key={m.permissionId || m.email}>
+                                <Avatar person={p} lg />
+                                <div style={{ minWidth: 0 }}>
+                                    <div className="sdm-name">{p.name}</div>
+                                    <div className="sdm-sub">{m.email} · Content Manager</div>
+                                </div>
+                                <button className="sdm-btn sdm-btn-outline sm" style={{ marginLeft: 'auto' }} onClick={() => onRemove(m)}>Remove</button>
                             </div>
-                            <button className="sdm-btn sdm-btn-outline sm" style={{ marginLeft: 'auto' }} onClick={() => onRemove(m)}>Remove</button>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </aside>
         </>
@@ -48,7 +52,7 @@ export const DriveMembersPanel = ({ drive, people, onClose, onAdd, onRemove }) =
 
 // ---- Person drives slide-over ----
 export const PersonDrivesPanel = ({ person, drives, onClose, onAddToDrives, onRemoveFromDrive }) => {
-    const on = drives.filter((d) => d.memberIds.includes(person.id));
+    const on = drives.filter((d) => (d.members || []).some((m) => samePerson(person.email, m.email)));
     return (
         <>
             <Backdrop onClick={onClose} />
