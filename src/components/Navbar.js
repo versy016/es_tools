@@ -24,7 +24,7 @@ const NavBar = ({ userName, role = 'Surveyor', search, onSearch, onSignOut }) =>
         <nav className="nav">
             <div className="nav-brand" onClick={() => go('/dashboard')}>
                 <img src="/images/ES_Logo_white_background.png" alt="Engineering Surveys"
-                    style={{ height: '40px', width: 'auto', display: 'block' }} />
+                    style={{ height: '50px', width: 'auto', display: 'block' }} />
             </div>
 
             <div className="nav-links">
