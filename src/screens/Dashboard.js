@@ -32,13 +32,21 @@ const Dashboard = () => {
     const showToast = useToast();
     // search/userName come from AppShell via the router Outlet context.
     const { search = '', userName } = useOutletContext() || {};
-    const { allowedTools } = useAuth(); // null = all tools; else only these tool ids
+    const { allowedTools, profile, user } = useAuth(); // tools restriction + profile (for signature onboarding)
     const [favs, setFavs] = useState(loadFavs);
     const [view, setView] = useState('grid');
     const [reports, setReports] = useState(null); // null = loading, [] = loaded-but-empty
 
     // Fetch reports once on mount; drives the recent list and draft count.
     useEffect(() => { listReports().then(setReports); }, []);
+
+    // First login without a signature: nudge the user to set one up (once per browser).
+    useEffect(() => {
+        if (!profile) return;
+        let prompted = false;
+        try { prompted = localStorage.getItem(`es_tools_sig_prompted_${user?.id}`) === '1'; } catch { /* ignore */ }
+        if (!profile.signature && !prompted) navigate('/setup-signature', { replace: true });
+    }, [profile, user, navigate]);
 
     const firstName = (userName || 'there').split(' ')[0];
     const q = search.trim().toLowerCase();

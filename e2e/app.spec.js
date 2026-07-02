@@ -84,6 +84,15 @@ test.describe('as an admin', () => {
     });
 });
 
+test.describe('signature onboarding', () => {
+    test('a new user with no signature is routed to set one up', async ({ page }) => {
+        await authenticate(page, { role: 'surveyor', signature: null });
+        await page.goto('/dashboard');
+        await expect(page).toHaveURL(/\/setup-signature$/);
+        await expect(page.getByRole('heading', { name: /Set up your signature/i })).toBeVisible();
+    });
+});
+
 test.describe('tool restrictions', () => {
     test('a restricted user only sees allowed tools and is blocked from the rest', async ({ page }) => {
         await authenticate(page, { role: 'admin', tools: ['service-location'] });

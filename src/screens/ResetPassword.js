@@ -31,7 +31,8 @@ const ResetPassword = () => {
             if (err) { setError(err.message); return; }
             completePasswordSetup?.();      // lift the blocking gate
             showToast('Password set — you’re all set', 'success');
-            navigate('/dashboard', { replace: true });
+            // New (invited) users go set up their signature first; resets go home.
+            navigate(isInvite ? '/setup-signature' : '/dashboard', { replace: true });
         } finally {
             setBusy(false);
         }

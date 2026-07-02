@@ -16,6 +16,7 @@ import UserManagement from './screens/UserManagement';
 import Profile from './screens/Profile';
 import ResetPassword from './screens/ResetPassword';
 import Welcome from './screens/Welcome';
+import SetupSignature from './screens/SetupSignature';
 import ServiceLocater from './tools/ServiceLocater';
 import PhotoReport from './tools/PhotoReport';
 
@@ -74,6 +75,7 @@ const Routed = () => (
       <Route path="/profile" element={<Profile />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/welcome" element={<Welcome />} />
+      <Route path="/setup-signature" element={<SetupSignature />} />
       <Route path="/tools/photo-report" element={<RequireTool id="photo-report"><PhotoReportRoute /></RequireTool>} />
       <Route path="/tools/service-location" element={<RequireTool id="service-location"><ServiceLocaterRoute /></RequireTool>} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
