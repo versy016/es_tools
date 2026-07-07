@@ -33,7 +33,7 @@ const Dashboard = () => {
     // search/userName come from AppShell via the router Outlet context.
     const { search = '', userName } = useOutletContext() || {};
     const { allowedTools, profile, user, role } = useAuth(); // tools restriction + profile + role
-    const isManagerish = ['admin', 'manager'].includes(String(role || '').toLowerCase());
+    const isManager = String(role || '').toLowerCase() === 'manager'; // top role; admins excluded
     const [favs, setFavs] = useState(loadFavs);
     const [view, setView] = useState('grid');
     const [reports, setReports] = useState(null); // null = loading, [] = loaded-but-empty
@@ -51,8 +51,9 @@ const Dashboard = () => {
 
     const firstName = (userName || 'there').split(' ')[0];
     const q = search.trim().toLowerCase();
-    // Hide manager-only tools from surveyors, apply any per-user tool allowlist, then search.
-    const permitted = TOOLS.filter((t) => (!t.managerOnly || isManagerish) && (!allowedTools || allowedTools.includes(t.id)));
+    // Manager-only tools are shown to managers ONLY (not admins/surveyors); then apply any
+    // per-user tool allowlist before searching.
+    const permitted = TOOLS.filter((t) => (!t.managerOnly || isManager) && (!allowedTools || allowedTools.includes(t.id)));
     const visible = permitted;
     const tools = q ? visible.filter((t) => (t.name + ' ' + t.desc).toLowerCase().includes(q)) : visible;
     const recent = (reports || []).slice(0, 4);

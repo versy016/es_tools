@@ -64,13 +64,13 @@ test.describe('as an admin', () => {
         await expect(page.getByText(/Invite sent/i)).toBeVisible();
     });
 
-    test('opens the Shared Drive Manager and switches sub-nav views', async ({ page }) => {
+    test('does not see the manager-only Shared Drive Manager and is bounced from its route', async ({ page }) => {
         await page.goto('/dashboard');
-        await page.getByText('Shared Drive Manager').click();
-        await expect(page).toHaveURL(/\/tools\/shared-drive-manager$/);
-        await expect(page.getByRole('heading', { name: /^Shared Drives$/i })).toBeVisible();
-        await page.getByRole('button', { name: /Members Directory/i }).click();
-        await expect(page.getByRole('heading', { name: /Members Directory/i })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Your tools/i })).toBeVisible();
+        await expect(page.getByText('Shared Drive Manager')).toHaveCount(0);
+        // Deep-linking the manager-only route bounces an admin back to the dashboard.
+        await page.goto('/tools/shared-drive-manager');
+        await expect(page).toHaveURL(/\/dashboard$/);
     });
 
     test('signs out back to the login screen', async ({ page }) => {
@@ -130,6 +130,19 @@ test.describe('user deletion', () => {
         await expect(page.getByRole('dialog')).toBeVisible();
         await page.getByRole('button', { name: /Delete user/i }).click();
         await expect(page.getByText(/deleted/i)).toBeVisible();
+    });
+});
+
+test.describe('as a manager', () => {
+    test.beforeEach(async ({ page }) => { await authenticate(page, { role: 'manager' }); });
+
+    test('opens the manager-only Shared Drive Manager and switches sub-nav views', async ({ page }) => {
+        await page.goto('/dashboard');
+        await page.getByText('Shared Drive Manager').click();
+        await expect(page).toHaveURL(/\/tools\/shared-drive-manager$/);
+        await expect(page.getByRole('heading', { name: /^Shared Drives$/i })).toBeVisible();
+        await page.getByRole('button', { name: /Members Directory/i }).click();
+        await expect(page.getByRole('heading', { name: /Members Directory/i })).toBeVisible();
     });
 });
 

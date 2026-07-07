@@ -56,6 +56,15 @@ const RequireManager = ({ children }) => {
     : <Navigate to="/dashboard" replace />;
 };
 
+// Stricter guard: MANAGERS ONLY (the top role). Admins are bounced too. Used for the
+// Shared Drive Manager, which is manager-exclusive.
+const RequireStrictManager = ({ children }) => {
+  const { role } = useAuth();
+  return String(role).toLowerCase() === 'manager'
+    ? children
+    : <Navigate to="/dashboard" replace />;
+};
+
 // Gate a tool route by the user's tool allowlist (set by a manager/admin). Unrestricted
 // users pass; a restricted user hitting a disallowed tool is bounced to the dashboard.
 const RequireTool = ({ id, children }) => {
@@ -79,7 +88,7 @@ const Routed = () => (
       <Route path="/setup-signature" element={<SetupSignature />} />
       <Route path="/tools/photo-report" element={<RequireTool id="photo-report"><PhotoReportRoute /></RequireTool>} />
       <Route path="/tools/service-location" element={<RequireTool id="service-location"><ServiceLocaterRoute /></RequireTool>} />
-      <Route path="/tools/shared-drive-manager" element={<RequireManager><SharedDriveManager /></RequireManager>} />
+      <Route path="/tools/shared-drive-manager" element={<RequireStrictManager><SharedDriveManager /></RequireStrictManager>} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Route>
   </Routes>

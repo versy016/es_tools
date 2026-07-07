@@ -1,10 +1,20 @@
 import React, { useState, useCallback } from 'react';
-import { Excalidraw, exportToBlob, convertToExcalidrawElements } from '@excalidraw/excalidraw';
+import { Excalidraw, exportToBlob, convertToExcalidrawElements, FONT_FAMILY } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 // Engine: Excalidraw — full whiteboard (shapes, arrows, text, freehand) over the photo.
+// Default new items to a "normal" look instead of Excalidraw's hand-drawn defaults:
+// smooth strokes (roughness 0), sharp corners, straight-line arrows and a normal font.
+const NORMAL_DEFAULTS = {
+    currentItemRoughness: 0,                          // 0 = architect (clean), not hand-drawn
+    currentItemEdges: 'sharp',                        // square corners, not rounded
+    currentItemArrowType: 'sharp',                    // straight arrows, not curved
+    currentItemEndArrowhead: 'triangle',              // solid filled triangle tip, not the open V
+    currentItemFontFamily: FONT_FAMILY.Helvetica || 2, // "Normal" font, not Virgil (hand-drawn)
+};
+
 const ExcalidrawEditor = ({ photo, onSave, onClose }) => {
     const [api, setApi] = useState(null);
 
@@ -63,7 +73,7 @@ const ExcalidrawEditor = ({ photo, onSave, onClose }) => {
                 </div>
                 <div className="eng-stage" style={{ padding: 0 }}>
                     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                        <Excalidraw excalidrawAPI={onApi} />
+                        <Excalidraw excalidrawAPI={onApi} initialData={{ appState: NORMAL_DEFAULTS }} />
                     </div>
                 </div>
             </div>

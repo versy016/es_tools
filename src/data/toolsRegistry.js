@@ -42,7 +42,7 @@ export const TOOLS = [
         mono: 'SD',
         route: '/tools/shared-drive-manager',
         live: true,
-        managerOnly: true,       // only managers/admins see + can open it
+        managerOnly: true,       // managers ONLY (top role) — not admins/surveyors
         tag: 'Manager tool',
         badgeBg: '#1B2230',
         badgeFg: '#F5A623',
