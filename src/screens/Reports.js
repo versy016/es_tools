@@ -2,13 +2,14 @@
 // downloads via a signed URL, and re-sends a report by email (fetch blob -> base64
 // -> emailService). Data comes from reportsService.
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
 import LoadingOverlay from '../components/LoadingOverlay';
 import { listReports, getReportUrl, getReportBlob, loadDraft, removeReport } from '../services/reportsService';
 import { sendReportEmail, isEmailConfigured, blobToBase64 } from '../services/emailService';
+import { isDraft, matchesStatusFilter } from '../lib/reportStatus';
 
 // Status filter tabs; trailing "s" is stripped when matching a report's status.
 const FILTERS = ['All', 'Drafts', 'Final', 'Sent', 'Approved'];
@@ -18,16 +19,19 @@ const monogram = (s) => (s || 'PR').replace(/[^A-Za-z]/g, ' ').trim().split(/\s+
 const Reports = () => {
     const showToast = useToast();
     const navigate = useNavigate();
-    const [filter, setFilter] = useState('All');
+    // ?status=Drafts (from the sidebar's My drafts) preselects a filter tab.
+    const [params] = useSearchParams();
+    const initial = FILTERS.includes(params.get('status')) ? params.get('status') : 'All';
+    const [filter, setFilter] = useState(initial);
+    useEffect(() => { if (FILTERS.includes(params.get('status'))) setFilter(params.get('status')); }, [params]);
     const [reports, setReports] = useState(null); // null = loading, [] = loaded-but-empty
     const [pendingDelete, setPendingDelete] = useState(null); // report queued for deletion (drives the confirm dialog)
     const [busy, setBusy] = useState(null);                   // message shown in the full-screen overlay during an action
 
     useEffect(() => { listReports().then(setReports); }, []);
 
-    // Apply the active status filter (singularised) to the loaded reports.
-    const rows = (reports || []).filter((r) =>
-        filter === 'All' ? true : (r.status || 'Draft') === filter.replace(/s$/, ''));
+    // Apply the active status filter (shared rule — same as the sidebar badge and dashboard).
+    const rows = (reports || []).filter((r) => matchesStatusFilter(r.status, filter));
 
     // Open the report in a new tab via a signed URL.
     const download = async (r) => {
@@ -119,7 +123,7 @@ const Reports = () => {
                                 <div className="recent-meta">{r.meta}</div>
                             </div>
                             <span className={statusClass(r.status)}>{r.status || 'Draft'}</span>
-                            {(r.status || 'Draft') === 'Draft' ? (
+                            {isDraft(r.status) ? (
                                 // Drafts are in-progress: resume editing, not download.
                                 <div className="row-actions">
                                     <button type="button" className="btn-outline sm" onClick={() => cont(r)}>Continue</button>

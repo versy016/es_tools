@@ -1,6 +1,6 @@
-// Dashboard.js — landing screen. Time-of-day greeting, a resume/start card, the
-// tool grid/list (favouritable, search-filtered) and a recent-reports list.
-// Reports come from reportsService; favourites and grid/list view are local UI state.
+// Dashboard.js — landing screen. Time-of-day greeting, the tool search, the tool grid/list
+// (favouritable, search-filtered) and a recent-reports list. Reports come from
+// reportsService; search, favourites and grid/list view are local UI state.
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
@@ -8,7 +8,8 @@ import { TOOLS } from '../data/toolsRegistry';
 import ToolTile from '../components/ToolTile';
 import EmptyState from '../components/EmptyState';
 import { useToast } from '../components/Toast';
-import { listReports, getReportUrl, loadDraft } from '../services/reportsService';
+import { listReports, getReportUrl } from '../services/reportsService';
+import { isDraft } from '../lib/reportStatus';
 
 // Favourites are persisted client-side only (localStorage), keyed by tool id.
 const FAVS_KEY = 'es_tools_favs';
@@ -30,8 +31,8 @@ const monogram = (s) => (s || 'PR').replace(/[^A-Za-z]/g, ' ').trim().split(/\s+
 const Dashboard = () => {
     const navigate = useNavigate();
     const showToast = useToast();
-    // search/userName come from AppShell via the router Outlet context.
-    const { search = '', userName } = useOutletContext() || {};
+    const { userName } = useOutletContext() || {};
+    const [search, setSearch] = useState('');
     const { allowedTools, profile, user, role } = useAuth(); // tools restriction + profile + role
     const isManager = String(role || '').toLowerCase() === 'manager'; // top role; admins excluded
     const [favs, setFavs] = useState(loadFavs);
@@ -57,22 +58,7 @@ const Dashboard = () => {
     const visible = permitted;
     const tools = q ? visible.filter((t) => (t.name + ' ' + t.desc).toLowerCase().includes(q)) : visible;
     const recent = (reports || []).slice(0, 4);
-    const draftCount = (reports || []).filter((r) => (r.status || '').toLowerCase() === 'draft').length;
-    // Most recent in-progress draft, used by the resume card.
-    const latestDraft = (reports || []).find((r) => (r.status || '').toLowerCase() === 'draft');
-
-    // Resume the latest draft in its tool (pre-filled), else start a fresh report.
-    const resumeOrStart = async () => {
-        if (latestDraft) {
-            const draft = await loadDraft(latestDraft.id);
-            if (draft && draft.tool) {
-                try { localStorage.setItem('es_tools_resume', JSON.stringify({ id: latestDraft.id, tool: draft.tool, state: draft.state })); } catch (e) { /* ignore */ }
-                navigate(draft.tool === 'service-location' ? '/tools/service-location' : '/tools/photo-report');
-                return;
-            }
-        }
-        navigate('/tools/photo-report');
-    };
+    const draftCount = (reports || []).filter((r) => isDraft(r.status)).length;
 
     const toggleFav = (id) => {
         setFavs((prev) => {
@@ -97,27 +83,18 @@ const Dashboard = () => {
 
     return (
         <div className="page dc-pop">
-            <div className="page-head">
-                <p className="page-eyebrow">{todayLabel()}</p>
-                <h1>{greeting()}, {firstName}</h1>
-                <p>{draftCount > 0 ? `You have ${draftCount} draft${draftCount === 1 ? '' : 's'} in progress.` : 'Pick a tool to start a new report.'}</p>
-            </div>
-
-            <div className="resume-card" onClick={resumeOrStart}>
-                <div className="resume-glow" />
-                <div className="resume-icon">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1B2230" strokeWidth="2">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                        <circle cx="12" cy="13" r="4" />
+            <div className="page-head dash-head">
+                <div>
+                    <p className="page-eyebrow">{todayLabel()}</p>
+                    <h1>{greeting()}, {firstName}</h1>
+                    <p>{draftCount > 0 ? `You have ${draftCount} draft${draftCount === 1 ? '' : 's'} in progress.` : 'Pick a tool to start a new report.'}</p>
+                </div>
+                <div className="dash-search">
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7" fill="none" stroke="#1B2230" strokeWidth="2" />
+                        <path d="M16 16 L21 21" stroke="#1B2230" strokeWidth="2" strokeLinecap="round" />
                     </svg>
-                </div>
-                <div className="resume-body">
-                    <div className="resume-eyebrow">{latestDraft ? 'CONTINUE WHERE YOU LEFT OFF' : 'START HERE'}</div>
-                    <div className="resume-title">{latestDraft ? latestDraft.title : 'New pothole report'}</div>
-                    <div className="resume-meta">{latestDraft ? latestDraft.meta : 'Capture photos, annotate, attach potholes and export a branded PDF.'}</div>
-                </div>
-                <div className="resume-cta">{latestDraft ? 'Resume' : 'Start'}
-                    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#F5A623" strokeWidth="2.4"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tools…" aria-label="Search tools" />
                 </div>
             </div>
 

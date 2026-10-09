@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faMagnifyingGlass, faFolder, faLock, faUserPlus, faFolderPlus, faUsers, faUser,
     faTrash, faChevronLeft, faChevronRight, faArrowUp, faArrowDown, faPlus, faClockRotateLeft, faRightToBracket,
+    faClipboardCheck,
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../auth/AuthProvider';
 import { useToast } from '../../components/Toast';
@@ -10,6 +11,7 @@ import LoadingOverlay from '../../components/LoadingOverlay';
 import Spinner from '../../components/Spinner';
 import { Avatar, DriveMembersPanel, PersonDrivesPanel, CreateDriveModal, AddMemberModal, ConfirmModal, ResultsModal } from './overlays';
 import MemberWizard from './MemberWizard';
+import AuditView from './AuditView';
 import { resolvePerson, samePerson, personFromEmail } from './data';
 import * as svc from './service';
 import './SharedDriveManager.css';
@@ -49,6 +51,7 @@ const SharedDriveManager = () => {
     const [confirm, setConfirm] = useState(null);
     const [results, setResults] = useState(null);
     const [loadingMsg, setLoadingMsg] = useState(null);
+    const [auditCount, setAuditCount] = useState(null);   // findings in the latest audit run (nav badge)
 
     const configured = svc.isConfigured();
     const driveById = (id) => drives.find((d) => d.id === id);
@@ -315,7 +318,8 @@ const SharedDriveManager = () => {
                 <div className="sdm-nav-label">SHARED DRIVE MANAGER</div>
                 {[['drives', faFolder, 'Shared Drives', drives.length],
                   ['members', faUsers, 'Members Directory', allPeople.length],
-                  ['activity', faClockRotateLeft, 'Activity Log', log.length]].map(([v, ic, label, ct]) => (
+                  ['activity', faClockRotateLeft, 'Activity Log', log.length],
+                  ['audit', faClipboardCheck, 'Audit', auditCount ?? '—']].map(([v, ic, label, ct]) => (
                     <button key={v} className={`sdm-nav-item${view === v ? ' active' : ''}`} onClick={() => go(v)}>
                         <FontAwesomeIcon icon={ic} /> <span>{label}</span> <span className="sdm-nav-ct">{ct}</span>
                     </button>
@@ -441,6 +445,10 @@ const SharedDriveManager = () => {
                         </div>
                     </>
                 )}
+                {/* Always mounted (hidden when not active) so a running audit survives switching tabs. */}
+                <div style={{ display: view === 'audit' ? 'block' : 'none' }}>
+                    <AuditView connected={connected} drives={drives} knownActors={allPeople.map((p) => p.email)} actor={actor} onCount={setAuditCount} />
+                </div>
             </div>
 
             {panel?.type === 'drive' && driveById(panel.id) && (

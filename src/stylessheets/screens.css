@@ -156,9 +156,21 @@
     box-shadow: var(--shadow-lg);
 }
 
+/* Live tools are plain white; coming-soon tiles carry the warm tint so they read as placeholders. */
 .tool-tile.live {
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+.tool-tile.soon {
     background: var(--surface-active);
     border-color: var(--border-active);
+    box-shadow: none;
+}
+
+.tool-tile.soon:hover {
+    transform: none;
+    box-shadow: var(--shadow-sm);
 }
 
 .tile-top {

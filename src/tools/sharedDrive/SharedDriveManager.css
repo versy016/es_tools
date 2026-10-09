@@ -213,6 +213,30 @@
 .sdm-res-sec h4 { margin: 0 0 6px; font-size: 11.5px; letter-spacing: .5px; color: var(--sdm-muted2); }
 .sdm-res-item { font-size: 13px; color: var(--sdm-muted3); padding: 4px 0; }
 
+/* ---- Audit tab ---- */
+.sdm-audit-panel { background: #fff; border: 1px solid var(--sdm-line); border-radius: 16px; margin-bottom: 12px; overflow: hidden; }
+.sdm-audit-panel summary { display: flex; align-items: center; gap: 10px; padding: 14px 18px; cursor: pointer; list-style: none; font-weight: 700; font-size: 14.5px; }
+.sdm-audit-panel summary::-webkit-details-marker { display: none; }
+.sdm-audit-panel summary::before { content: '▸'; color: var(--sdm-muted2); font-size: 12px; }
+.sdm-audit-panel[open] summary::before { content: '▾'; }
+.sdm-audit-panel[open] summary { border-bottom: 1px solid var(--sdm-line); }
+.sdm-audit-title { flex: 1; }
+.sdm-audit-status { font-size: 11.5px; font-weight: 600; color: var(--sdm-muted2); white-space: nowrap; }
+.sdm-audit-status.live { color: var(--sdm-yellow-tx); }
+.sdm-audit-panel summary .sdm-btn { margin-left: 4px; }
+.sdm-chip-count { background: var(--sdm-yellow-bg); color: var(--sdm-yellow-tx); }
+.sdm-audit-notice { padding: 10px 18px; margin: 0; display: flex; gap: 8px; align-items: center; }
+.sdm-audit-table { display: grid; column-gap: 14px; padding: 0 18px 8px; font-size: 13px; }
+.sdm-audit-th { font-size: 11px; font-weight: 700; letter-spacing: .4px; color: var(--sdm-muted2); padding: 10px 0 6px; border-bottom: 1px solid var(--sdm-line); }
+.sdm-audit-td { padding: 9px 0; border-bottom: 1px solid var(--sdm-line2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sdm-audit-strong { font-weight: 700; }
+.sdm-audit-bad { color: var(--sdm-red-tx); }
+.sdm-audit-row.warn { background: var(--sdm-yellow-bg); color: var(--sdm-yellow-tx); }
+.sdm-audit-row.critical { background: var(--sdm-red-bg); color: var(--sdm-red-tx); }
+.sdm-audit-progress { padding: 14px 18px; margin-bottom: 14px; }
+.sdm-progress { height: 8px; border-radius: 999px; background: var(--sdm-line); overflow: hidden; margin-bottom: 8px; }
+.sdm-progress-fill { height: 100%; background: var(--sdm-yellow); transition: width .3s ease; }
+
 @media (max-width: 900px) {
     .sdm { flex-direction: column; }
     .sdm-nav { width: 100%; position: static; display: flex; gap: 6px; overflow-x: auto; }

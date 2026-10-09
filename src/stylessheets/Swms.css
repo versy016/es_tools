@@ -1,0 +1,193 @@
+/* SWMS tool — scoped styles. Outer chrome (.photo-report, .pr-content, .tool-topbar,
+   .form-section, .tool-actions) is reused from PhotoReport.css. Everything here is
+   prefixed .swms- and built on the ES Tools design tokens (see index.css). */
+
+.swms .swms-sub { color: var(--muted); font-size: .82rem; margin: 2px 0 0; }
+
+/* Template selector */
+.swms-tpl-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.swms-tpl-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border: 1.5px solid var(--border-strong); background: var(--surface);
+    border-radius: var(--radius-pill); font: inherit; font-size: .85rem; font-weight: 600;
+    color: var(--ink-soft); cursor: pointer; transition: all .15s;
+}
+.swms-tpl-btn:hover { border-color: var(--es-yellow); color: var(--ink); }
+.swms-tpl-btn.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.swms-tpl-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+/* Checkbox grids (equipment / PPE) */
+.swms-cbgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.swms-cbitem {
+    display: flex; align-items: center; gap: 9px; padding: 9px 12px;
+    background: var(--surface-2); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; font-size: .85rem; transition: all .15s;
+}
+.swms-cbitem:hover { border-color: var(--es-yellow); background: var(--surface-tint); }
+.swms-cbitem input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--ink); cursor: pointer; flex: none; }
+.swms-cbitem span { line-height: 1.3; }
+.swms-cbitem .swms-other-input {
+    flex: 1; min-width: 60px; border: none; border-bottom: 1.5px solid var(--border-strong);
+    background: transparent; font: inherit; font-size: .82rem; color: var(--ink); outline: none; padding: 2px 0;
+}
+.swms-cbitem .swms-other-input:focus { border-bottom-color: var(--es-yellow); }
+
+/* Generic tables (HRCW / review / staff / licenses) */
+.swms-table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+.swms-table th {
+    background: var(--ink); color: #fff; text-align: left; font-weight: 700;
+    padding: 9px 12px; font-size: .74rem; letter-spacing: .3px; text-transform: uppercase;
+}
+.swms-table th.c, .swms-table td.c { text-align: center; }
+.swms-table td { padding: 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.swms-table tbody tr:nth-child(even) td { background: var(--surface-2); }
+.swms-table td .cellpad { padding: 8px 12px; }
+.swms-table td input, .swms-table td textarea {
+    width: 100%; border: none; background: transparent; font: inherit; font-size: .84rem;
+    color: var(--ink); outline: none; padding: 8px 12px; resize: vertical;
+}
+.swms-table td input:focus, .swms-table td textarea:focus { background: var(--surface-tint); }
+.swms-hrcw td:first-child { padding: 8px 12px; line-height: 1.4; }
+.swms-yn { display: inline-flex; gap: 14px; padding: 6px 0; }
+.swms-yn label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.swms-yn input { accent-color: var(--ink); cursor: pointer; }
+
+/* Licence picker: chips of picked certifications + "add" select + free-text extra */
+.swms-certs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 12px 2px; }
+.swms-cert-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px;
+    background: var(--surface-tint); border: 1.5px solid var(--es-yellow); border-radius: var(--radius-pill);
+    font-size: .78rem; font-weight: 600; color: var(--ink); line-height: 1.3;
+}
+.swms-cert-chip button {
+    border: none; background: none; cursor: pointer; color: var(--muted); font-size: .72rem;
+    width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+}
+.swms-cert-chip button:hover { background: var(--sev-high-bg); color: var(--danger); }
+.swms-table td select.swms-cert-add {
+    border: 1.5px dashed var(--border-strong); border-radius: var(--radius-pill); background: var(--surface);
+    font: inherit; font-size: .78rem; font-weight: 600; color: var(--ink-soft); padding: 4px 10px; cursor: pointer;
+    max-width: 100%; outline: none;
+}
+.swms-table td select.swms-cert-add:hover, .swms-table td select.swms-cert-add:focus { border-color: var(--es-yellow); color: var(--ink); }
+.swms-table td input.swms-cert-other { font-size: .8rem; color: var(--ink-soft); padding-top: 4px; }
+
+.swms-add-btn {
+    margin-top: 10px; padding: 7px 14px; border: 1.5px solid var(--border-strong);
+    background: var(--surface); border-radius: var(--radius-sm); font: inherit; font-size: .82rem;
+    font-weight: 600; color: var(--ink-soft); cursor: pointer;
+}
+.swms-add-btn:hover { border-color: var(--es-yellow); color: var(--ink); }
+
+.swms-notes {
+    background: var(--surface-tint); border: 1.5px solid var(--border-strong); border-left: 4px solid var(--es-yellow);
+    border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 14px; font-size: .82rem;
+    line-height: 1.6; color: var(--ink-soft);
+}
+
+/* JSA table */
+.swms-jsa-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.swms-jsa-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.swms-jsa { width: 100%; border-collapse: collapse; min-width: 1080px; font-size: .82rem; }
+.swms-jsa th {
+    background: var(--ink); color: #fff; text-align: left; font-weight: 700; vertical-align: top;
+    padding: 9px 10px; font-size: .72rem; letter-spacing: .3px; text-transform: uppercase;
+}
+.swms-jsa th small { display: block; font-weight: 400; color: rgba(255,255,255,.55); font-size: .64rem; margin-top: 2px; text-transform: none; letter-spacing: 0; }
+.swms-jsa td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: top; padding: 0; }
+.swms-jsa td:last-child { border-right: none; }
+.swms-jsa .swms-rownum { text-align: center; font-weight: 700; color: var(--ink); background: var(--surface-2); width: 34px; padding: 8px 4px; vertical-align: top; }
+.swms-jsa textarea {
+    width: 100%; border: none; background: transparent; font: inherit; font-size: .82rem; color: var(--ink);
+    outline: none; padding: 6px 8px; resize: vertical; line-height: 1.45; min-height: 34px;
+}
+.swms-jsa textarea:focus { background: var(--surface-tint); }
+.swms-jsa .swms-proc textarea { font-weight: 600; }
+.swms-jsa .swms-risk textarea { text-align: center; font-weight: 700; min-height: 34px; resize: none; }
+.swms-haz { position: relative; }
+.swms-haz + .swms-haz { border-top: 1px dashed var(--border); }
+.swms-haz-actions { display: flex; gap: 4px; padding: 2px 4px 6px; }
+.swms-mini {
+    border: none; background: none; cursor: pointer; color: var(--muted); font-size: .7rem;
+    padding: 2px 6px; border-radius: 6px;
+}
+.swms-mini:hover { background: var(--surface-2); color: var(--ink); }
+.swms-mini.rm:hover { background: var(--sev-high-bg); color: var(--danger); }
+.swms-rowtools { text-align: center; white-space: nowrap; padding: 4px; }
+.swms-rowtools .swms-mini { display: inline-flex; }
+
+/* Risk colour text (matches doc bands) */
+.rk-H textarea, textarea.rk-H { color: var(--danger) !important; font-weight: 700; }
+.rk-M textarea, textarea.rk-M { color: #b26a00 !important; font-weight: 700; }
+.rk-L textarea, textarea.rk-L { color: var(--success-dark) !important; font-weight: 700; }
+
+/* Auto-filled initials in the "Signed" columns */
+.swms-table td .swms-initials { font-weight: 700; letter-spacing: .5px; color: var(--ink); min-height: 1.2em; }
+
+/* Staff-name suggestions inside table cells (dropdown from ServiceLocater.css) */
+.swms-table td.swms-ac-cell { position: relative; }
+.swms-table td.swms-ac-cell .dropdown { z-index: 50; min-width: 220px; margin-top: 0; }
+
+/* Autocomplete */
+.swms-ac-wrap { position: relative; }
+.swms-ac {
+    position: absolute; top: calc(100% - 2px); left: 0; right: 0; z-index: 40;
+    background: var(--surface); border: 1.5px solid var(--es-yellow); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg); max-height: 240px; overflow-y: auto;
+}
+.swms-ac-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: .8rem; line-height: 1.35; }
+.swms-ac-item:last-child { border-bottom: none; }
+.swms-ac-item:hover { background: var(--surface-tint); }
+
+/* Modals */
+.swms-overlay {
+    position: fixed; inset: 0; z-index: 3000; background: rgba(27,34,48,.5);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.swms-modal {
+    background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+    width: 100%; max-width: 940px; max-height: 88vh; display: flex; flex-direction: column;
+}
+.swms-modal.sm { max-width: 560px; }
+.swms-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 22px; border-bottom: 1px solid var(--border); }
+.swms-modal-head h3 { margin: 0; font-size: 1.05rem; color: var(--ink); }
+.swms-modal-x { width: 32px; height: 32px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface); cursor: pointer; color: var(--muted); font-size: 1rem; }
+.swms-modal-x:hover { background: var(--sev-high-bg); color: var(--danger); border-color: var(--danger); }
+.swms-modal-body { padding: 18px 22px; overflow-y: auto; flex: 1; }
+.swms-modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid var(--border); }
+
+/* Modal — new process form */
+.swms-field { margin-bottom: 14px; }
+.swms-field label { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--ink); margin-bottom: 5px; }
+.swms-field input, .swms-field textarea {
+    width: 100%; border: 1.5px solid var(--border-strong); border-radius: var(--radius-sm);
+    padding: 9px 12px; font: inherit; font-size: .88rem; background: var(--surface-2); color: var(--ink);
+    outline: none; resize: vertical; box-sizing: border-box;
+}
+.swms-field input:focus, .swms-field textarea:focus { border-color: var(--es-yellow); background: var(--surface); box-shadow: 0 0 0 3px var(--primary-soft); }
+.swms-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* Modal — process library */
+.swms-lib-search { width: 100%; border: 1.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 10px 14px; font: inherit; font-size: .9rem; background: var(--surface-2); color: var(--ink); outline: none; box-sizing: border-box; margin-bottom: 8px; }
+.swms-lib-search:focus { border-color: var(--es-yellow); background: var(--surface); }
+.swms-lib-count { font-size: .78rem; color: var(--muted); margin-bottom: 12px; }
+.swms-lib-tpl { display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin: 12px 0 6px; background: var(--surface-2); border-radius: var(--radius-sm); border-left: 4px solid var(--es-yellow); }
+.swms-lib-tpl .name { font-weight: 700; color: var(--ink); flex: 1; font-size: .85rem; }
+.swms-lib-tpl .count { font-size: .74rem; color: var(--muted); }
+.swms-lib-card { border: 1.5px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; overflow: hidden; }
+.swms-lib-card-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface-2); cursor: pointer; }
+.swms-lib-card-title { font-weight: 600; color: var(--ink); flex: 1; font-size: .84rem; line-height: 1.35; }
+.swms-lib-badge { font-size: .68rem; font-weight: 700; color: #fff; border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+.swms-lib-add { padding: 5px 12px; color: #fff; border: none; border-radius: 6px; font: inherit; font-size: .74rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.swms-lib-add:hover { opacity: .88; }
+.swms-lib-card-body { display: none; padding: 10px 14px; border-top: 1px solid var(--border); }
+.swms-lib-card-body.open { display: block; }
+.swms-lib-haz { display: grid; grid-template-columns: 2fr 66px 2fr 66px 1.2fr; gap: 10px; font-size: .74rem; padding: 8px 0; border-bottom: 1px dashed var(--border); line-height: 1.4; }
+.swms-lib-haz:last-child { border-bottom: none; }
+.swms-lib-col { font-size: .62rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
+.swms-lib-empty { text-align: center; padding: 36px; color: var(--muted); font-size: .85rem; }
+
+/* Full-bleed width for the JSA section: break out of the 920px content column,
+   centred on the viewport, capped on very wide screens (avoids page h-scroll). */
+.swms .swms-wide { position: relative; left: 50%; transform: translateX(-50%); width: calc(100vw - 32px); max-width: 1720px; }
+.swms .swms-wide .form-section { margin-left: 0; margin-right: 0; }

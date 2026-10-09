@@ -27,6 +27,17 @@ describe('toolsRegistry', () => {
         expect(live).toEqual(expect.arrayContaining(['photo-report', 'service-location']));
     });
 
+    test('ES Planner and ES Action Register are the coming-soon placeholders (site-survey / as-built are gone)', () => {
+        const ids = TOOLS.map((t) => t.id);
+        expect(ids).toEqual(expect.arrayContaining(['es-planner', 'es-action-register']));
+        expect(ids).not.toContain('site-survey');
+        expect(ids).not.toContain('as-built');
+        const planner = TOOLS.find((t) => t.id === 'es-planner');
+        const register = TOOLS.find((t) => t.id === 'es-action-register');
+        expect(planner).toMatchObject({ name: 'ES Planner', soon: true, mono: 'EP' });
+        expect(register).toMatchObject({ name: 'ES Action Register', soon: true, mono: 'AR' });
+    });
+
     test('every tool has display essentials (name, desc, mono badge)', () => {
         for (const t of TOOLS) {
             expect(t.name).toBeTruthy();

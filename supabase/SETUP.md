@@ -188,7 +188,7 @@ password** (branded reset link arrives, only for `@engsurveys.com.au`).
 
 ### 5c. Shared Drive Manager (Google Drive)
 
-The Shared Drive Manager (admin/manager-only tool) manages Google shared drives + access.
+The Shared Drive Manager (**manager-only** tool — admins are bounced too) manages Google shared drives + access.
 Drives + membership are read/written **directly from the browser** using the signed-in
 manager's Google token (per-user OAuth — no service account). The reusable **Members
 Directory** and the **Activity Log** are Supabase tables.
@@ -198,20 +198,41 @@ Directory** and the **Activity Log** are Supabase tables.
    `shared_drive_activity` with admin/manager RLS.
 2. **Google Cloud Console** (same project is fine):
    - **APIs & Services → Enable APIs → Google Drive API.**
-   - **OAuth consent screen** → User type **Internal** (engsurveys.com.au) → add scope
-     `https://www.googleapis.com/auth/drive`.
+   - **OAuth consent screen** → User type **Internal** (engsurveys.com.au) → add scopes
+     `https://www.googleapis.com/auth/drive` and
+     `https://www.googleapis.com/auth/admin.reports.audit.readonly` (the Audit tab).
+   - **APIs & Services → Enable APIs → Admin SDK API** (for the Reports API used by the Audit tab).
    - **Credentials → Create credentials → OAuth client ID → Web application.** Under
      **Authorized JavaScript origins** add `https://estools.com.au` and
      `http://localhost:3000`. Copy the **Client ID** (it ends `.apps.googleusercontent.com`).
 3. **Frontend env:** set `REACT_APP_GOOGLE_CLIENT_ID=<that client id>` in `.env` / `.env.local`
    and rebuild. (Public value, baked into the bundle — fine; it's not a secret.)
-4. **Who can use it:** the tool is restricted to ES Tools **admins/managers**, and the
-   Google account they connect must be allowed to manage shared drives. A **Workspace
-   admin** sees/edits every shared drive (via domain-admin access); a non-admin only sees
-   drives they belong to. Members are added as **Content Manager** (no notification email).
+4. **Who can use it:** the tool is restricted to ES Tools **managers**, and the Google
+   account they connect must be allowed to manage shared drives. A **Workspace admin**
+   sees/edits every shared drive (via domain-admin access); a non-admin only sees drives
+   they belong to. Members are added as **Content Manager** (no notification email).
+5. **Audit tab — database:** run migration
+   [`0005_shared_drive_audit.sql`](migrations/0005_shared_drive_audit.sql) — creates
+   `shared_drive_audit_runs` (latest audit results) with the same admin/manager RLS.
+6. **Audit tab — Algolia (ESE master client list):** in the Algolia dashboard (app
+   `ENGDR4U6W2`) create an API key with ACL **search + browse** (read-only; `browse` is
+   required because the index has more than 1,000 clients and plain search stops at 1,000)
+   restricted to the `clients` index, then set
+   `REACT_APP_ALGOLIA_APP_ID` and `REACT_APP_ALGOLIA_SEARCH_KEY` (step 6 below). Do **not**
+   reuse the desktop Project Directory Creation app's key — that one is an admin key. Without
+   these the "Unknown clients" check shows "Algolia not configured" and the rest still run.
+7. **Audit tab — deletions and last-created:** these use the **Admin SDK Reports API**, so the
+   connecting Google account needs Workspace admin reports access. Because the OAuth scope
+   list changed, everyone who connected before will be asked to re-consent once (the tab
+   shows a **Reconnect Google** button until then).
+8. **Audit tab — drive membership:** listing a drive's files needs the connecting account to
+   be a **member** of that shared drive (domain-admin access only covers listing the drives
+   themselves). Drives it isn't a member of appear under **Notes** as "not a member of this
+   drive" and are left out of the counts — add the account as Content manager and re-run.
 
 > No service-account key or domain-wide delegation needed — each manager authorises their
-> own Google account when they open the tool (token is in-memory, re-prompted each session).
+> own Google account when they open the tool (token is kept in sessionStorage for the tab and
+> silently restored on reload; re-prompted when it can't be).
 
 ## 6. Frontend environment
 
@@ -230,6 +251,10 @@ REACT_APP_REPORT_ARCHIVE_EMAIL=sverma@engsurveys.com.au
 
 # Shared Drive Manager — Google OAuth client id (step 5c)
 REACT_APP_GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
+
+# Shared Drive Manager → Audit tab — Algolia search-only key for the ESE client list (step 5c.6)
+REACT_APP_ALGOLIA_APP_ID=ENGDR4U6W2
+REACT_APP_ALGOLIA_SEARCH_KEY=xxxxxxxx
 ```
 
 Restart `npm start` after editing env files.

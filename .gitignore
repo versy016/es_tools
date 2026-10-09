@@ -43,3 +43,6 @@ skills-lock.json
 
 # Local Claude project skills
 .claude/skills/
+
+# brainstorming companion sessions
+.superpowers/

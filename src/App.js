@@ -1,11 +1,11 @@
 // App.js — application router shell. Composes the auth + toast providers, the
 // boot Gate (configure / loading / login / routed), the authenticated AppShell
-// (nav + Outlet), the route table, and the manager-only RBAC guard.
+// (sidebar + Outlet), the route table, and the manager-only RBAC guard.
 import './App.css';
 import './stylessheets/screens.css';
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
-import NavBar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import { ToastProvider } from './components/Toast';
 import { NavGuardProvider } from './components/NavGuard';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
@@ -17,24 +17,23 @@ import Profile from './screens/Profile';
 import ResetPassword from './screens/ResetPassword';
 import Welcome from './screens/Welcome';
 import SetupSignature from './screens/SetupSignature';
+import SignatureScreen from './screens/SignatureScreen';
+import Templates from './screens/Templates';
 import ServiceLocater from './tools/ServiceLocater';
 import PhotoReport from './tools/PhotoReport';
 import SharedDriveManager from './tools/sharedDrive/SharedDriveManager';
+import Swms from './tools/Swms';
 
-// Normalise a raw role string to a display label, defaulting to Surveyor.
-const roleLabel = (r) => (r || 'surveyor').replace(/^./, (c) => c.toUpperCase());
-
-// Authenticated chrome: top nav plus the routed page rendered via <Outlet>.
-// Owns the shared search box state and passes auth context down to every screen.
+// Authenticated chrome: the left sidebar plus the routed page rendered via <Outlet>.
+// Passes auth context down to every screen.
 const AppShell = () => {
   const { userName, role, signOut } = useAuth();
-  const [search, setSearch] = useState('');
   return (
-    <div className="App">
-      <NavBar userName={userName} role={roleLabel(role)} search={search} onSearch={setSearch} onSignOut={signOut} />
+    <div className="App app-with-sidebar">
+      <Sidebar />
       <main className="app-main">
         {/* Outlet context is consumed by screens via useOutletContext(). */}
-        <Outlet context={{ search, userName, signOut, role }} />
+        <Outlet context={{ userName, signOut, role }} />
       </main>
     </div>
   );
@@ -47,6 +46,7 @@ const withBack = (Component) => function Wrapped() {
 };
 const PhotoReportRoute = withBack(PhotoReport);
 const ServiceLocaterRoute = withBack(ServiceLocater);
+const SwmsRoute = withBack(Swms);
 
 // Only managers/admins may reach user management; everyone else is bounced to the dashboard.
 const RequireManager = ({ children }) => {
@@ -83,11 +83,14 @@ const Routed = () => (
       {/* Users screen is gated behind the manager/admin RBAC guard. */}
       <Route path="/users" element={<RequireManager><UserManagement /></RequireManager>} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/signature" element={<SignatureScreen />} />
+      <Route path="/templates" element={<RequireManager><Templates /></RequireManager>} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/setup-signature" element={<SetupSignature />} />
       <Route path="/tools/photo-report" element={<RequireTool id="photo-report"><PhotoReportRoute /></RequireTool>} />
       <Route path="/tools/service-location" element={<RequireTool id="service-location"><ServiceLocaterRoute /></RequireTool>} />
+      <Route path="/tools/swms" element={<RequireTool id="swms"><SwmsRoute /></RequireTool>} />
       <Route path="/tools/shared-drive-manager" element={<RequireStrictManager><SharedDriveManager /></RequireStrictManager>} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Route>

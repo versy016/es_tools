@@ -12,3 +12,8 @@ export const REPORT_ARCHIVE_EMAIL =
 // Empty = the tool shows a "not configured" notice. Create a Web OAuth client in the
 // Google Cloud console and set REACT_APP_GOOGLE_CLIENT_ID. (Public value, baked in.)
 export const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
+
+// Algolia (Shared Drive Manager audit → ESE master client list). Create a SEARCH-ONLY key
+// in the Algolia dashboard; both values are public-safe. Empty = audit check 1 disabled.
+export const ALGOLIA_APP_ID = process.env.REACT_APP_ALGOLIA_APP_ID || '';
+export const ALGOLIA_SEARCH_KEY = process.env.REACT_APP_ALGOLIA_SEARCH_KEY || '';

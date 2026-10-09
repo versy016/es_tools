@@ -39,4 +39,22 @@ describe('config', () => {
         jest.isolateModules(() => { config = require('./config'); });
         expect(config.EMAIL_ENDPOINT).toContain('/send-report');
     });
+
+    test('ALGOLIA_APP_ID / ALGOLIA_SEARCH_KEY default to empty strings', () => {
+        delete process.env.REACT_APP_ALGOLIA_APP_ID;
+        delete process.env.REACT_APP_ALGOLIA_SEARCH_KEY;
+        let config;
+        jest.isolateModules(() => { config = require('./config'); });
+        expect(config.ALGOLIA_APP_ID).toBe('');
+        expect(config.ALGOLIA_SEARCH_KEY).toBe('');
+    });
+
+    test('ALGOLIA_APP_ID / ALGOLIA_SEARCH_KEY honour env', () => {
+        process.env.REACT_APP_ALGOLIA_APP_ID = 'ENGDR4U6W2';
+        process.env.REACT_APP_ALGOLIA_SEARCH_KEY = 'k';
+        let config;
+        jest.isolateModules(() => { config = require('./config'); });
+        expect(config.ALGOLIA_APP_ID).toBe('ENGDR4U6W2');
+        expect(config.ALGOLIA_SEARCH_KEY).toBe('k');
+    });
 });
